@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 });
 
 export type Env = z.infer<typeof envSchema>;

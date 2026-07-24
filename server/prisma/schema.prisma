@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RestaurantStatus {
+  ACTIVE
+  MAINTENANCE
+}
+
+enum AdminAction {
+  CREATE
+  UPDATE
+  DELETE
+  TOGGLE
+}
+
+enum AdminEntity {
+  CATEGORY
+  MENU_ITEM
+  RESTAURANT
+  OWNER
+}
+
+model Owner {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("owners")
+}
+
+model Restaurant {
+  id           String           @id @default(cuid())
+  name         String
+  logo         String?
+  coverImage   String?
+  address      String?
+  phone        String?
+  email        String?
+  openingHours Json
+  description  String?
+  facebook     String?
+  instagram    String?
+  telegram     String?
+  status       RestaurantStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("restaurants")
+}
+
+model Category {
+  id           String     @id @default(cuid())
+  name         String     @unique
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  menuItems    MenuItem[]
+
+  @@index([displayOrder])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  categoryId   String
+  name         String
+  description  String   @default("")
+  price        Decimal  @db.Decimal(10, 2)
+  currency     String   @default("ETB")
+  image        String?
+  isAvailable  Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  category     Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@index([displayOrder])
+  @@map("menu_items")
+}
+
+model AdminActivity {
+  id        String      @id @default(cuid())
+  action    AdminAction
+  entity    AdminEntity
+  entityId  String?
+  summary   String
+  createdAt DateTime    @default(now())
+
+  @@index([createdAt])
+  @@map("admin_activities")
+}

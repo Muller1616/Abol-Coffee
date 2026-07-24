@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: abol-coffee-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: abol
+      POSTGRES_PASSWORD: abol_dev_password
+      POSTGRES_DB: abol_coffee
+    ports:
+      - '5434:5432'
+    volumes:
+      - abol_coffee_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U abol -d abol_coffee']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  abol_coffee_pgdata:
