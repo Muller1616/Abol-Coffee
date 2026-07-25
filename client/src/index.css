@@ -1,0 +1,46 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #0f766e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #0f172a;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-background: #f8fafc;
+  --color-card: #ffffff;
+  --color-foreground: #0f172a;
+  --color-muted: #e2e8f0;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-ring: #0f766e;
+
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply m-0 min-h-dvh bg-background font-sans text-foreground;
+    background-image:
+      radial-gradient(circle at top left, rgb(15 118 110 / 0.08), transparent 40%),
+      radial-gradient(circle at top right, rgb(245 158 11 / 0.08), transparent 35%);
+  }
+
+  #root {
+    @apply min-h-dvh;
+  }
+}
