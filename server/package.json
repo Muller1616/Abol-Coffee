@@ -18,7 +18,8 @@
     "verify:categories": "tsx scripts/verify-categories.ts",
     "verify:menu-items": "tsx scripts/verify-menu-items.ts",
     "verify:uploads": "tsx scripts/verify-uploads.ts",
-    "verify:public-menu": "tsx scripts/verify-public-menu.ts"
+    "verify:public-menu": "tsx scripts/verify-public-menu.ts",
+    "verify:dashboard": "tsx scripts/verify-dashboard.ts"
   },
   "engines": {
     "node": ">=20"
