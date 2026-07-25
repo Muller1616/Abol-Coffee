@@ -7,6 +7,7 @@ import { ComingSoonPage } from '@/pages/admin/ComingSoonPage'
 import { DashboardPage } from '@/pages/admin/DashboardPage'
 import { LoginPage } from '@/pages/admin/LoginPage'
 import { MenuItemsPage } from '@/pages/admin/MenuItemsPage'
+import { RestaurantPage } from '@/pages/admin/RestaurantPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { MenuPlaceholderPage } from '@/pages/public/MenuPlaceholderPage'
@@ -37,15 +38,7 @@ export function AppRouter() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="menu-items" element={<MenuItemsPage />} />
-          <Route
-            path="restaurant"
-            element={
-              <ComingSoonPage
-                title="Restaurant"
-                description="Restaurant profile editing for branding, hours, contact, and maintenance status is next."
-              />
-            }
-          />
+          <Route path="restaurant" element={<RestaurantPage />} />
           <Route
             path="qr"
             element={

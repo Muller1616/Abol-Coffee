@@ -59,8 +59,13 @@ export function ImageUpload({
             size="sm"
             disabled={disabled}
             onClick={() => {
+              const hadPendingFile = Boolean(file)
               onFileChange(null)
-              onRemoveExisting?.()
+              // Discarding a new selection should restore the existing preview,
+              // not mark the stored image for deletion.
+              if (!hadPendingFile) {
+                onRemoveExisting?.()
+              }
               if (inputRef.current) inputRef.current.value = ''
             }}
           >
