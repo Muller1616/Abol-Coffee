@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Coffee, Mail, MapPin, Phone } from 'lucide-react'
+import { ArrowLeft, Coffee, Mail, MapPin, Phone } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { PublicMenuMaintenance } from '@/features/public-menu/api'
 import { resolveMediaUrl } from '@/lib/format'
 
@@ -15,6 +16,14 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 py-16">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,#0f766e_0%,#134e4a_45%,#0f172a_100%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgb(245_158_11/0.18),transparent_45%)]" />
+
+      <Link
+        to="/"
+        aria-label="Back to home"
+        className="absolute top-4 left-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-md transition hover:bg-white/15 sm:top-6 sm:left-6"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Link>
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   AlertTriangle,
+  ArrowLeft,
   Coffee,
   Mail,
   MapPin,
@@ -10,6 +11,7 @@ import {
   Send,
 } from 'lucide-react'
 import { useDeferredValue, useMemo, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -89,7 +91,8 @@ export function MenuPage() {
 
   if (menuQuery.isError) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-lg items-center px-6 py-16">
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-6 py-16">
+        <BackHomeLink className="mb-6 bg-white text-foreground ring-border hover:bg-[#f8fafc]" />
         <EmptyState
           icon={AlertTriangle}
           title="Menu unavailable"
@@ -130,6 +133,10 @@ export function MenuPage() {
           <div className="absolute inset-0 bg-[linear-gradient(155deg,#0f766e_0%,#115e59_40%,#0f172a_100%)]" />
         )}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(6_18_15/0.25)_0%,rgb(6_18_15/0.35)_40%,rgb(6_18_15/0.88)_100%)]" />
+
+        <div className="absolute top-0 right-0 left-0 z-10 px-4 pt-4 sm:px-8 sm:pt-6 lg:px-14">
+          <BackHomeLink className="text-white" />
+        </div>
 
         <div className="relative flex min-h-dvh flex-col justify-end px-6 pb-14 pt-20 sm:px-10 lg:px-16">
           <motion.div
@@ -339,6 +346,21 @@ export function MenuPage() {
         }}
       />
     </div>
+  )
+}
+
+function BackHomeLink({ className }: { className?: string }) {
+  return (
+    <Link
+      to="/"
+      aria-label="Back to home"
+      className={cn(
+        'inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-black/25 ring-1 ring-white/20 backdrop-blur-md transition hover:bg-black/35',
+        className,
+      )}
+    >
+      <ArrowLeft className="h-5 w-5" />
+    </Link>
   )
 }
 
