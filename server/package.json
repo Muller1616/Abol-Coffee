@@ -13,7 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "db:setup": "prisma migrate dev && prisma db seed",
-    "verify:auth": "tsx scripts/verify-auth.ts"
+    "verify:auth": "tsx scripts/verify-auth.ts",
+    "verify:restaurant": "tsx scripts/verify-restaurant.ts"
   },
   "engines": {
     "node": ">=20"
