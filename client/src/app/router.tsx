@@ -3,10 +3,10 @@ import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticat
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { CategoriesPage } from '@/pages/admin/CategoriesPage'
-import { ComingSoonPage } from '@/pages/admin/ComingSoonPage'
 import { DashboardPage } from '@/pages/admin/DashboardPage'
 import { LoginPage } from '@/pages/admin/LoginPage'
 import { MenuItemsPage } from '@/pages/admin/MenuItemsPage'
+import { QrPage } from '@/pages/admin/QrPage'
 import { RestaurantPage } from '@/pages/admin/RestaurantPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -39,15 +39,7 @@ export function AppRouter() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="menu-items" element={<MenuItemsPage />} />
           <Route path="restaurant" element={<RestaurantPage />} />
-          <Route
-            path="qr"
-            element={
-              <ComingSoonPage
-                title="QR code"
-                description="A dedicated QR studio for preview, download, and print will arrive in an upcoming step."
-              />
-            }
-          />
+          <Route path="qr" element={<QrPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
