@@ -84,6 +84,8 @@ Abol-Coffee/
 └── docker-compose.yml
 ```
 
+Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free license), stored at `client/public/media/`.
+
 ## Product rules (v1)
 
 - Currency is fixed to **ETB**
