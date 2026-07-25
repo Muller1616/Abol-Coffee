@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { AlertTriangle, Save, Store } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FloatingInput } from '@/components/ui/input'
@@ -25,6 +26,8 @@ import {
 import { OpeningHoursEditor } from '@/features/restaurant/OpeningHoursEditor'
 import { restaurantFormSchema, type RestaurantFormValues } from '@/features/restaurant/schema'
 import { createDefaultOpeningHours } from '@/features/restaurant/types'
+import { SettingsShell } from '@/features/settings/SettingsShell'
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
 import { getApiErrorMessage } from '@/lib/api'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -34,6 +37,13 @@ function emptyToNull(value?: string) {
   return trimmed.length === 0 ? null : trimmed
 }
 
+function scrollToFirstError() {
+  window.requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>('[aria-invalid="true"], .text-danger')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
+
 export function RestaurantPage() {
   const queryClient = useQueryClient()
   const { pushToast } = useToast()
@@ -41,6 +51,7 @@ export function RestaurantPage() {
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [removeLogo, setRemoveLogo] = useState(false)
   const [removeCover, setRemoveCover] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState<'ACTIVE' | 'MAINTENANCE' | null>(null)
 
   const restaurantQuery = useQuery({
     queryKey: ['admin', 'restaurant'],
@@ -55,6 +66,8 @@ export function RestaurantPage() {
     formState: { errors, isDirty },
   } = useForm<RestaurantFormValues>({
     resolver: zodResolver(restaurantFormSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -67,6 +80,8 @@ export function RestaurantPage() {
       openingHours: createDefaultOpeningHours(),
     },
   })
+
+  const descriptionValue = useWatch({ control, name: 'description' }) ?? ''
 
   useEffect(() => {
     if (!restaurantQuery.data) return
@@ -88,6 +103,10 @@ export function RestaurantPage() {
     setRemoveCover(false)
   }, [restaurantQuery.data, reset])
 
+  const hasPendingMedia = Boolean(logoFile || coverFile || removeLogo || removeCover)
+  const formDirty = isDirty || hasPendingMedia
+  const unsaved = useUnsavedChanges(formDirty)
+
   const invalidate = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant'] }),
@@ -99,9 +118,9 @@ export function RestaurantPage() {
     mutationFn: async (values: RestaurantFormValues) => {
       let restaurant = await updateRestaurant({
         name: values.name,
-        description: emptyToNull(values.description),
-        address: emptyToNull(values.address),
-        phone: emptyToNull(values.phone),
+        description: values.description.trim(),
+        address: values.address.trim(),
+        phone: values.phone.trim(),
         email: emptyToNull(values.email),
         facebook: emptyToNull(values.facebook),
         instagram: emptyToNull(values.instagram),
@@ -125,13 +144,24 @@ export function RestaurantPage() {
 
       return restaurant
     },
-    onSuccess: async () => {
+    onSuccess: async (restaurant) => {
       await invalidate()
+      reset({
+        name: restaurant.name,
+        description: restaurant.description ?? '',
+        address: restaurant.address ?? '',
+        phone: restaurant.phone ?? '',
+        email: restaurant.email ?? '',
+        facebook: restaurant.facebook ?? '',
+        instagram: restaurant.instagram ?? '',
+        telegram: restaurant.telegram ?? '',
+        openingHours: restaurant.openingHours ?? createDefaultOpeningHours(),
+      })
       setLogoFile(null)
       setCoverFile(null)
       setRemoveLogo(false)
       setRemoveCover(false)
-      pushToast('Restaurant settings saved')
+      pushToast('Restaurant information updated successfully')
     },
     onError: (error) =>
       pushToast(getApiErrorMessage(error, 'Could not save restaurant settings'), 'error'),
@@ -141,59 +171,53 @@ export function RestaurantPage() {
     mutationFn: updateRestaurantStatus,
     onSuccess: async (restaurant) => {
       await invalidate()
+      setPendingStatus(null)
       pushToast(
         restaurant.status === 'ACTIVE'
           ? 'Public menu is now live'
           : 'Public menu set to maintenance',
       )
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Could not update restaurant status'), 'error'),
+    onError: (error) => {
+      setPendingStatus(null)
+      pushToast(getApiErrorMessage(error, 'Could not update restaurant status'), 'error')
+    },
   })
 
   if (restaurantQuery.isLoading) {
     return (
-      <div className="space-y-6">
+      <SettingsShell activeTab="restaurant">
         <Skeleton className="h-20 w-full max-w-xl" />
-        <Skeleton className="h-40" />
-        <Skeleton className="h-96" />
-      </div>
+        <Skeleton className="mt-6 h-40" />
+        <Skeleton className="mt-6 h-96" />
+      </SettingsShell>
     )
   }
 
   if (restaurantQuery.isError || !restaurantQuery.data) {
     return (
-      <EmptyState
-        icon={AlertTriangle}
-        title="Unable to load restaurant settings"
-        description={getApiErrorMessage(restaurantQuery.error, 'Please refresh and try again.')}
-        className="min-h-[420px] bg-white"
-      />
+      <SettingsShell activeTab="restaurant">
+        <EmptyState
+          icon={AlertTriangle}
+          title="Unable to load restaurant settings"
+          description={getApiErrorMessage(restaurantQuery.error, 'Please refresh and try again.')}
+          className="min-h-[420px] bg-white"
+        />
+      </SettingsShell>
     )
   }
 
   const restaurant = restaurantQuery.data
   const isLive = restaurant.status === 'ACTIVE'
-  const hasPendingMedia = Boolean(logoFile || coverFile || removeLogo || removeCover)
-  const canSave = isDirty || hasPendingMedia
+  const canSave = formDirty
+  const pending = saveMutation.isPending
 
-  const logoPreview =
-    !removeLogo && !logoFile ? resolveMediaUrl(restaurant.logo) : null
-  const coverPreview =
-    !removeCover && !coverFile ? resolveMediaUrl(restaurant.coverImage) : null
+  const logoPreview = !removeLogo && !logoFile ? resolveMediaUrl(restaurant.logo) : null
+  const coverPreview = !removeCover && !coverFile ? resolveMediaUrl(restaurant.coverImage) : null
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-medium text-primary">Settings</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            Restaurant
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-            Control your public brand presence, opening hours, and whether the QR menu is live.
-          </p>
-        </div>
+    <SettingsShell activeTab="restaurant">
+      <div className="mb-2 flex justify-end">
         <Badge variant={isLive ? 'success' : 'warning'}>
           {isLive ? 'Menu live' : 'Maintenance mode'}
         </Badge>
@@ -225,29 +249,38 @@ export function RestaurantPage() {
             <Switch
               checked={isLive}
               disabled={statusMutation.isPending}
-              onCheckedChange={(checked) =>
-                statusMutation.mutate(checked ? 'ACTIVE' : 'MAINTENANCE')
-              }
+              onCheckedChange={(checked) => {
+                const next = checked ? 'ACTIVE' : 'MAINTENANCE'
+                if (next === 'MAINTENANCE') {
+                  setPendingStatus('MAINTENANCE')
+                  return
+                }
+                statusMutation.mutate('ACTIVE')
+              }}
             />
           </div>
         </div>
       </motion.section>
 
       <form
-        className="space-y-6"
-        onSubmit={handleSubmit(async (values) => {
-          await saveMutation.mutateAsync(values)
-        })}
+        className="mt-6 space-y-6"
+        noValidate
+        onSubmit={handleSubmit(
+          async (values) => {
+            await saveMutation.mutateAsync(values)
+          },
+          () => scrollToFirstError(),
+        )}
       >
         <section className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Store className="h-4 w-4" />
+              <Store className="h-4 w-4" aria-hidden />
             </div>
             <div>
               <h2 className="text-lg font-semibold tracking-tight">Brand media</h2>
               <p className="text-sm text-muted-foreground">
-                Logo and cover appear on the public menu hero.
+                Optional logo and cover for the public menu hero. JPG, PNG, or WebP up to 5 MB.
               </p>
             </div>
           </div>
@@ -258,7 +291,7 @@ export function RestaurantPage() {
               hint="Square-friendly logo, up to 5 MB."
               currentImageUrl={logoPreview}
               file={logoFile}
-              disabled={saveMutation.isPending}
+              disabled={pending}
               onFileChange={(file) => {
                 setLogoFile(file)
                 if (file) setRemoveLogo(false)
@@ -272,7 +305,7 @@ export function RestaurantPage() {
               hint="Wide hero banner for the public menu."
               currentImageUrl={coverPreview}
               file={coverFile}
-              disabled={saveMutation.isPending}
+              disabled={pending}
               onFileChange={(file) => {
                 setCoverFile(file)
                 if (file) setRemoveCover(false)
@@ -293,43 +326,79 @@ export function RestaurantPage() {
           </div>
 
           <div className="grid gap-4">
-            <FloatingInput label="Restaurant name" error={errors.name?.message} {...register('name')} />
+            <FloatingInput
+              label="Restaurant name"
+              disabled={pending}
+              aria-invalid={Boolean(errors.name)}
+              error={errors.name?.message}
+              {...register('name')}
+            />
             <FloatingTextarea
               label="Description"
+              disabled={pending}
+              maxLength={2000}
+              showCount
+              hint="Tell guests what makes your café special."
+              aria-invalid={Boolean(errors.description)}
               error={errors.description?.message}
               {...register('description')}
+              value={descriptionValue}
             />
             <div className="grid gap-4 sm:grid-cols-2">
-              <FloatingInput label="Phone" error={errors.phone?.message} {...register('phone')} />
+              <FloatingInput
+                label="Phone"
+                disabled={pending}
+                aria-invalid={Boolean(errors.phone)}
+                hint="Include country code if possible."
+                error={errors.phone?.message}
+                {...register('phone')}
+              />
               <FloatingInput
                 label="Public email"
                 type="email"
+                disabled={pending}
+                aria-invalid={Boolean(errors.email)}
+                hint="Optional contact email for guests."
                 error={errors.email?.message}
                 {...register('email')}
               />
             </div>
-            <FloatingInput label="Address" error={errors.address?.message} {...register('address')} />
+            <FloatingInput
+              label="Address"
+              disabled={pending}
+              aria-invalid={Boolean(errors.address)}
+              error={errors.address?.message}
+              {...register('address')}
+            />
           </div>
         </section>
 
         <section className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6">
           <div className="mb-5">
             <h2 className="text-lg font-semibold tracking-tight">Social links</h2>
-            <p className="text-sm text-muted-foreground">Optional profile URLs for Facebook, Instagram, and Telegram.</p>
+            <p className="text-sm text-muted-foreground">
+              Optional profile URLs for Facebook, Instagram, and Telegram.
+            </p>
           </div>
           <div className="grid gap-4">
             <FloatingInput
               label="Facebook URL"
+              disabled={pending}
+              aria-invalid={Boolean(errors.facebook)}
               error={errors.facebook?.message}
               {...register('facebook')}
             />
             <FloatingInput
               label="Instagram URL"
+              disabled={pending}
+              aria-invalid={Boolean(errors.instagram)}
               error={errors.instagram?.message}
               {...register('instagram')}
             />
             <FloatingInput
               label="Telegram URL"
+              disabled={pending}
+              aria-invalid={Boolean(errors.telegram)}
               error={errors.telegram?.message}
               {...register('telegram')}
             />
@@ -340,17 +409,44 @@ export function RestaurantPage() {
           <div className="mb-5">
             <h2 className="text-lg font-semibold tracking-tight">Opening hours</h2>
             <p className="text-sm text-muted-foreground">
-              Structured schedule for each day of the week.
+              Required weekly schedule. Closed days must not include open or close times.
             </p>
           </div>
           <OpeningHoursEditor control={control} errors={errors} />
         </section>
 
-        <div className="sticky bottom-4 z-10 flex justify-end">
+        <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-2">
+          {formDirty ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                if (!restaurantQuery.data) return
+                reset({
+                  name: restaurantQuery.data.name,
+                  description: restaurantQuery.data.description ?? '',
+                  address: restaurantQuery.data.address ?? '',
+                  phone: restaurantQuery.data.phone ?? '',
+                  email: restaurantQuery.data.email ?? '',
+                  facebook: restaurantQuery.data.facebook ?? '',
+                  instagram: restaurantQuery.data.instagram ?? '',
+                  telegram: restaurantQuery.data.telegram ?? '',
+                  openingHours: restaurantQuery.data.openingHours ?? createDefaultOpeningHours(),
+                })
+                setLogoFile(null)
+                setCoverFile(null)
+                setRemoveLogo(false)
+                setRemoveCover(false)
+              }}
+            >
+              Discard
+            </Button>
+          ) : null}
           <Button
             type="submit"
-            loading={saveMutation.isPending}
-            disabled={!canSave || saveMutation.isPending}
+            loading={pending}
+            disabled={!canSave || pending}
             className="min-w-48 shadow-[0_16px_40px_rgb(15_118_110/0.28)]"
           >
             <Save className="h-4 w-4" />
@@ -358,6 +454,31 @@ export function RestaurantPage() {
           </Button>
         </div>
       </form>
-    </div>
+
+      <ConfirmDialog
+        open={unsaved.dialogOpen}
+        onOpenChange={(open) => {
+          if (!open) unsaved.cancelLeave()
+        }}
+        title="You have unsaved changes"
+        description="Are you sure you want to leave? Your restaurant edits will be lost."
+        confirmLabel="Leave page"
+        tone="danger"
+        onConfirm={unsaved.confirmLeave}
+      />
+
+      <ConfirmDialog
+        open={pendingStatus === 'MAINTENANCE'}
+        onOpenChange={(open) => {
+          if (!open) setPendingStatus(null)
+        }}
+        title="Enable maintenance mode?"
+        description="Guests scanning your QR code will temporarily see a maintenance message instead of the menu."
+        confirmLabel="Set to maintenance"
+        tone="danger"
+        loading={statusMutation.isPending}
+        onConfirm={() => statusMutation.mutate('MAINTENANCE')}
+      />
+    </SettingsShell>
   )
 }

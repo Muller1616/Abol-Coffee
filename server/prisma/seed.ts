@@ -37,6 +37,8 @@ async function main(): Promise<void> {
       data: {
         name: 'Abol Coffee',
         description: 'Premium Ethiopian coffee and café menu.',
+        phone: '+251 11 123 4567',
+        address: 'Bole Road, Addis Ababa, Ethiopia',
         status: RestaurantStatus.ACTIVE,
         openingHours: createDefaultOpeningHours(),
       },

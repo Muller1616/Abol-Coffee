@@ -22,7 +22,7 @@ const navItems = [
   { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed },
   { to: '/admin/restaurant', label: 'Restaurant', icon: Store },
   { to: '/admin/qr', label: 'QR code', icon: QrCode },
-  { to: '/admin/account', label: 'Account', icon: KeyRound },
+  { to: '/admin/account', label: 'Settings', icon: KeyRound },
 ]
 
 export function AdminLayout() {

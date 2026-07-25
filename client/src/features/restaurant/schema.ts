@@ -43,11 +43,21 @@ export const openingHoursSchema = z.object(
   >,
 )
 
+const phoneRegex = /^[+]?[\d\s().-]{7,40}$/
+
 export const restaurantFormSchema = z.object({
-  name: z.string().trim().min(1, 'Restaurant name is required').max(120),
-  description: z.string().trim().max(2000).optional().or(z.literal('')),
-  address: z.string().trim().max(500).optional().or(z.literal('')),
-  phone: z.string().trim().max(40).optional().or(z.literal('')),
+  name: z.string().trim().min(1, 'Restaurant name is required').max(120, 'Maximum 120 characters'),
+  description: z
+    .string()
+    .trim()
+    .min(1, 'Description is required')
+    .max(2000, 'Maximum 2000 characters'),
+  address: z.string().trim().min(1, 'Address is required').max(500, 'Maximum 500 characters'),
+  phone: z
+    .string()
+    .trim()
+    .min(1, 'Phone number is required')
+    .regex(phoneRegex, 'Enter a valid phone number'),
   email: z
     .union([z.literal(''), z.email('Enter a valid email')])
     .optional(),

@@ -1,23 +1,31 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Store } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
-import { DocumentTitle } from '@/components/DocumentTitle'
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Alert } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { FloatingInput } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { changePasswordRequest } from '@/features/auth/api'
 import { useAuth } from '@/features/auth/auth-context'
+import { PasswordStrength } from '@/features/auth/PasswordStrength'
 import {
   changePasswordSchema,
   type ChangePasswordFormValues,
 } from '@/features/auth/schema'
+import { SettingsShell } from '@/features/settings/SettingsShell'
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
 import { getApiErrorMessage } from '@/lib/api'
-import { cn } from '@/lib/utils'
+
+function scrollToFirstError() {
+  window.requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>('[aria-invalid="true"], .text-danger')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
 
 export function AccountPage() {
   const { owner } = useAuth()
@@ -30,10 +38,13 @@ export function AccountPage() {
   const {
     register,
     handleSubmit,
+    control,
     reset,
     formState: { errors, isDirty },
   } = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       currentPassword: '',
       newPassword: '',
@@ -41,17 +52,8 @@ export function AccountPage() {
     },
   })
 
-  useEffect(() => {
-    if (!isDirty) return
-
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [isDirty])
+  const newPassword = useWatch({ control, name: 'newPassword' }) ?? ''
+  const unsaved = useUnsavedChanges(isDirty)
 
   const mutation = useMutation({
     mutationFn: changePasswordRequest,
@@ -73,20 +75,7 @@ export function AccountPage() {
   const pending = mutation.isPending
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <DocumentTitle title="Account · Abol Coffee" />
-
-      <div>
-        <p className="text-sm font-medium text-primary">Security</p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-          Account
-        </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
-          Owner sign-in is limited to a permanent email and password. Business branding, contact
-          details, and hours are managed under Restaurant settings.
-        </p>
-      </div>
-
+    <SettingsShell activeTab="security">
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -94,12 +83,12 @@ export function AccountPage() {
       >
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4" aria-hidden />
           </div>
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Owner email</h2>
             <p className="text-sm text-muted-foreground">
-              Seeded permanently. Email cannot be changed in the application.
+              Permanent login identity. Cannot be changed in the application.
             </p>
           </div>
         </div>
@@ -116,55 +105,31 @@ export function AccountPage() {
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.04 }}
-        className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6"
-      >
-        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Store className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">Restaurant profile</h2>
-              <p className="text-sm text-muted-foreground">
-                Name, logo, cover, phone, address, hours, and social links.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/admin/restaurant"
-            className={cn(buttonVariants({ variant: 'outline' }), 'shrink-0')}
-          >
-            Open restaurant settings
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </motion.section>
-
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
-        className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6"
+        transition={{ delay: 0.05 }}
+        className="mt-6 rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6"
       >
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <LockKeyhole className="h-4 w-4" />
+            <LockKeyhole className="h-4 w-4" aria-hidden />
           </div>
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Change password</h2>
             <p className="text-sm text-muted-foreground">
-              Confirm your current password, then choose a new one (8–128 characters).
+              Verify your current password, then choose a stronger replacement (8–128 characters).
             </p>
           </div>
         </div>
 
         <form
           className="space-y-4"
-          onSubmit={handleSubmit(async (values) => {
-            setFormError(null)
-            await mutation.mutateAsync(values)
-          })}
+          noValidate
+          onSubmit={handleSubmit(
+            async (values) => {
+              setFormError(null)
+              await mutation.mutateAsync(values)
+            },
+            () => scrollToFirstError(),
+          )}
         >
           {formError ? <Alert>{formError}</Alert> : null}
 
@@ -173,11 +138,12 @@ export function AccountPage() {
             type={showCurrent ? 'text' : 'password'}
             autoComplete="current-password"
             disabled={pending}
+            aria-invalid={Boolean(errors.currentPassword)}
             error={errors.currentPassword?.message}
             trailing={
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 disabled={pending}
                 onClick={() => setShowCurrent((value) => !value)}
                 aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
@@ -188,37 +154,42 @@ export function AccountPage() {
             {...register('currentPassword')}
           />
 
-          <FloatingInput
-            label="New password"
-            type={showNew ? 'text' : 'password'}
-            autoComplete="new-password"
-            disabled={pending}
-            hint="Minimum 8 characters. Must differ from the current password."
-            error={errors.newPassword?.message}
-            trailing={
-              <button
-                type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
-                disabled={pending}
-                onClick={() => setShowNew((value) => !value)}
-                aria-label={showNew ? 'Hide new password' : 'Show new password'}
-              >
-                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            }
-            {...register('newPassword')}
-          />
+          <div className="space-y-2">
+            <FloatingInput
+              label="New password"
+              type={showNew ? 'text' : 'password'}
+              autoComplete="new-password"
+              disabled={pending}
+              aria-invalid={Boolean(errors.newPassword)}
+              hint="Use at least 8 characters. Must differ from your current password."
+              error={errors.newPassword?.message}
+              trailing={
+                <button
+                  type="button"
+                  className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  disabled={pending}
+                  onClick={() => setShowNew((value) => !value)}
+                  aria-label={showNew ? 'Hide new password' : 'Show new password'}
+                >
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
+              {...register('newPassword')}
+            />
+            <PasswordStrength password={newPassword} />
+          </div>
 
           <FloatingInput
             label="Confirm new password"
             type={showConfirm ? 'text' : 'password'}
             autoComplete="new-password"
             disabled={pending}
+            aria-invalid={Boolean(errors.confirmPassword)}
             error={errors.confirmPassword?.message}
             trailing={
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 disabled={pending}
                 onClick={() => setShowConfirm((value) => !value)}
                 aria-label={showConfirm ? 'Hide confirmation' : 'Show confirmation'}
@@ -230,23 +201,45 @@ export function AccountPage() {
           />
 
           <div className="flex items-start gap-3 rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-muted-foreground">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
             <p>
-              There is no forgot-password flow in v1. After changing your password, your current
-              session stays signed in until it expires.
+              There is no forgot-password flow in v1. After a successful change, this session remains
+              signed in until it expires.
             </p>
           </div>
 
-          <Button
-            type="submit"
-            loading={pending}
-            disabled={!isDirty || pending}
-            className="w-full sm:w-auto"
-          >
-            Update password
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" loading={pending} disabled={!isDirty || pending}>
+              Update password
+            </Button>
+            {isDirty ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => {
+                  reset()
+                  setFormError(null)
+                }}
+              >
+                Discard changes
+              </Button>
+            ) : null}
+          </div>
         </form>
       </motion.section>
-    </div>
+
+      <ConfirmDialog
+        open={unsaved.dialogOpen}
+        onOpenChange={(open) => {
+          if (!open) unsaved.cancelLeave()
+        }}
+        title="You have unsaved changes"
+        description="Are you sure you want to leave? Your password changes will be lost."
+        confirmLabel="Leave page"
+        tone="danger"
+        onConfirm={unsaved.confirmLeave}
+      />
+    </SettingsShell>
   )
 }

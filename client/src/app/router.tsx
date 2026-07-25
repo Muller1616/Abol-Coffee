@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticated'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RouteFallback } from '@/components/RouteFallback'
@@ -47,87 +47,86 @@ function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
 }
 
+const router = createBrowserRouter([
+  { path: '/', element: <HomePage /> },
+  {
+    path: '/menu',
+    element: (
+      <LazyPage>
+        <MenuPage />
+      </LazyPage>
+    ),
+  },
+  { path: '/admin', element: <Navigate to="/admin/dashboard" replace /> },
+  {
+    path: '/admin/login',
+    element: (
+      <RedirectIfAuthenticated>
+        <LoginPage />
+      </RedirectIfAuthenticated>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <RequireAuth>
+        <AdminLayout />
+      </RequireAuth>
+    ),
+    children: [
+      {
+        path: 'dashboard',
+        element: (
+          <LazyPage>
+            <DashboardPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'categories',
+        element: (
+          <LazyPage>
+            <CategoriesPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'menu-items',
+        element: (
+          <LazyPage>
+            <MenuItemsPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'restaurant',
+        element: (
+          <LazyPage>
+            <RestaurantPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'qr',
+        element: (
+          <LazyPage>
+            <QrPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'account',
+        element: (
+          <LazyPage>
+            <AccountPage />
+          </LazyPage>
+        ),
+      },
+    ],
+  },
+  { path: '*', element: <NotFoundPage /> },
+])
+
 export function AppRouter() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/menu"
-          element={
-            <LazyPage>
-              <MenuPage />
-            </LazyPage>
-          }
-        />
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route
-          path="/admin/login"
-          element={
-            <RedirectIfAuthenticated>
-              <LoginPage />
-            </RedirectIfAuthenticated>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <RequireAuth>
-              <AdminLayout />
-            </RequireAuth>
-          }
-        >
-          <Route
-            path="dashboard"
-            element={
-              <LazyPage>
-                <DashboardPage />
-              </LazyPage>
-            }
-          />
-          <Route
-            path="categories"
-            element={
-              <LazyPage>
-                <CategoriesPage />
-              </LazyPage>
-            }
-          />
-          <Route
-            path="menu-items"
-            element={
-              <LazyPage>
-                <MenuItemsPage />
-              </LazyPage>
-            }
-          />
-          <Route
-            path="restaurant"
-            element={
-              <LazyPage>
-                <RestaurantPage />
-              </LazyPage>
-            }
-          />
-          <Route
-            path="qr"
-            element={
-              <LazyPage>
-                <QrPage />
-              </LazyPage>
-            }
-          />
-          <Route
-            path="account"
-            element={
-              <LazyPage>
-                <AccountPage />
-              </LazyPage>
-            }
-          />
-        </Route>
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </BrowserRouter>
-  )
+  return <RouterProvider router={router} />
 }
