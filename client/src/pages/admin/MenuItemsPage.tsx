@@ -23,6 +23,7 @@ import { fetchCategories } from '@/features/categories/api'
 import {
   createMenuItem,
   deleteMenuItem,
+  fetchAllMenuItemsInCategory,
   fetchMenuItems,
   removeMenuItemImage,
   reorderMenuItems,
@@ -115,15 +116,11 @@ export function MenuItemsPage() {
           saved = await uploadMenuItemImage(item.id, payload.imageFile)
         }
       } else {
-        const siblings = await fetchMenuItems({
-          categoryId: body.categoryId,
-          page: 1,
-          pageSize: 100,
-        })
+        const siblings = await fetchAllMenuItemsInCategory(body.categoryId)
         const nextOrder =
-          siblings.items.length === 0
+          siblings.length === 0
             ? 0
-            : Math.max(...siblings.items.map((entry) => entry.displayOrder)) + 1
+            : Math.max(...siblings.map((entry) => entry.displayOrder)) + 1
 
         saved = await createMenuItem({
           ...body,
@@ -196,12 +193,23 @@ export function MenuItemsPage() {
   }
 
   const moveItem = async (item: MenuItem, direction: 'up' | 'down') => {
-    const ordered = [...items].sort((a, b) => a.displayOrder - b.displayOrder)
-    const index = ordered.findIndex((entry) => entry.id === item.id)
+    // Always reorder within the item's category using the full category list so
+    // filters, pagination, and mixed-category views cannot corrupt displayOrder.
+    const siblings = await fetchAllMenuItemsInCategory(item.categoryId)
+    const index = siblings.findIndex((entry) => entry.id === item.id)
     const targetIndex = direction === 'up' ? index - 1 : index + 1
-    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) return
 
-    const swapped = [...ordered]
+    if (index < 0 || targetIndex < 0 || targetIndex >= siblings.length) {
+      pushToast(
+        direction === 'up'
+          ? 'Already at the top of this category'
+          : 'Already at the bottom of this category',
+        'error',
+      )
+      return
+    }
+
+    const swapped = [...siblings]
     const current = swapped[index]
     const target = swapped[targetIndex]
     if (!current || !target) return
@@ -375,7 +383,7 @@ export function MenuItemsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={index === 0 || reorderMutation.isPending}
+                        disabled={reorderMutation.isPending}
                         onClick={() => void moveItem(item, 'up')}
                       >
                         <ArrowUp className="h-3.5 w-3.5" />
@@ -383,7 +391,7 @@ export function MenuItemsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={index >= items.length - 1 || reorderMutation.isPending}
+                        disabled={reorderMutation.isPending}
                         onClick={() => void moveItem(item, 'down')}
                       >
                         <ArrowDown className="h-3.5 w-3.5" />

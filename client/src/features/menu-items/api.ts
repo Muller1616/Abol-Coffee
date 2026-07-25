@@ -62,6 +62,23 @@ export async function fetchMenuItems(query: MenuItemListQuery = {}) {
   return data.data
 }
 
+/** Loads every item in a category (across pages) for safe reorder/create-order. */
+export async function fetchAllMenuItemsInCategory(categoryId: string) {
+  const pageSize = 100
+  const first = await fetchMenuItems({ categoryId, page: 1, pageSize })
+  const items = [...first.items]
+
+  for (let page = 2; page <= first.pagination.totalPages; page += 1) {
+    const next = await fetchMenuItems({ categoryId, page, pageSize })
+    items.push(...next.items)
+  }
+
+  return items.sort((a, b) => {
+    if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export async function createMenuItem(input: MenuItemInput) {
   await ensureCsrfToken()
   const { data } = await api.post<ApiSuccess<{ item: MenuItem }>>('/api/admin/menu-items', input)

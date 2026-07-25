@@ -47,6 +47,7 @@ export function CategoriesPage() {
   const invalidate = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
     ])
   }

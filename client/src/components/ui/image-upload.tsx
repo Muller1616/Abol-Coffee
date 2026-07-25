@@ -1,5 +1,5 @@
 import { ImagePlus, Trash2, Upload } from 'lucide-react'
-import { useMemo, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +14,8 @@ type ImageUploadProps = {
 }
 
 const ACCEPTED = 'image/jpeg,image/png,image/webp'
+const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const MAX_BYTES = 5 * 1024 * 1024
 
 export function ImageUpload({
   label = 'Food image',
@@ -26,15 +28,35 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const previewUrl = useMemo(() => {
     if (file) return URL.createObjectURL(file)
     return currentImageUrl ?? null
   }, [currentImageUrl, file])
 
+  useEffect(() => {
+    if (!file || !previewUrl?.startsWith('blob:')) return
+    return () => {
+      URL.revokeObjectURL(previewUrl)
+    }
+  }, [file, previewUrl])
+
   const handleFiles = (files: FileList | null) => {
     const next = files?.[0]
     if (!next) return
+
+    if (!ACCEPTED_TYPES.has(next.type)) {
+      setLocalError('Use a JPG, PNG, or WebP image.')
+      return
+    }
+
+    if (next.size > MAX_BYTES) {
+      setLocalError('Image must be 5 MB or smaller.')
+      return
+    }
+
+    setLocalError(null)
     onFileChange(next)
   }
 
@@ -61,6 +83,7 @@ export function ImageUpload({
             onClick={() => {
               const hadPendingFile = Boolean(file)
               onFileChange(null)
+              setLocalError(null)
               // Discarding a new selection should restore the existing preview,
               // not mark the stored image for deletion.
               if (!hadPendingFile) {
@@ -85,6 +108,7 @@ export function ImageUpload({
         className={cn(
           'relative overflow-hidden rounded-2xl border border-dashed bg-[#f8fafc] transition',
           isDragging ? 'border-primary bg-primary/5' : 'border-border/80',
+          localError && 'border-danger/50',
           disabled && 'opacity-60',
         )}
       >
@@ -117,6 +141,8 @@ export function ImageUpload({
           </button>
         )}
       </div>
+
+      {localError ? <p className="px-1 text-xs font-medium text-danger">{localError}</p> : null}
 
       <input
         ref={inputRef}

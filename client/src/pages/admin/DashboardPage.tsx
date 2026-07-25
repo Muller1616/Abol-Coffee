@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Activity,
@@ -15,11 +15,13 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { fetchDashboard } from '@/features/dashboard/api'
-import { fetchQrPreview, getQrDownloadUrl } from '@/features/qr/api'
+import { fetchQrPreview } from '@/features/qr/api'
+import { downloadQrFile } from '@/features/qr/download'
 import { getApiErrorMessage } from '@/lib/api'
 import { formatDateTime, formatRelativeTime, resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -69,6 +71,8 @@ const quickActions = [
 ]
 
 export function DashboardPage() {
+  const { pushToast } = useToast()
+
   const dashboardQuery = useQuery({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => fetchDashboard(8),
@@ -77,6 +81,13 @@ export function DashboardPage() {
   const qrQuery = useQuery({
     queryKey: ['admin', 'qr'],
     queryFn: fetchQrPreview,
+  })
+
+  const downloadMutation = useMutation({
+    mutationFn: downloadQrFile,
+    onSuccess: (_data, format) => pushToast(`${format.toUpperCase()} downloaded`),
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Could not download QR code'), 'error'),
   })
 
   if (dashboardQuery.isLoading) {
@@ -335,20 +346,28 @@ export function DashboardPage() {
                   {qrQuery.data.menuUrl}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href={getQrDownloadUrl('png')}
-                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full')}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    loading={downloadMutation.isPending && downloadMutation.variables === 'png'}
+                    disabled={downloadMutation.isPending}
+                    onClick={() => downloadMutation.mutate('png')}
                   >
                     <Download className="h-3.5 w-3.5" />
                     PNG
-                  </a>
-                  <a
-                    href={getQrDownloadUrl('svg')}
-                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    loading={downloadMutation.isPending && downloadMutation.variables === 'svg'}
+                    disabled={downloadMutation.isPending}
+                    onClick={() => downloadMutation.mutate('svg')}
                   >
                     <Download className="h-3.5 w-3.5" />
                     SVG
-                  </a>
+                  </Button>
                 </div>
                 <Link to="/admin/qr" className={cn(buttonVariants(), 'w-full')}>
                   Open QR studio
