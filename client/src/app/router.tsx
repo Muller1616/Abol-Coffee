@@ -10,14 +10,14 @@ import { QrPage } from '@/pages/admin/QrPage'
 import { RestaurantPage } from '@/pages/admin/RestaurantPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { MenuPlaceholderPage } from '@/pages/public/MenuPlaceholderPage'
+import { MenuPage } from '@/pages/public/MenuPage'
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/menu" element={<MenuPlaceholderPage />} />
+        <Route path="/menu" element={<MenuPage />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route
           path="/admin/login"
