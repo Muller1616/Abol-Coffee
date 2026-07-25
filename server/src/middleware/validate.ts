@@ -18,7 +18,16 @@ export function validate(schema: ZodType, target: RequestTarget = 'body') {
       return;
     }
 
-    req[target] = parsed.data;
+    if (target === 'query') {
+      req.validatedQuery = parsed.data;
+    } else if (target === 'params') {
+      req.validatedParams = parsed.data;
+      Object.assign(req.params, parsed.data);
+    } else {
+      req.validatedBody = parsed.data;
+      req.body = parsed.data;
+    }
+
     next();
   };
 }

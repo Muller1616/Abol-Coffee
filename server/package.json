@@ -15,7 +15,8 @@
     "db:setup": "prisma migrate dev && prisma db seed",
     "verify:auth": "tsx scripts/verify-auth.ts",
     "verify:restaurant": "tsx scripts/verify-restaurant.ts",
-    "verify:categories": "tsx scripts/verify-categories.ts"
+    "verify:categories": "tsx scripts/verify-categories.ts",
+    "verify:menu-items": "tsx scripts/verify-menu-items.ts"
   },
   "engines": {
     "node": ">=20"
