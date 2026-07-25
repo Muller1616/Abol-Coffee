@@ -19,11 +19,13 @@ const prisma = new PrismaClient({ adapter });
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(ownerPassword, 12);
 
+  const normalizedEmail = ownerEmail.trim().toLowerCase();
+
   await prisma.owner.upsert({
-    where: { email: ownerEmail },
+    where: { email: normalizedEmail },
     update: {},
     create: {
-      email: ownerEmail,
+      email: normalizedEmail,
       password: passwordHash,
     },
   });
@@ -41,7 +43,7 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log(`Seed complete. Owner email: ${ownerEmail}`);
+  console.log(`Seed complete. Owner email: ${normalizedEmail}`);
 }
 
 main()
