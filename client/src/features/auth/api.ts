@@ -1,5 +1,5 @@
 import { api, type ApiSuccess } from '@/lib/api'
-import { setCsrfToken } from '@/lib/csrf'
+import { getCsrfToken, setCsrfToken } from '@/lib/csrf'
 
 export type Owner = {
   id: string
@@ -16,6 +16,12 @@ export async function fetchCsrfToken() {
   const { data } = await api.get<ApiSuccess<{ csrfToken: string }>>('/api/auth/csrf')
   setCsrfToken(data.data.csrfToken)
   return data.data.csrfToken
+}
+
+export async function ensureCsrfToken() {
+  const existing = getCsrfToken()
+  if (existing) return existing
+  return fetchCsrfToken()
 }
 
 export async function loginRequest(payload: LoginPayload) {

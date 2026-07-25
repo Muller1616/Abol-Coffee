@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticated'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AdminLayout } from '@/layouts/AdminLayout'
+import { CategoriesPage } from '@/pages/admin/CategoriesPage'
 import { ComingSoonPage } from '@/pages/admin/ComingSoonPage'
 import { DashboardPage } from '@/pages/admin/DashboardPage'
 import { LoginPage } from '@/pages/admin/LoginPage'
@@ -33,15 +34,7 @@ export function AppRouter() {
           }
         >
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route
-            path="categories"
-            element={
-              <ComingSoonPage
-                title="Categories"
-                description="Category management UI will be built next with create, reorder, and visibility controls."
-              />
-            }
-          />
+          <Route path="categories" element={<CategoriesPage />} />
           <Route
             path="menu-items"
             element={
