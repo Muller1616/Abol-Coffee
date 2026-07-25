@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import {
   Coffee,
+  ExternalLink,
   FolderTree,
   KeyRound,
   LayoutDashboard,
@@ -9,8 +10,9 @@ import {
   Store,
   UtensilsCrossed,
 } from 'lucide-react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { BackLink } from '@/components/BackLink'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +27,9 @@ const navItems = [
 
 export function AdminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { owner, logout } = useAuth()
+  const isDashboard = location.pathname === '/admin/dashboard'
 
   const handleLogout = async () => {
     await logout()
@@ -92,23 +96,45 @@ export function AdminLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 border-b border-border/70 bg-white/75 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4">
-              <div className="lg:hidden">
-                <p className="text-sm font-semibold">Abol Coffee</p>
-                <p className="text-xs text-muted-foreground">Owner console</p>
+              <div className="flex min-w-0 items-center gap-3">
+                {!isDashboard ? (
+                  <BackLink
+                    to="/admin/dashboard"
+                    label="Back to dashboard"
+                    tone="light"
+                    className="h-10 w-10 shrink-0 lg:hidden"
+                  />
+                ) : null}
+                <div className="lg:hidden">
+                  <p className="text-sm font-semibold">Abol Coffee</p>
+                  <p className="text-xs text-muted-foreground">Owner console</p>
+                </div>
+                <div className="hidden lg:block">
+                  <motion.p
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-muted-foreground"
+                  >
+                    Manage your digital menu with clarity and speed.
+                  </motion.p>
+                </div>
               </div>
-              <div className="hidden lg:block">
-                <motion.p
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-sm text-muted-foreground"
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  to="/"
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'hidden text-muted-foreground sm:inline-flex',
+                  )}
                 >
-                  Manage your digital menu with clarity and speed.
-                </motion.p>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View site
+                </Link>
+                <Button variant="ghost" className="lg:hidden" onClick={() => void handleLogout()}>
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
               </div>
-              <Button variant="ghost" className="lg:hidden" onClick={() => void handleLogout()}>
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </Button>
             </div>
 
             <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
