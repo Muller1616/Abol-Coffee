@@ -11,6 +11,7 @@ import type {
   UpdateMenuItemInput,
 } from '../validators/menuItem.validators.js';
 import { logAdminActivity } from './activity.service.js';
+import { deleteStoredImage } from './storage.service.js';
 
 const menuItemInclude = {
   category: {
@@ -220,6 +221,7 @@ export async function deleteMenuItem(id: string): Promise<void> {
   const item = await getMenuItemById(id);
 
   await prisma.menuItem.delete({ where: { id } });
+  await deleteStoredImage(item.image);
 
   await logAdminActivity({
     action: AdminAction.DELETE,

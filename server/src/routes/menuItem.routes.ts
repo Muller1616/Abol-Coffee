@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import {
+  removeMenuItemImageHandler,
+  uploadMenuItemImageHandler,
+} from '../controllers/image.controller.js';
+import {
   createMenuItemHandler,
   deleteMenuItemHandler,
   getMenuItemHandler,
@@ -10,6 +14,7 @@ import {
 } from '../controllers/menuItem.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { verifyCsrf } from '../middleware/csrf.js';
+import { uploadSingleImage } from '../middleware/upload.js';
 import { validate } from '../middleware/validate.js';
 import {
   createMenuItemSchema,
@@ -51,6 +56,21 @@ menuItemRouter.patch(
   validate(menuItemIdParamsSchema, 'params'),
   validate(updateMenuItemAvailabilitySchema),
   updateMenuItemAvailabilityHandler,
+);
+
+menuItemRouter.post(
+  '/:id/image',
+  verifyCsrf,
+  validate(menuItemIdParamsSchema, 'params'),
+  uploadSingleImage('image'),
+  uploadMenuItemImageHandler,
+);
+
+menuItemRouter.delete(
+  '/:id/image',
+  verifyCsrf,
+  validate(menuItemIdParamsSchema, 'params'),
+  removeMenuItemImageHandler,
 );
 
 menuItemRouter.delete(
