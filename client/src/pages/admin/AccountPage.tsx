@@ -1,14 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Store } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
+import { DocumentTitle } from '@/components/DocumentTitle'
 import { Alert } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { FloatingInput } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { DocumentTitle } from '@/components/DocumentTitle'
 import { changePasswordRequest } from '@/features/auth/api'
 import { useAuth } from '@/features/auth/auth-context'
 import {
@@ -16,6 +17,7 @@ import {
   type ChangePasswordFormValues,
 } from '@/features/auth/schema'
 import { getApiErrorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 export function AccountPage() {
   const { owner } = useAuth()
@@ -39,11 +41,26 @@ export function AccountPage() {
     },
   })
 
+  useEffect(() => {
+    if (!isDirty) return
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isDirty])
+
   const mutation = useMutation({
     mutationFn: changePasswordRequest,
     onSuccess: () => {
       reset()
       setFormError(null)
+      setShowCurrent(false)
+      setShowNew(false)
+      setShowConfirm(false)
       pushToast('Password updated successfully')
     },
     onError: (error) => {
@@ -52,6 +69,8 @@ export function AccountPage() {
       pushToast(message, 'error')
     },
   })
+
+  const pending = mutation.isPending
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -63,8 +82,8 @@ export function AccountPage() {
           Account
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
-          Your owner email is permanent. Update your password here when needed — there is no
-          forgot-password flow in this version.
+          Owner sign-in is limited to a permanent email and password. Business branding, contact
+          details, and hours are managed under Restaurant settings.
         </p>
       </div>
 
@@ -79,17 +98,53 @@ export function AccountPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Owner email</h2>
-            <p className="text-sm text-muted-foreground">Cannot be changed in the application.</p>
+            <p className="text-sm text-muted-foreground">
+              Seeded permanently. Email cannot be changed in the application.
+            </p>
           </div>
         </div>
 
-        <FloatingInput label="Email" value={owner?.email ?? ''} readOnly disabled />
+        <FloatingInput
+          label="Email"
+          value={owner?.email ?? ''}
+          readOnly
+          disabled
+          autoComplete="username"
+        />
       </motion.section>
 
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
+        transition={{ delay: 0.04 }}
+        className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6"
+      >
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Store className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Restaurant profile</h2>
+              <p className="text-sm text-muted-foreground">
+                Name, logo, cover, phone, address, hours, and social links.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/restaurant"
+            className={cn(buttonVariants({ variant: 'outline' }), 'shrink-0')}
+          >
+            Open restaurant settings
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
         className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6"
       >
         <div className="mb-5 flex items-center gap-3">
@@ -99,7 +154,7 @@ export function AccountPage() {
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Change password</h2>
             <p className="text-sm text-muted-foreground">
-              Use at least 8 characters. Keep your session signed in after updating.
+              Confirm your current password, then choose a new one (8–128 characters).
             </p>
           </div>
         </div>
@@ -117,11 +172,13 @@ export function AccountPage() {
             label="Current password"
             type={showCurrent ? 'text' : 'password'}
             autoComplete="current-password"
+            disabled={pending}
             error={errors.currentPassword?.message}
             trailing={
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                disabled={pending}
                 onClick={() => setShowCurrent((value) => !value)}
                 aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
               >
@@ -135,12 +192,14 @@ export function AccountPage() {
             label="New password"
             type={showNew ? 'text' : 'password'}
             autoComplete="new-password"
-            hint="Minimum 8 characters"
+            disabled={pending}
+            hint="Minimum 8 characters. Must differ from the current password."
             error={errors.newPassword?.message}
             trailing={
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                disabled={pending}
                 onClick={() => setShowNew((value) => !value)}
                 aria-label={showNew ? 'Hide new password' : 'Show new password'}
               >
@@ -154,11 +213,13 @@ export function AccountPage() {
             label="Confirm new password"
             type={showConfirm ? 'text' : 'password'}
             autoComplete="new-password"
+            disabled={pending}
             error={errors.confirmPassword?.message}
             trailing={
               <button
                 type="button"
-                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                disabled={pending}
                 onClick={() => setShowConfirm((value) => !value)}
                 aria-label={showConfirm ? 'Hide confirmation' : 'Show confirmation'}
               >
@@ -171,15 +232,15 @@ export function AccountPage() {
           <div className="flex items-start gap-3 rounded-2xl bg-[#f8fafc] px-4 py-3 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p>
-              There is no self-serve password recovery. Store your new password securely after
-              changing it.
+              There is no forgot-password flow in v1. After changing your password, your current
+              session stays signed in until it expires.
             </p>
           </div>
 
           <Button
             type="submit"
-            loading={mutation.isPending}
-            disabled={!isDirty || mutation.isPending}
+            loading={pending}
+            disabled={!isDirty || pending}
             className="w-full sm:w-auto"
           >
             Update password

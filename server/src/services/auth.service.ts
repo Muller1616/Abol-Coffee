@@ -1,7 +1,9 @@
 import { prisma } from '../config/database.js';
+import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
+import { logAdminActivity } from './activity.service.js';
 
 export type AuthenticatedOwner = {
   id: string;
@@ -69,5 +71,12 @@ export async function changeOwnerPassword(
   await prisma.owner.update({
     where: { id: ownerId },
     data: { password: passwordHash },
+  });
+
+  await logAdminActivity({
+    action: AdminAction.UPDATE,
+    entity: AdminEntity.OWNER,
+    entityId: ownerId,
+    summary: 'Owner password updated',
   });
 }

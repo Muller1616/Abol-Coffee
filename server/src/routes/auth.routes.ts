@@ -8,7 +8,7 @@ import {
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { verifyCsrf } from '../middleware/csrf.js';
-import { loginRateLimiter } from '../middleware/rateLimit.js';
+import { changePasswordRateLimiter, loginRateLimiter } from '../middleware/rateLimit.js';
 import { validate } from '../middleware/validate.js';
 import { changePasswordSchema, loginSchema } from '../validators/auth.validators.js';
 
@@ -25,6 +25,7 @@ authRouter.get('/me', authenticate, me);
 authRouter.post(
   '/change-password',
   authenticate,
+  changePasswordRateLimiter,
   verifyCsrf,
   validate(changePasswordSchema),
   changePassword,
