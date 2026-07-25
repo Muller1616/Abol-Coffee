@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(4000),
+  PORT: z.coerce.number().int().positive().default(4001),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
   PUBLIC_MENU_URL: z.string().url('PUBLIC_MENU_URL must be a valid permanent menu URL'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),

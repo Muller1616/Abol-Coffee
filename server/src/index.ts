@@ -7,6 +7,19 @@ const app = createApp();
 
 await ensureUploadDirectories();
 
-app.listen(env.PORT, () => {
-  console.log(`Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
+const server = app.listen(env.PORT, () => {
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : env.PORT;
+  console.log(`Abol Coffee API running in ${env.NODE_ENV} mode on port ${port}`);
+});
+
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(
+      `Port ${env.PORT} is already in use. Stop the other process or set a free PORT in server/.env.`,
+    );
+  } else {
+    console.error('Failed to start API server:', error);
+  }
+  process.exit(1);
 });

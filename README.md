@@ -20,6 +20,8 @@ The printed QR encodes a **permanent public URL** (`PUBLIC_MENU_URL`). Menu cont
 - Node.js 20+
 - Docker (for local Postgres)
 
+> Local API defaults to **port 4001** so it does not collide with other apps commonly using 4000. The Vite proxy targets `http://localhost:4001`.
+
 ## Quick start
 
 ```bash
@@ -31,7 +33,7 @@ cd server
 cp .env.example .env   # then set a real JWT_SECRET (32+ chars)
 npm install
 npm run db:setup
-npm run dev            # http://localhost:4000
+npm run dev            # http://localhost:4001
 
 # 3) Client (new terminal)
 cd client
@@ -54,7 +56,7 @@ Change the password after first login at `/admin/account`.
 | http://localhost:5173/ | Landing |
 | http://localhost:5173/menu | Public QR menu |
 | http://localhost:5173/admin/login | Owner login |
-| http://localhost:4000/api/health | API health check |
+| http://localhost:4001/api/health | API health check |
 
 Local env should keep:
 
