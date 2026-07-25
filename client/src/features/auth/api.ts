@@ -46,3 +46,15 @@ export async function fetchCurrentOwner() {
   const { data } = await api.get<ApiSuccess<{ owner: Owner }>>('/api/auth/me')
   return data.data.owner
 }
+
+export type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export async function changePasswordRequest(payload: ChangePasswordPayload) {
+  await ensureCsrfToken()
+  const { data } = await api.post<ApiSuccess<undefined>>('/api/auth/change-password', payload)
+  return data
+}

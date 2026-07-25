@@ -2,13 +2,14 @@ import { motion } from 'framer-motion'
 import {
   Coffee,
   FolderTree,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   QrCode,
   Store,
   UtensilsCrossed,
 } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ const navItems = [
   { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed },
   { to: '/admin/restaurant', label: 'Restaurant', icon: Store },
   { to: '/admin/qr', label: 'QR code', icon: QrCode },
+  { to: '/admin/account', label: 'Account', icon: KeyRound },
 ]
 
 export function AdminLayout() {
@@ -74,7 +76,13 @@ export function AdminLayout() {
               Signed in
             </p>
             <p className="mt-1 truncate text-sm font-semibold">{owner?.email}</p>
-            <Button variant="outline" className="mt-4 h-10 w-full" onClick={() => void handleLogout()}>
+            <Link
+              to="/admin/account"
+              className="mt-3 inline-flex text-xs font-semibold text-primary hover:underline"
+            >
+              Change password
+            </Link>
+            <Button variant="outline" className="mt-3 h-10 w-full" onClick={() => void handleLogout()}>
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>

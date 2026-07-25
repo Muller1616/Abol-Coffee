@@ -10,6 +10,7 @@ import {
   Send,
 } from 'lucide-react'
 import { useDeferredValue, useMemo, useState, type ReactNode } from 'react'
+import { DocumentTitle } from '@/components/DocumentTitle'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fetchPublicMenu, type PublicMenuItem } from '@/features/public-menu/api'
@@ -102,7 +103,12 @@ export function MenuPage() {
   if (!menuQuery.data) return null
 
   if (menuQuery.data.status === 'MAINTENANCE') {
-    return <MaintenanceView menu={menuQuery.data} />
+    return (
+      <>
+        <DocumentTitle title={`${menuQuery.data.restaurant.name} · Menu`} />
+        <MaintenanceView menu={menuQuery.data} />
+      </>
+    )
   }
 
   const { restaurant, categories } = menuQuery.data
@@ -112,6 +118,7 @@ export function MenuPage() {
 
   return (
     <div className="min-h-dvh bg-[#f7faf9] text-foreground">
+      <DocumentTitle title={`${restaurant.name} · Menu`} />
       <section className="relative min-h-dvh overflow-hidden">
         {coverUrl ? (
           <img
