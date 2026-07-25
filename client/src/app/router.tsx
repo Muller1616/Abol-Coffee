@@ -6,6 +6,7 @@ import { CategoriesPage } from '@/pages/admin/CategoriesPage'
 import { ComingSoonPage } from '@/pages/admin/ComingSoonPage'
 import { DashboardPage } from '@/pages/admin/DashboardPage'
 import { LoginPage } from '@/pages/admin/LoginPage'
+import { MenuItemsPage } from '@/pages/admin/MenuItemsPage'
 import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { MenuPlaceholderPage } from '@/pages/public/MenuPlaceholderPage'
@@ -35,15 +36,7 @@ export function AppRouter() {
         >
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="categories" element={<CategoriesPage />} />
-          <Route
-            path="menu-items"
-            element={
-              <ComingSoonPage
-                title="Menu items"
-                description="Menu item management UI will include pricing, images, availability, and search."
-              />
-            }
-          />
+          <Route path="menu-items" element={<MenuItemsPage />} />
           <Route
             path="restaurant"
             element={
