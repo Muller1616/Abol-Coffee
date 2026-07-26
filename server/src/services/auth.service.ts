@@ -2,8 +2,20 @@ import { prisma } from '../config/database.js';
 import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
-import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  ResetWithOtpInput,
+  SendOtpInput,
+} from '../validators/auth.validators.js';
 import { logAdminActivity } from './activity.service.js';
+
+type OtpRecord = {
+  code: string;
+  expiresAt: number;
+};
+
+const otpStore = new Map<string, OtpRecord>();
 
 export type AuthenticatedOwner = {
   id: string;
@@ -16,13 +28,13 @@ export async function loginOwner(input: LoginInput): Promise<AuthenticatedOwner>
   });
 
   if (!owner) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('No owner account found with this email.', 401, undefined, true, 'email');
   }
 
   const isValid = await verifyPassword(input.password, owner.password);
 
   if (!isValid) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Incorrect password.', 401, undefined, true, 'password');
   }
 
   return {
@@ -78,5 +90,63 @@ export async function changeOwnerPassword(
     entity: AdminEntity.OWNER,
     entityId: ownerId,
     summary: 'Owner password updated',
+  });
+}
+
+export async function sendOwnerOtp(input: SendOtpInput): Promise<{ email: string; otpCode: string }> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const owner = await prisma.owner.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (!owner) {
+    throw new AppError('No owner account found with this email.', 404, undefined, true, 'email');
+  }
+
+  // Generate 6-digit numeric OTP code
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
+
+  otpStore.set(normalizedEmail, { code: otpCode, expiresAt });
+
+  console.log(`[OTP SENT] Sent OTP verification code ${otpCode} to ${normalizedEmail}`);
+
+  return { email: normalizedEmail, otpCode };
+}
+
+export async function resetOwnerPasswordWithOtp(input: ResetWithOtpInput): Promise<void> {
+  const normalizedEmail = input.email.trim().toLowerCase();
+  const owner = await prisma.owner.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (!owner) {
+    throw new AppError('No owner account found with this email.', 404, undefined, true, 'email');
+  }
+
+  const record = otpStore.get(normalizedEmail);
+
+  if (!record || record.expiresAt < Date.now()) {
+    throw new AppError('OTP code has expired or is invalid. Please request a new code.', 400, undefined, true, 'otpCode');
+  }
+
+  if (record.code !== input.otpCode.trim()) {
+    throw new AppError('Incorrect OTP verification code. Please check and try again.', 400, undefined, true, 'otpCode');
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+
+  await prisma.owner.update({
+    where: { id: owner.id },
+    data: { password: passwordHash },
+  });
+
+  otpStore.delete(normalizedEmail);
+
+  await logAdminActivity({
+    action: AdminAction.UPDATE,
+    entity: AdminEntity.OWNER,
+    entityId: owner.id,
+    summary: 'Owner password reset using OTP verification code',
   });
 }

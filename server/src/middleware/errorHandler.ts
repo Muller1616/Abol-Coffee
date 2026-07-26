@@ -16,6 +16,7 @@ export function errorHandler(
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
+      ...(err.field !== undefined ? { field: err.field } : {}),
       ...(err.details !== undefined ? { details: err.details } : {}),
     });
     return;

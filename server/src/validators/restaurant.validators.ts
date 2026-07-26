@@ -21,7 +21,7 @@ const requiredPhone = z.preprocess(
     .string()
     .trim()
     .min(1, 'Phone number is required')
-    .regex(phoneRegex, 'Enter a valid phone number')
+    .regex(phoneRegex, 'Please enter a valid phone number')
     .optional(),
 );
 

@@ -4,6 +4,8 @@ import {
   changeOwnerPassword,
   getOwnerById,
   loginOwner,
+  resetOwnerPasswordWithOtp,
+  sendOwnerOtp,
 } from '../services/auth.service.js';
 import { AppError } from '../utils/AppError.js';
 import {
@@ -14,7 +16,12 @@ import {
 } from '../utils/cookies.js';
 import { generateCsrfToken } from '../utils/csrf.js';
 import { signAccessToken } from '../utils/jwt.js';
-import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
+import type {
+  ChangePasswordInput,
+  LoginInput,
+  ResetWithOtpInput,
+  SendOtpInput,
+} from '../validators/auth.validators.js';
 
 function sessionMaxAge(rememberMe: boolean): number {
   return rememberMe ? authConfig.sessionTtlMs.rememberMe : authConfig.sessionTtlMs.default;
@@ -106,6 +113,46 @@ export async function changePassword(
     res.status(200).json({
       success: true,
       message: 'Password updated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as SendOtpInput;
+    const result = await sendOwnerOtp(body);
+
+    res.status(200).json({
+      success: true,
+      message: 'A 6-digit OTP code has been generated and sent to your email.',
+      data: {
+        email: result.email,
+        otpCode: result.otpCode,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPasswordWithOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as ResetWithOtpInput;
+    await resetOwnerPasswordWithOtp(body);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. You can now log in with your new password.',
     });
   } catch (error) {
     next(error);
