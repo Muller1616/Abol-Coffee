@@ -3,10 +3,13 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { FloatingInput } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { useToast } from '@/components/ui/toast'
 import type { Category } from '@/features/categories/api'
 import { categoryFormSchema, type CategoryFormValues } from '@/features/categories/schema'
+import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
 
 type CategoryFormDialogProps = {
   open: boolean
@@ -24,16 +27,21 @@ export function CategoryFormDialog({
   onSubmit,
 }: CategoryFormDialogProps) {
   const isEditing = Boolean(category)
+  const { pushToast } = useToast()
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    setError,
     watch,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    shouldFocusError: true,
     defaultValues: {
       name: '',
       isActive: true,
@@ -62,14 +70,27 @@ export function CategoryFormDialog({
       >
         <form
           className="space-y-5"
-          onSubmit={handleSubmit(async (values) => {
-            await onSubmit(values)
-          })}
+          noValidate
+          onSubmit={handleSubmit(
+            async (values) => {
+              try {
+                await onSubmit(values)
+              } catch (error) {
+                if (applyServerFieldErrors(setError, error)) {
+                  pushToast('Please complete all required fields.', 'error')
+                }
+              }
+            },
+            createFormInvalidHandler(pushToast),
+          )}
         >
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           <FloatingInput
             label="Category name"
             error={errors.name?.message}
             autoFocus
+            disabled={loading}
             {...register('name')}
           />
 
@@ -80,6 +101,7 @@ export function CategoryFormDialog({
             </div>
             <Switch
               checked={isActive}
+              disabled={loading}
               onCheckedChange={(checked) => setValue('isActive', checked, { shouldDirty: true })}
             />
           </div>
@@ -88,7 +110,7 @@ export function CategoryFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading}>
+            <Button type="submit" loading={loading} disabled={loading}>
               {isEditing ? 'Save changes' : 'Create category'}
             </Button>
           </div>

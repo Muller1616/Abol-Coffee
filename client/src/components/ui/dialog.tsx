@@ -40,7 +40,7 @@ export function DialogContent({
           )}
         </div>
         {children}
-        <DialogPrimitive.Close className="absolute top-5 right-5 rounded-xl p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground">
+        <DialogPrimitive.Close className="absolute top-5 right-5 cursor-pointer rounded-xl p-2 text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
