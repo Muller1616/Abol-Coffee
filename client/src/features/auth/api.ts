@@ -58,3 +58,32 @@ export async function changePasswordRequest(payload: ChangePasswordPayload) {
   const { data } = await api.post<ApiSuccess<undefined>>('/api/auth/change-password', payload)
   return data
 }
+
+export type SendOtpPayload = {
+  email: string
+}
+
+export async function sendOtpRequest(payload: SendOtpPayload) {
+  await fetchCsrfToken()
+  const { data } = await api.post<ApiSuccess<{ email: string; otpCode: string }>>(
+    '/api/auth/send-otp',
+    payload,
+  )
+  return data
+}
+
+export type ResetWithOtpPayload = {
+  email: string
+  otpCode: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export async function resetWithOtpRequest(payload: ResetWithOtpPayload) {
+  await fetchCsrfToken()
+  const { data } = await api.post<ApiSuccess<undefined>>(
+    '/api/auth/reset-password-otp',
+    payload,
+  )
+  return data
+}

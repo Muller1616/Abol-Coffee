@@ -106,21 +106,43 @@ export function ImageUpload({
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'relative overflow-hidden rounded-2xl border border-dashed bg-[#f8fafc] transition',
-          isDragging ? 'border-primary bg-primary/5' : 'border-border/80',
+          'relative overflow-hidden rounded-2xl border border-dashed bg-[#f8fafc] transition-all duration-200',
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-primary/50 hover:bg-primary/5',
+          isDragging ? 'border-2 border-primary bg-primary/10 shadow-lg' : 'border-border/80',
           localError && 'border-danger/50',
-          disabled && 'opacity-60',
         )}
       >
-        {previewUrl ? (
-          <div className="relative aspect-[16/10]">
-            <img src={previewUrl} alt="Menu item preview" className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+        {isDragging ? (
+          <div className="flex w-full flex-col items-center justify-center px-6 py-12 text-center">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md animate-bounce">
+              <Upload className="h-6 w-6" />
+            </div>
+            <p className="text-base font-bold text-primary">Drop your image here</p>
+            <p className="mt-1 text-xs text-muted-foreground">Release to upload file</p>
+          </div>
+        ) : previewUrl ? (
+          <div
+            onClick={() => !disabled && inputRef.current?.click()}
+            className="group relative aspect-[16/10] cursor-pointer overflow-hidden"
+          >
+            <img
+              src={previewUrl}
+              alt="Menu item preview"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100 flex items-center justify-center">
+              <span className="inline-flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2 text-xs font-bold text-foreground shadow-md backdrop-blur transform translate-y-1 transition-transform group-hover:translate-y-0">
+                📷 Change Image
+              </span>
+            </div>
             <button
               type="button"
               disabled={disabled}
-              onClick={() => inputRef.current?.click()}
-              className="absolute right-3 bottom-3 inline-flex items-center gap-2 rounded-xl bg-white/95 px-3 py-2 text-xs font-semibold text-foreground shadow-sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                inputRef.current?.click()
+              }}
+              className="absolute right-3 bottom-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white/95 px-3 py-2 text-xs font-semibold text-foreground shadow-sm hover:bg-white disabled:cursor-not-allowed"
             >
               <Upload className="h-3.5 w-3.5" />
               Replace
@@ -131,18 +153,20 @@ export function ImageUpload({
             type="button"
             disabled={disabled}
             onClick={() => inputRef.current?.click()}
-            className="flex w-full flex-col items-center justify-center px-6 py-10 text-center"
+            className="flex w-full cursor-pointer flex-col items-center justify-center px-6 py-10 text-center transition-colors group disabled:cursor-not-allowed"
           >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
               <ImagePlus className="h-5 w-5" />
             </div>
-            <p className="text-sm font-semibold">Drag & drop or click to upload</p>
+            <p className="text-sm font-semibold transition-colors group-hover:text-primary">Drag & drop or click to upload</p>
             <p className="mt-1 text-xs text-muted-foreground">Optimized automatically to WebP</p>
           </button>
         )}
       </div>
 
-      {localError ? <p className="px-1 text-xs font-medium text-danger">{localError}</p> : null}
+      {localError ? (
+        <p className="px-1 text-xs font-medium text-danger">❌ {localError}</p>
+      ) : null}
 
       <input
         ref={inputRef}
