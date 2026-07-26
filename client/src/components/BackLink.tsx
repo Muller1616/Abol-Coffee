@@ -22,11 +22,11 @@ export function BackLink({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex h-11 w-11 items-center justify-center rounded-2xl backdrop-blur-md transition',
+        'inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95',
         tone === 'dark' &&
-          'bg-black/25 text-white ring-1 ring-white/20 hover:bg-black/35',
+          'bg-black/25 text-white ring-1 ring-white/20 hover:bg-black/40 hover:text-amber-300',
         tone === 'light' &&
-          'bg-white text-foreground ring-1 ring-border hover:bg-[#f8fafc]',
+          'bg-white text-foreground ring-1 ring-border hover:bg-[#f8fafc] hover:border-primary/30 hover:text-primary',
         className,
       )}
     >

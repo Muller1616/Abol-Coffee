@@ -24,6 +24,14 @@
   --radius-xl: 1.25rem;
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -42,5 +50,39 @@
 
   #root {
     @apply min-h-dvh;
+  }
+
+  /* Interactive Cursor & Hover Consistency Rules */
+  button:not(:disabled),
+  a:not([aria-disabled='true']),
+  summary,
+  [role='button']:not([aria-disabled='true']),
+  [type='button']:not(:disabled),
+  [type='submit']:not(:disabled),
+  [type='reset']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed !important;
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='number'],
+  input[type='search'],
+  textarea {
+    cursor: text;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'],
+  select {
+    cursor: pointer;
   }
 }

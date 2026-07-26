@@ -14,14 +14,20 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   const checkboxId = id ?? generatedId
 
   return (
-    <label htmlFor={checkboxId} className="group inline-flex cursor-pointer items-center gap-3">
+    <label
+      htmlFor={checkboxId}
+      className={cn(
+        'group inline-flex cursor-pointer items-center gap-3 select-none',
+        props.disabled && 'cursor-not-allowed opacity-50',
+      )}
+    >
       <span className="relative inline-flex h-5 w-5 items-center justify-center">
         <input
           ref={ref}
           id={checkboxId}
           type="checkbox"
           className={cn(
-            'peer h-5 w-5 appearance-none rounded-md border border-border bg-white/80 transition-all duration-200',
+            'peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-border bg-white/80 transition-all duration-200 disabled:cursor-not-allowed',
             'checked:border-primary checked:bg-primary',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15',
             className,
