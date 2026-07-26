@@ -6,7 +6,7 @@ export const menuItemFormSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   price: z.coerce
     .number({ error: 'Price is required' })
-    .positive('Price must be greater than zero')
+    .positive('Price must be greater than 0')
     .max(1_000_000),
   isAvailable: z.boolean(),
 })

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Coffee, Mail, MapPin, Phone } from 'lucide-react'
 import { BackLink } from '@/components/BackLink'
+import { PhoneContactLink } from '@/components/PhoneContactLink'
 import type { PublicMenuMaintenance } from '@/features/public-menu/api'
 import { resolveMediaUrl } from '@/lib/format'
 
@@ -48,13 +49,11 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
         {(restaurant.phone || restaurant.email || restaurant.address) && (
           <div className="mx-auto mt-8 max-w-sm space-y-3 text-left text-sm text-white/80">
             {restaurant.phone ? (
-              <a
-                href={`tel:${restaurant.phone}`}
-                className="flex items-center gap-3 rounded-2xl bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12"
-              >
-                <Phone className="h-4 w-4 shrink-0" />
-                {restaurant.phone}
-              </a>
+              <PhoneContactLink
+                phone={restaurant.phone}
+                className="flex w-full items-center gap-3 rounded-2xl bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12 text-white cursor-pointer"
+                icon={<Phone className="h-4 w-4 shrink-0 text-amber-300" />}
+              />
             ) : null}
             {restaurant.email ? (
               <a

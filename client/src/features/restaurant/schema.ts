@@ -57,7 +57,7 @@ export const restaurantFormSchema = z.object({
     .string()
     .trim()
     .min(1, 'Phone number is required')
-    .regex(phoneRegex, 'Enter a valid phone number'),
+    .regex(phoneRegex, 'Please enter a valid phone number'),
   email: z
     .union([z.literal(''), z.email('Enter a valid email')])
     .optional(),

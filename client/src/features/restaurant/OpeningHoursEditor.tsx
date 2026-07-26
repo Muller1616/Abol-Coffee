@@ -34,6 +34,7 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                   className={cn(
                     'rounded-2xl border px-4 py-3 transition',
                     isClosed ? 'border-border/70 bg-[#f8fafc]' : 'border-primary/15 bg-white',
+                    message && 'border-danger/60',
                   )}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -65,32 +66,46 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                         <input
                           type="time"
                           value={value.open ?? ''}
+                          aria-invalid={message ? true : undefined}
                           onChange={(event) =>
                             field.onChange({
                               ...value,
                               open: event.target.value || null,
                             })
                           }
-                          className="h-11 rounded-xl border border-border/80 bg-[#f8fafc] px-3 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+                          className={cn(
+                            'h-11 cursor-pointer rounded-xl border bg-[#f8fafc] px-3 text-sm outline-none transition-all duration-200 focus:ring-4',
+                            message
+                              ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
+                              : 'border-border/80 focus:border-primary focus:ring-primary/10 hover:border-primary/40',
+                          )}
                         />
                         <span className="text-xs text-muted-foreground">to</span>
                         <input
                           type="time"
                           value={value.close ?? ''}
+                          aria-invalid={message ? true : undefined}
                           onChange={(event) =>
                             field.onChange({
                               ...value,
                               close: event.target.value || null,
                             })
                           }
-                          className="h-11 rounded-xl border border-border/80 bg-[#f8fafc] px-3 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+                          className={cn(
+                            'h-11 cursor-pointer rounded-xl border bg-[#f8fafc] px-3 text-sm outline-none transition-all duration-200 focus:ring-4',
+                            message
+                              ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
+                              : 'border-border/80 focus:border-primary focus:ring-primary/10 hover:border-primary/40',
+                          )}
                         />
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">Not accepting guests this day</p>
                     )}
                   </div>
-                  {message ? <p className="mt-2 text-xs font-medium text-danger">{message}</p> : null}
+                  {message ? (
+                    <p className="mt-2 text-xs font-medium text-danger">❌ {message}</p>
+                  ) : null}
                 </div>
               )
             }}

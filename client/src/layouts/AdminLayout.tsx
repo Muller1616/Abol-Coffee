@@ -43,7 +43,7 @@ export function AdminLayout() {
         <div className="absolute top-1/2 -left-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[1440px]">
+      <div className="relative flex min-h-dvh w-full">
         <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-border/70 bg-white/70 px-5 py-6 backdrop-blur-xl lg:flex">
           <div className="mb-8 flex items-center gap-3 px-2">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(15_118_110/0.28)]">
@@ -62,14 +62,14 @@ export function AdminLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   cn(
-                    'group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition-all',
+                    'group flex cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(15_118_110/0.22)]'
-                      : 'text-muted-foreground hover:bg-primary/5 hover:text-foreground',
+                      ? 'bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(15_118_110/0.22)] font-semibold'
+                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary hover:translate-x-1',
                   )
                 }
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                 {item.label}
               </NavLink>
             ))}
@@ -80,12 +80,6 @@ export function AdminLayout() {
               Signed in
             </p>
             <p className="mt-1 truncate text-sm font-semibold">{owner?.email}</p>
-            <Link
-              to="/admin/account"
-              className="mt-3 inline-flex text-xs font-semibold text-primary hover:underline"
-            >
-              Change password
-            </Link>
             <Button variant="outline" className="mt-3 h-10 w-full" onClick={() => void handleLogout()}>
               <LogOut className="h-4 w-4" />
               Sign out
@@ -144,10 +138,10 @@ export function AdminLayout() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      'inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition',
+                      'inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 active:scale-95',
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-white text-muted-foreground ring-1 ring-border',
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-white text-muted-foreground ring-1 ring-border hover:bg-primary/5 hover:text-primary',
                     )
                   }
                 >
@@ -159,7 +153,9 @@ export function AdminLayout() {
           </header>
 
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-            <Outlet />
+            <div className="mx-auto w-full max-w-7xl">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>
