@@ -4,10 +4,10 @@ import { motion } from 'framer-motion'
 import { AlertTriangle, Save, Store } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FloatingInput } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,22 +26,16 @@ import {
 import { OpeningHoursEditor } from '@/features/restaurant/OpeningHoursEditor'
 import { restaurantFormSchema, type RestaurantFormValues } from '@/features/restaurant/schema'
 import { createDefaultOpeningHours } from '@/features/restaurant/types'
-import { SettingsShell } from '@/features/settings/SettingsShell'
+import { DocumentTitle } from '@/components/DocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
+import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 function emptyToNull(value?: string) {
   const trimmed = value?.trim() ?? ''
   return trimmed.length === 0 ? null : trimmed
-}
-
-function scrollToFirstError() {
-  window.requestAnimationFrame(() => {
-    const el = document.querySelector<HTMLElement>('[aria-invalid="true"], .text-danger')
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  })
 }
 
 export function RestaurantPage() {
@@ -63,11 +57,13 @@ export function RestaurantPage() {
     handleSubmit,
     control,
     reset,
-    formState: { errors, isDirty },
+    setError,
+    formState: { errors, isDirty, submitCount },
   } = useForm<RestaurantFormValues>({
     resolver: zodResolver(restaurantFormSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
+    shouldFocusError: true,
     defaultValues: {
       name: '',
       description: '',
@@ -163,8 +159,10 @@ export function RestaurantPage() {
       setRemoveCover(false)
       pushToast('Restaurant information updated successfully')
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Could not save restaurant settings'), 'error'),
+    onError: (error) => {
+      if (getApiValidationDetails(error)) return
+      pushToast(getApiErrorMessage(error, 'Could not save restaurant settings'), 'error')
+    },
   })
 
   const statusMutation = useMutation({
@@ -186,41 +184,46 @@ export function RestaurantPage() {
 
   if (restaurantQuery.isLoading) {
     return (
-      <SettingsShell activeTab="restaurant">
+      <div className="space-y-6">
         <Skeleton className="h-20 w-full max-w-xl" />
         <Skeleton className="mt-6 h-40" />
         <Skeleton className="mt-6 h-96" />
-      </SettingsShell>
+      </div>
     )
   }
 
   if (restaurantQuery.isError || !restaurantQuery.data) {
     return (
-      <SettingsShell activeTab="restaurant">
-        <EmptyState
-          icon={AlertTriangle}
-          title="Unable to load restaurant settings"
-          description={getApiErrorMessage(restaurantQuery.error, 'Please refresh and try again.')}
-          className="min-h-[420px] bg-white"
-        />
-      </SettingsShell>
+      <EmptyState
+        icon={AlertTriangle}
+        title="Unable to load restaurant settings"
+        description={getApiErrorMessage(restaurantQuery.error, 'Please refresh and try again.')}
+        className="min-h-105 bg-white"
+      />
     )
   }
 
   const restaurant = restaurantQuery.data
   const isLive = restaurant.status === 'ACTIVE'
-  const canSave = formDirty
   const pending = saveMutation.isPending
 
   const logoPreview = !removeLogo && !logoFile ? resolveMediaUrl(restaurant.logo) : null
   const coverPreview = !removeCover && !coverFile ? resolveMediaUrl(restaurant.coverImage) : null
 
   return (
-    <SettingsShell activeTab="restaurant">
-      <div className="mb-2 flex justify-end">
-        <Badge variant={isLive ? 'success' : 'warning'}>
-          {isLive ? 'Menu live' : 'Maintenance mode'}
-        </Badge>
+    <div className="space-y-6">
+      <DocumentTitle title="Restaurant · Admin" />
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-primary">Restaurant</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+            Restaurant profile
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+            Manage your public restaurant profile, media, opening hours, and menu status.
+          </p>
+        </div>
       </div>
 
       <motion.section
@@ -229,8 +232,8 @@ export function RestaurantPage() {
         className={cn(
           'rounded-[28px] border p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6',
           isLive
-            ? 'border-success/20 bg-gradient-to-br from-success/5 to-white'
-            : 'border-accent/25 bg-gradient-to-br from-accent/10 to-white',
+            ? 'border-success/20 bg-linear-to-br from-success/5 to-white'
+            : 'border-accent/25 bg-linear-to-br from-accent/10 to-white',
         )}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -267,11 +270,19 @@ export function RestaurantPage() {
         noValidate
         onSubmit={handleSubmit(
           async (values) => {
-            await saveMutation.mutateAsync(values)
+            try {
+              await saveMutation.mutateAsync(values)
+            } catch (error) {
+              if (applyServerFieldErrors(setError, error)) {
+                pushToast('Please complete all required fields.', 'error')
+              }
+            }
           },
-          () => scrollToFirstError(),
+          createFormInvalidHandler(pushToast),
         )}
       >
+        <FormErrorSummary errors={errors} submitCount={submitCount} />
+
         <section className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -446,7 +457,7 @@ export function RestaurantPage() {
           <Button
             type="submit"
             loading={pending}
-            disabled={!canSave || pending}
+            disabled={pending}
             className="min-w-48 shadow-[0_16px_40px_rgb(15_118_110/0.28)]"
           >
             <Save className="h-4 w-4" />
@@ -479,6 +490,6 @@ export function RestaurantPage() {
         loading={statusMutation.isPending}
         onConfirm={() => statusMutation.mutate('MAINTENANCE')}
       />
-    </SettingsShell>
+    </div>
   )
 }

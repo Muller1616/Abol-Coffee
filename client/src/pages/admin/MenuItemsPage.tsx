@@ -36,7 +36,7 @@ import {
   MenuItemFormDialog,
   type MenuItemFormSubmitPayload,
 } from '@/features/menu-items/MenuItemFormDialog'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -140,7 +140,10 @@ export function MenuItemsPage() {
       setEditing(null)
       pushToast(variables.item ? 'Menu item updated' : 'Menu item created')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not save menu item'), 'error'),
+    onError: (error) => {
+      if (getApiValidationDetails(error)) return
+      pushToast(getApiErrorMessage(error, 'Could not save menu item'), 'error')
+    },
   })
 
   const availabilityMutation = useMutation({
@@ -266,13 +269,13 @@ export function MenuItemsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search name or description..."
-              className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+              className="h-12 w-full cursor-text rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
             />
           </div>
           <select
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="h-12 rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           >
             <option value="">All categories</option>
             {categories.map((category) => (
@@ -286,7 +289,7 @@ export function MenuItemsPage() {
             onChange={(event) =>
               setAvailability(event.target.value as 'all' | 'available' | 'hidden')
             }
-            className="h-12 rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           >
             <option value="all">All availability</option>
             <option value="available">Available only</option>
@@ -410,7 +413,7 @@ export function MenuItemsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-danger hover:text-danger"
+                        className="cursor-pointer text-danger border-danger/30 hover:bg-danger/10 hover:border-danger hover:text-danger hover:-translate-y-0.5"
                         onClick={() => setDeleting(item)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />

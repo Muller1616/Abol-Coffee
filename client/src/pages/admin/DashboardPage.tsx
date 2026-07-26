@@ -1,9 +1,8 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   Activity,
   ArrowUpRight,
-  Download,
   EyeOff,
   FolderTree,
   QrCode,
@@ -15,13 +14,11 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useToast } from '@/components/ui/toast'
 import { fetchDashboard } from '@/features/dashboard/api'
 import { fetchQrPreview } from '@/features/qr/api'
-import { downloadQrFile } from '@/features/qr/download'
 import { getApiErrorMessage } from '@/lib/api'
 import { formatDateTime, formatRelativeTime, resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -71,8 +68,6 @@ const quickActions = [
 ]
 
 export function DashboardPage() {
-  const { pushToast } = useToast()
-
   const dashboardQuery = useQuery({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => fetchDashboard(8),
@@ -81,13 +76,6 @@ export function DashboardPage() {
   const qrQuery = useQuery({
     queryKey: ['admin', 'qr'],
     queryFn: fetchQrPreview,
-  })
-
-  const downloadMutation = useMutation({
-    mutationFn: downloadQrFile,
-    onSuccess: (_data, format) => pushToast(`${format.toUpperCase()} downloaded`),
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Could not download QR code'), 'error'),
   })
 
   if (dashboardQuery.isLoading) {
@@ -100,7 +88,7 @@ export function DashboardPage() {
         icon={AlertTriangle}
         title="Unable to load dashboard"
         description={getApiErrorMessage(dashboardQuery.error, 'Please refresh and try again.')}
-        className="min-h-[420px] bg-white"
+        className="min-h-105 bg-white"
       />
     )
   }
@@ -164,11 +152,11 @@ export function DashboardPage() {
         {statsCards.map((card) => (
           <div
             key={card.label}
-            className="group relative overflow-hidden rounded-[24px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgb(15_23_42/0.08)]"
+            className="group relative overflow-hidden rounded-3xl border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgb(15_23_42/0.08)]"
           >
             <div
               className={cn(
-                'mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br',
+                'mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br',
                 card.tone,
               )}
             >
@@ -198,7 +186,7 @@ export function DashboardPage() {
                 <Link
                   key={action.to}
                   to={action.to}
-                  className="group rounded-2xl border border-border/70 bg-[#f8fafc] p-4 transition hover:border-primary/25 hover:bg-white hover:shadow-[0_12px_30px_rgb(15_118_110/0.08)]"
+                  className="group cursor-pointer rounded-2xl border border-border/70 bg-background p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-[0_12px_30px_rgb(15_118_110/0.12)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -232,14 +220,14 @@ export function DashboardPage() {
                 icon={Activity}
                 title="No activity yet"
                 description="Create categories and menu items to see your recent updates here."
-                className="border-none bg-[#f8fafc] py-10"
+                className="border-none bg-background py-10"
               />
             ) : (
               <ul className="space-y-3">
                 {recentUpdates.map((update) => (
                   <li
                     key={update.id}
-                    className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-[#f8fafc] px-4 py-3"
+                    className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-background px-4 py-3"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">{update.summary}</p>
@@ -283,7 +271,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 rounded-2xl bg-[#f8fafc] p-4 text-sm">
+              <div className="grid gap-3 rounded-2xl bg-background p-4 text-sm">
                 <div className="flex justify-between gap-3">
                   <span className="text-muted-foreground">Status</span>
                   <Badge variant={isLive ? 'success' : 'warning'}>
@@ -331,45 +319,22 @@ export function DashboardPage() {
                 icon={QrCode}
                 title="QR unavailable"
                 description={getApiErrorMessage(qrQuery.error, 'Could not load QR preview.')}
-                className="border-none bg-[#f8fafc] py-8"
+                className="border-none bg-background py-8"
               />
             ) : (
               <div className="space-y-4">
-                <div className="mx-auto flex h-56 w-56 items-center justify-center rounded-[24px] border border-border bg-[radial-gradient(circle_at_top,#f0fdfa,#ffffff)] p-4 shadow-inner">
+                <div className="mx-auto flex h-56 w-56 items-center justify-center rounded-3xl border border-border bg-[radial-gradient(circle_at_top,#f0fdfa,#ffffff)] p-4 shadow-inner">
                   <img
                     src={qrQuery.data.pngDataUrl}
                     alt="Restaurant menu QR code"
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p className="truncate rounded-xl bg-[#f8fafc] px-3 py-2 text-center text-xs text-muted-foreground">
+                <p className="truncate rounded-xl bg-background px-3 py-2 text-center text-xs text-muted-foreground">
                   {qrQuery.data.menuUrl}
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    loading={downloadMutation.isPending && downloadMutation.variables === 'png'}
-                    disabled={downloadMutation.isPending}
-                    onClick={() => downloadMutation.mutate('png')}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    PNG
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    loading={downloadMutation.isPending && downloadMutation.variables === 'svg'}
-                    disabled={downloadMutation.isPending}
-                    onClick={() => downloadMutation.mutate('svg')}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    SVG
-                  </Button>
-                </div>
                 <Link to="/admin/qr" className={cn(buttonVariants(), 'w-full')}>
+                  <QrCode className="h-4 w-4" />
                   Open QR studio
                 </Link>
               </div>

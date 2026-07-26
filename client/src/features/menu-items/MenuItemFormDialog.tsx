@@ -3,15 +3,18 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { FloatingInput } from '@/components/ui/input'
 import { SelectField } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { FloatingTextarea } from '@/components/ui/textarea'
+import { useToast } from '@/components/ui/toast'
 import type { Category } from '@/features/categories/api'
 import type { MenuItem } from '@/features/menu-items/api'
 import { menuItemFormSchema, type MenuItemFormValues } from '@/features/menu-items/schema'
 import { resolveMediaUrl } from '@/lib/format'
+import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
 
 export type MenuItemFormSubmitPayload = {
   values: MenuItemFormValues
@@ -37,6 +40,7 @@ export function MenuItemFormDialog({
   onSubmit,
 }: MenuItemFormDialogProps) {
   const isEditing = Boolean(item)
+  const { pushToast } = useToast()
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [removeImage, setRemoveImage] = useState(false)
 
@@ -45,15 +49,19 @@ export function MenuItemFormDialog({
     handleSubmit,
     reset,
     setValue,
+    setError,
     watch,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    shouldFocusError: true,
     defaultValues: {
       categoryId: '',
       name: '',
       description: '',
-      price: 0,
+      price: undefined as unknown as number,
       isAvailable: true,
     },
   })
@@ -67,7 +75,7 @@ export function MenuItemFormDialog({
       categoryId: item?.categoryId ?? categories[0]?.id ?? '',
       name: item?.name ?? '',
       description: item?.description ?? '',
-      price: item?.price ?? undefined,
+      price: item?.price ?? (undefined as unknown as number),
       isAvailable: item?.isAvailable ?? true,
     })
     setImageFile(null)
@@ -86,14 +94,27 @@ export function MenuItemFormDialog({
       >
         <form
           className="space-y-5"
-          onSubmit={handleSubmit(async (values) => {
-            await onSubmit({ values, imageFile, removeImage })
-          })}
+          noValidate
+          onSubmit={handleSubmit(
+            async (values) => {
+              try {
+                await onSubmit({ values, imageFile, removeImage })
+              } catch (error) {
+                if (applyServerFieldErrors(setError, error)) {
+                  pushToast('Please complete all required fields.', 'error')
+                }
+              }
+            },
+            createFormInvalidHandler(pushToast),
+          )}
         >
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField
               label="Category"
               error={errors.categoryId?.message}
+              disabled={loading}
               options={categories.map((category) => ({
                 value: category.id,
                 label: category.isActive ? category.name : `${category.name} (inactive)`,
@@ -105,15 +126,22 @@ export function MenuItemFormDialog({
               type="number"
               step="0.01"
               min="0.01"
+              disabled={loading}
               error={errors.price?.message}
               {...register('price')}
             />
           </div>
 
-          <FloatingInput label="Item name" error={errors.name?.message} {...register('name')} />
+          <FloatingInput
+            label="Item name"
+            disabled={loading}
+            error={errors.name?.message}
+            {...register('name')}
+          />
 
           <FloatingTextarea
             label="Description"
+            disabled={loading}
             error={errors.description?.message}
             {...register('description')}
           />
@@ -125,6 +153,7 @@ export function MenuItemFormDialog({
             </div>
             <Switch
               checked={isAvailable}
+              disabled={loading}
               onCheckedChange={(checked) => setValue('isAvailable', checked, { shouldDirty: true })}
             />
           </div>
@@ -146,7 +175,7 @@ export function MenuItemFormDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading}>
+            <Button type="submit" loading={loading} disabled={loading}>
               {isEditing ? 'Save changes' : 'Create item'}
             </Button>
           </div>

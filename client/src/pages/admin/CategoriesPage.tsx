@@ -28,7 +28,7 @@ import {
 } from '@/features/categories/api'
 import { CategoryFormDialog } from '@/features/categories/CategoryFormDialog'
 import type { CategoryFormValues } from '@/features/categories/schema'
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export function CategoriesPage() {
@@ -59,7 +59,10 @@ export function CategoriesPage() {
       setFormOpen(false)
       pushToast('Category created')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not create category'), 'error'),
+    onError: (error) => {
+      if (getApiValidationDetails(error)) return
+      pushToast(getApiErrorMessage(error, 'Could not create category'), 'error')
+    },
   })
 
   const updateMutation = useMutation({
@@ -71,7 +74,10 @@ export function CategoriesPage() {
       setEditing(null)
       pushToast('Category updated')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not update category'), 'error'),
+    onError: (error) => {
+      if (getApiValidationDetails(error)) return
+      pushToast(getApiErrorMessage(error, 'Could not update category'), 'error')
+    },
   })
 
   const statusMutation = useMutation({
@@ -197,7 +203,7 @@ export function CategoriesPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search categories..."
-            className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="h-12 w-full cursor-text rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           />
         </div>
 
@@ -304,7 +310,7 @@ export function CategoriesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-danger hover:text-danger"
+                        className="cursor-pointer text-danger border-danger/30 hover:bg-danger/10 hover:border-danger hover:text-danger hover:-translate-y-0.5"
                         onClick={() => setDeleting(category)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
