@@ -109,7 +109,10 @@ Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free
 | --- | --- |
 | `npm run dev` | Start API with watch |
 | `npm run build` | Generate Prisma client + compile |
-| `npm run db:setup` | Migrate + seed |
+| `npm run start` | Run compiled API (`node dist/index.js`) |
+| `npm run start:prod` | Apply migrations (`prisma migrate deploy`) then start |
+| `npm run prisma:migrate:deploy` | Production migrations only |
+| `npm run db:setup` | Dev migrate + seed |
 | `npm run verify:all` | Full API smoke suite |
 
 ### Client
@@ -119,3 +122,67 @@ Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free
 | `npm run dev` | Vite dev server (proxies `/api` and `/uploads`) |
 | `npm run build` | Production build |
 | `npm run typecheck` | TypeScript check |
+
+## Production deployment
+
+Treat local defaults as **unsafe** for real customers.
+
+### Required environment (API)
+
+| Variable | Notes |
+| --- | --- |
+| `NODE_ENV=production` | Enables secure cookies and production checks |
+| `DATABASE_URL` | Managed Postgres connection string |
+| `JWT_SECRET` | Strong random secret, 32+ chars (not a placeholder) |
+| `CLIENT_URL` | Public SPA origin (CORS + cookies), **not** localhost |
+| `PUBLIC_MENU_URL` | Permanent public menu URL printed on QR codes |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | Required for password-reset OTP email |
+| `SMTP_USER` / `SMTP_PASS` | Usually required by your provider |
+| `PORT` | Host-assigned port when applicable |
+
+Optional:
+
+| Variable | Notes |
+| --- | --- |
+| `UPLOADS_DIR` | Absolute path to a **persistent volume** for images |
+| `COOKIE_SAME_SITE=none` | Needed when SPA and API are on different sites |
+| `COOKIE_DOMAIN` | e.g. `.yourdomain.com` for subdomain cookie sharing |
+| `LOG_LEVEL` | `debug` \| `info` \| `warn` \| `error` |
+
+### Required environment (client build)
+
+| Variable | Notes |
+| --- | --- |
+| `VITE_API_URL` | Public API origin when SPA ≠ API host (no trailing slash). Leave empty only if a reverse proxy serves `/api` and `/uploads` on the same origin as the SPA. |
+
+### Suggested process
+
+```bash
+# API
+cd server
+npm ci
+npm run build
+npm run start:prod   # migrate deploy + listen
+
+# Client (build-time env baked into the bundle)
+cd client
+VITE_API_URL=https://api.yourdomain.com npm ci && npm run build
+# Deploy client/dist to your static host / CDN
+```
+
+Docker (API):
+
+```bash
+cd server
+docker build -t abol-coffee-api .
+docker run --env-file .env.production -p 4001:4001 -v abol_uploads:/app/uploads abol-coffee-api
+```
+
+### Hosting checklist
+
+1. Run `prisma migrate deploy` before or during release (`start:prod` does this).
+2. Mount a durable volume at `UPLOADS_DIR` — local disk is wiped on ephemeral hosts.
+3. Prefer same-site reverse proxy (SPA + `/api` + `/uploads`) so cookies stay `SameSite=Lax`.
+4. Change the seeded owner password immediately (`ChangeMe123!` is for local/dev only).
+5. Set production `PUBLIC_MENU_URL` **before** printing QR codes.
+6. Health probe: `GET /api/health` (checks database connectivity).

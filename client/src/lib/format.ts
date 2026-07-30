@@ -47,10 +47,20 @@ export function formatActivityDayLabel(value: string) {
   }).format(date)
 }
 
+/**
+ * Resolve stored media paths for the browser.
+ * Relative `/uploads/...` paths must hit the API origin when the SPA is hosted separately.
+ */
 export function resolveMediaUrl(path: string | null | undefined) {
   if (!path) return null
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
     return path
   }
+
+  const apiBase = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, '') || ''
+  if (path.startsWith('/') && apiBase) {
+    return `${apiBase}${path}`
+  }
+
   return path
 }
