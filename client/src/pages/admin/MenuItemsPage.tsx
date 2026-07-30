@@ -335,12 +335,13 @@ export function MenuItemsPage() {
                   transition={{ delay: index * 0.03 }}
                   className="overflow-hidden rounded-2xl border border-border/70 bg-[#f8fafc] transition hover:border-primary/20 hover:bg-white"
                 >
-                  <div className="flex gap-4 p-4">
-                    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-border">
+                  <div className="flex gap-3 p-4 sm:gap-4">
+                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-border sm:h-24 sm:w-24">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
                           alt={item.name}
+                          loading="lazy"
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -365,14 +366,14 @@ export function MenuItemsPage() {
                         <span className="font-semibold text-primary">
                           {item.priceFormatted} ETB
                         </span>
-                        <span className="text-muted-foreground">· {item.category.name}</span>
+                        <span className="truncate text-muted-foreground">· {item.category.name}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-4 py-3">
-                    <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 ring-1 ring-border">
-                      <span className="text-xs font-medium text-muted-foreground">Available</span>
+                  <div className="space-y-3 border-t border-border/60 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 ring-1 ring-border">
+                      <span className="text-sm font-medium text-muted-foreground">Available</span>
                       <Switch
                         checked={item.isAvailable}
                         disabled={availabilityMutation.isPending}
@@ -382,41 +383,44 @@ export function MenuItemsPage() {
                       />
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         disabled={reorderMutation.isPending}
                         onClick={() => void moveItem(item, 'up')}
+                        aria-label={`Move ${item.name} up`}
                       >
-                        <ArrowUp className="h-3.5 w-3.5" />
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         disabled={reorderMutation.isPending}
                         onClick={() => void moveItem(item, 'down')}
+                        aria-label={`Move ${item.name} down`}
                       >
-                        <ArrowDown className="h-3.5 w-3.5" />
+                        <ArrowDown className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        className="col-span-2 h-11 sm:col-span-1 sm:min-w-24"
                         onClick={() => {
                           setEditing(item)
                           setFormOpen(true)
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                         Edit
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="cursor-pointer text-danger border-danger/30 hover:bg-danger/10 hover:border-danger hover:text-danger hover:-translate-y-0.5"
+                        className="col-span-2 h-11 cursor-pointer border-danger/30 text-danger hover:-translate-y-0.5 hover:border-danger hover:bg-danger/10 hover:text-danger sm:col-span-1 sm:min-w-24"
                         onClick={() => setDeleting(item)}
+                        aria-label={`Delete ${item.name}`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
+                        Delete
                       </Button>
                     </div>
                   </div>
@@ -427,17 +431,21 @@ export function MenuItemsPage() {
         )}
 
         {pagination && pagination.totalPages > 1 ? (
-          <div className="mt-5 flex items-center justify-between gap-3">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-between">
             <Button
               variant="outline"
+              className="h-11"
               disabled={page <= 1 || listQuery.isFetching}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
               Previous
             </Button>
-            <p className="text-sm text-muted-foreground">{summary.pageLabel}</p>
+            <p className="col-span-2 order-first text-center text-sm text-muted-foreground sm:order-none sm:col-span-1">
+              {summary.pageLabel}
+            </p>
             <Button
               variant="outline"
+              className="h-11"
               disabled={page >= pagination.totalPages || listQuery.isFetching}
               onClick={() => setPage((current) => current + 1)}
             >
@@ -502,17 +510,17 @@ function Header({
   disableCreate?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-sm font-medium text-primary">Catalog</p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+        <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
           Menu items
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
           Manage prices, photos, and availability. Changes appear on the public QR menu immediately.
         </p>
       </div>
-      <Button onClick={onCreate} disabled={disableCreate}>
+      <Button onClick={onCreate} disabled={disableCreate} className="h-11 w-full sm:w-auto">
         <Plus className="h-4 w-4" />
         Add menu item
       </Button>
