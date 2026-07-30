@@ -1,9 +1,7 @@
 import { prisma } from '../config/database.js';
-import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
-import { logAdminActivity } from './activity.service.js';
 import { invalidateOwnerAuthCache } from './ownerAuth.cache.js';
 
 export type AuthenticatedOwner = {
@@ -26,13 +24,6 @@ export async function loginOwner(input: LoginInput): Promise<AuthenticatedOwner>
   if (!isValid) {
     throw AppError.field('password', 'Incorrect password.', 401);
   }
-
-  await logAdminActivity({
-    action: AdminAction.LOGIN,
-    entity: AdminEntity.OWNER,
-    entityId: owner.id,
-    summary: `Owner signed in (${owner.email})`,
-  });
 
   return {
     id: owner.id,
@@ -89,13 +80,6 @@ export async function changeOwnerPassword(
       passwordChangedAt: new Date(),
     },
     select: { id: true, email: true, tokenVersion: true },
-  });
-
-  await logAdminActivity({
-    action: AdminAction.UPDATE,
-    entity: AdminEntity.OWNER,
-    entityId: ownerId,
-    summary: 'Owner password updated',
   });
 
   invalidateOwnerAuthCache(ownerId);

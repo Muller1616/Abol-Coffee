@@ -87,7 +87,7 @@ export async function updateRestaurantForOwner(
     action: AdminAction.UPDATE,
     entity: AdminEntity.RESTAURANT,
     entityId: updated.id,
-    summary: buildUpdateSummary(input),
+    ...resolveRestaurantActivityMeta(input),
   });
 
   invalidatePublicMenuCache();
@@ -119,12 +119,66 @@ export async function updateRestaurantStatus(
   return updateRestaurant({ status: input.status });
 }
 
-function buildUpdateSummary(input: UpdateRestaurantInput): string {
+const LOCATION_FIELDS = new Set([
+  'address',
+  'city',
+  'state',
+  'country',
+  'postalCode',
+  'latitude',
+  'longitude',
+]);
+
+const CONTACT_FIELDS = new Set([
+  'phone',
+  'email',
+  'facebook',
+  'instagram',
+  'telegram',
+]);
+
+function resolveRestaurantActivityMeta(input: UpdateRestaurantInput): {
+  summary: string;
+  type?: string;
+  title?: string;
+} {
   const fields = Object.keys(input);
 
   if (fields.length === 1 && fields[0] === 'status') {
-    return `Restaurant status set to ${input.status}`;
+    return {
+      type: 'RESTAURANT_STATUS_UPDATED',
+      title: 'Restaurant status updated',
+      summary: `Restaurant status set to ${input.status}`,
+    };
   }
 
-  return `Updated restaurant information (${fields.join(', ')})`;
+  if (fields.length === 1 && fields[0] === 'openingHours') {
+    return {
+      type: 'RESTAURANT_HOURS_UPDATED',
+      title: 'Opening hours updated',
+      summary: 'Updated restaurant opening hours',
+    };
+  }
+
+  if (fields.length > 0 && fields.every((field) => LOCATION_FIELDS.has(field))) {
+    return {
+      type: 'RESTAURANT_LOCATION_UPDATED',
+      title: 'Restaurant location updated',
+      summary: `Updated restaurant location (${fields.join(', ')})`,
+    };
+  }
+
+  if (fields.length > 0 && fields.every((field) => CONTACT_FIELDS.has(field))) {
+    return {
+      type: 'RESTAURANT_CONTACT_UPDATED',
+      title: 'Contact information updated',
+      summary: `Updated restaurant contact information (${fields.join(', ')})`,
+    };
+  }
+
+  return {
+    type: 'RESTAURANT_UPDATED',
+    title: 'Restaurant information updated',
+    summary: `Updated restaurant information (${fields.join(', ')})`,
+  };
 }

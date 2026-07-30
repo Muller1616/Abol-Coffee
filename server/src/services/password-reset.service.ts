@@ -1,6 +1,5 @@
 import { authConfig } from '../config/auth.js';
 import { prisma } from '../config/database.js';
-import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import {
   generateOtpCode,
@@ -15,7 +14,6 @@ import type {
   ResetPasswordInput,
   VerifyOtpInput,
 } from '../validators/auth.validators.js';
-import { logAdminActivity } from './activity.service.js';
 import { sendPasswordResetOtpEmail } from './email.service.js';
 import { invalidateOwnerAuthCache } from './ownerAuth.cache.js';
 
@@ -314,13 +312,6 @@ export async function resetPasswordWithSession(input: ResetPasswordInput): Promi
       data: { invalidated: true },
     }),
   ]);
-
-  await logAdminActivity({
-    action: AdminAction.UPDATE,
-    entity: AdminEntity.OWNER,
-    entityId: session.ownerId,
-    summary: 'Owner password reset via email OTP verification',
-  });
 
   invalidateOwnerAuthCache(session.ownerId);
 }
