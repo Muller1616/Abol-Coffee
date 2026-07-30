@@ -39,6 +39,7 @@ import {
   type SendOtpFormValues,
 } from '@/features/auth/schema'
 import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
+import { cn } from '@/lib/utils'
 
 const highlights = [
   {
@@ -290,14 +291,19 @@ export function LoginPage() {
               </div>
             </div>
 
-            {/* 3D Flip Container */}
+            {/* 3D Flip Container — visible face stays in-flow so height never clips */}
             <div
               className={`relative w-full transition-transform duration-700 transform-3d ${
                 isFlipped ? 'rotate-y-180' : ''
               }`}
             >
               {/* ================= FRONT FACE: LOGIN CARD ================= */}
-              <div className="w-full backface-hidden relative overflow-hidden rounded-[28px] border border-white/10 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl">
+              <div
+                className={cn(
+                  'w-full backface-hidden overflow-hidden rounded-[28px] border border-white/10 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl',
+                  isFlipped ? 'absolute inset-x-0 top-0' : 'relative',
+                )}
+              >
                 <div className="absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-white/50 to-transparent" />
                 <div className="rounded-[27px] bg-linear-to-b from-white to-[#f7faf9] p-7 text-foreground sm:p-8">
                   <div className="mb-8">
@@ -402,25 +408,30 @@ export function LoginPage() {
               </div>
 
               {/* ================= BACK FACE: FORGOT PASSWORD (OTP) CARD ================= */}
-              <div className="w-full backface-hidden rotate-y-180 absolute top-0 left-0 overflow-hidden rounded-[28px] border border-amber-400/30 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl">
+              <div
+                className={cn(
+                  'w-full backface-hidden rotate-y-180 overflow-hidden rounded-[28px] border border-amber-400/30 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl',
+                  isFlipped ? 'relative' : 'absolute top-0 left-0',
+                )}
+              >
                 <div className="absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-amber-400/50 to-transparent" />
                 <div className="rounded-[27px] bg-linear-to-b from-white via-amber-50/30 to-white p-7 text-foreground sm:p-8">
                   {/* Top Bar with Flip Back Action */}
-                  <div className="mb-6 flex items-center justify-between">
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setIsFlipped(false)
                         setOtpError(null)
                       }}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-primary transition cursor-pointer"
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-1 text-xs font-bold text-slate-700 transition hover:text-primary cursor-pointer"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back to Sign In
                     </button>
 
-                    <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-400/30">
-                      OTP Password Recovery
+                    <span className="rounded-lg border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-800">
+                      OTP Recovery
                     </span>
                   </div>
 
@@ -568,11 +579,11 @@ export function LoginPage() {
                         })}
                       />
 
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
                           onClick={() => setOtpStep('request')}
-                          className="h-12 px-3 text-xs font-bold text-slate-700 hover:text-primary transition flex items-center justify-center rounded-2xl border border-border/80 bg-white/70"
+                          className="flex h-12 w-full items-center justify-center rounded-2xl border border-border/80 bg-white/70 px-3 text-xs font-bold text-slate-700 transition hover:text-primary sm:w-auto sm:shrink-0"
                         >
                           Resend OTP
                         </button>
@@ -581,9 +592,9 @@ export function LoginPage() {
                           type="submit"
                           loading={isResetting}
                           disabled={isResetting}
-                          className="h-12 flex-1 font-bold bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
+                          className="h-12 w-full flex-1 bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
                         >
-                          {isResetting ? 'Resetting Password...' : 'Verify OTP & Reset Password'}
+                          {isResetting ? 'Resetting Password...' : 'Verify & reset'}
                         </Button>
                       </div>
                     </form>
