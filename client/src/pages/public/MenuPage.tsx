@@ -107,10 +107,10 @@ export function MenuPage() {
   const menuQuery = useQuery({
     queryKey: ['public', 'menu'],
     queryFn: fetchPublicMenu,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
+    refetchOnMount: false,
     retry: (failureCount, error) => {
       if (getApiErrorMessage(error).toLowerCase().includes('maintenance')) return false
       return failureCount < 2
@@ -217,6 +217,8 @@ export function MenuPage() {
           <img
             src={coverUrl}
             alt=""
+            fetchPriority="high"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover opacity-25 filter blur-xs scale-105"
           />
         ) : (
@@ -528,6 +530,8 @@ export function MenuPage() {
                               <img
                                 src={imageUrl}
                                 alt={item.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="h-16 w-16 shrink-0 rounded-xl object-cover shadow-xs border border-border/80 transition-transform duration-300 group-hover:scale-105"
                               />
                             ) : null}
@@ -581,6 +585,8 @@ export function MenuPage() {
                                 <img
                                   src={imageUrl}
                                   alt={item.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
                               </div>

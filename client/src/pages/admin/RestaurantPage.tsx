@@ -46,6 +46,8 @@ export function RestaurantPage() {
   const [removeLogo, setRemoveLogo] = useState(false)
   const [removeCover, setRemoveCover] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<'ACTIVE' | 'MAINTENANCE' | null>(null)
+  const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null)
+  const [coverUploadProgress, setCoverUploadProgress] = useState<number | null>(null)
 
   const restaurantQuery = useQuery({
     queryKey: ['admin', 'restaurant'],
@@ -108,6 +110,7 @@ export function RestaurantPage() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
+      queryClient.invalidateQueries({ queryKey: ['public', 'menu'] }),
     ])
   }
 
@@ -129,19 +132,22 @@ export function RestaurantPage() {
         restaurant = await removeRestaurantLogo()
       }
       if (logoFile) {
-        restaurant = await uploadRestaurantLogo(logoFile)
+        setLogoUploadProgress(0)
+        restaurant = await uploadRestaurantLogo(logoFile, setLogoUploadProgress)
       }
 
       if (removeCover && restaurant.coverImage) {
         restaurant = await removeRestaurantCover()
       }
       if (coverFile) {
-        restaurant = await uploadRestaurantCover(coverFile)
+        setCoverUploadProgress(0)
+        restaurant = await uploadRestaurantCover(coverFile, setCoverUploadProgress)
       }
 
       return restaurant
     },
     onSuccess: async (restaurant) => {
+      queryClient.setQueryData(['admin', 'restaurant'], restaurant)
       await invalidate()
       reset({
         name: restaurant.name,
@@ -160,11 +166,16 @@ export function RestaurantPage() {
       setRemoveCover(false)
       pushToast('Restaurant information updated successfully')
     },
+    onSettled: () => {
+      setLogoUploadProgress(null)
+      setCoverUploadProgress(null)
+    },
   })
 
   const statusMutation = useMutation({
     mutationFn: updateRestaurantStatus,
     onSuccess: async (restaurant) => {
+      queryClient.setQueryData(['admin', 'restaurant'], restaurant)
       await invalidate()
       setPendingStatus(null)
       pushToast(
@@ -299,10 +310,12 @@ export function RestaurantPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <ImageUpload
               label="Logo"
-              hint="Square-friendly logo, up to 5 MB."
+              hint="Square-friendly logo. Compressed on your device before upload."
               currentImageUrl={logoPreview}
               file={logoFile}
               disabled={pending}
+              compressVariant="logo"
+              uploadProgress={logoUploadProgress}
               onFileChange={(file) => {
                 setLogoFile(file)
                 if (file) setRemoveLogo(false)
@@ -313,10 +326,12 @@ export function RestaurantPage() {
             />
             <ImageUpload
               label="Cover image"
-              hint="Wide hero banner for the public menu."
+              hint="Wide hero banner. Compressed on your device before upload."
               currentImageUrl={coverPreview}
               file={coverFile}
               disabled={pending}
+              compressVariant="cover"
+              uploadProgress={coverUploadProgress}
               onFileChange={(file) => {
                 setCoverFile(file)
                 if (file) setRemoveCover(false)
