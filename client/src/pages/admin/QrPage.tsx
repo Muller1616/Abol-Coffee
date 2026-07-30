@@ -15,7 +15,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
-import { fetchQrPreview } from '@/features/qr/api'
+import { fetchQrPreview, regeneratePublicMenuToken } from '@/features/qr/api'
 import { downloadQrFile, printQrSheet } from '@/features/qr/download'
 import { fetchRestaurant } from '@/features/restaurant/api'
 import { getApiErrorMessage } from '@/lib/api'
@@ -40,6 +40,16 @@ export function QrPage() {
       pushToast(`${format.toUpperCase()} downloaded`),
     onError: (error) =>
       pushToast(getApiErrorMessage(error, 'Could not download QR code'), 'error'),
+  })
+
+  const regenerateMutation = useMutation({
+    mutationFn: regeneratePublicMenuToken,
+    onSuccess: async () => {
+      await qrQuery.refetch()
+      pushToast('New public menu link created. Download and reprint your QR code.', 'warning')
+    },
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Could not regenerate menu link'), 'error'),
   })
 
   const handlePrint = () => {
@@ -264,13 +274,27 @@ export function QrPage() {
               </li>
               <li className="flex gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Reprint only if the production public domain/URL itself changes.
+                Reprint only if you regenerate the public menu token or change your production domain.
               </li>
             </ul>
 
             <p className="mt-5 rounded-2xl bg-white/80 px-4 py-3 text-xs leading-relaxed text-muted-foreground ring-1 ring-border/70">
               {qr.note}
             </p>
+
+            <Button
+              variant="outline"
+              className="mt-4 w-full border-amber-300 text-amber-900 hover:bg-amber-50"
+              loading={regenerateMutation.isPending}
+              onClick={() => {
+                const confirmed = window.confirm(
+                  'Regenerate the public menu link? Previously printed QR codes will stop working until you reprint.',
+                )
+                if (confirmed) regenerateMutation.mutate()
+              }}
+            >
+              Regenerate public menu token
+            </Button>
           </motion.section>
         </div>
       </div>

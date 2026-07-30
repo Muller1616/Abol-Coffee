@@ -11,12 +11,13 @@ import {
   AlertTriangle,
   Clock3,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RecentActivityCard } from '@/features/activity/RecentActivityCard'
+import { useAuth } from '@/features/auth/auth-context'
 import { fetchDashboard } from '@/features/dashboard/api'
 import { fetchQrPreview } from '@/features/qr/api'
 import { getApiErrorMessage } from '@/lib/api'
@@ -40,27 +41,27 @@ const item = {
   },
 }
 
-const quickActions = [
+const quickActionDefs = [
   {
-    to: '/admin/categories',
+    segment: 'categories',
     title: 'Manage categories',
     description: 'Organize coffee, food, and seasonal sections.',
     icon: FolderTree,
   },
   {
-    to: '/admin/menu-items',
+    segment: 'menu',
     title: 'Edit menu items',
     description: 'Update prices, photos, and availability.',
     icon: UtensilsCrossed,
   },
   {
-    to: '/admin/restaurant',
+    segment: 'restaurant',
     title: 'Restaurant profile',
     description: 'Hours, contact details, logo, and cover.',
     icon: Store,
   },
   {
-    to: '/admin/qr',
+    segment: 'qr',
     title: 'QR & print',
     description: 'Download your permanent public menu code.',
     icon: QrCode,
@@ -68,6 +69,15 @@ const quickActions = [
 ]
 
 export function DashboardPage() {
+  const { restaurantSlug } = useParams()
+  const { owner } = useAuth()
+  const slug = restaurantSlug ?? owner?.restaurantSlug ?? ''
+
+  const quickActions = quickActionDefs.map((action) => ({
+    ...action,
+    to: `/${slug}/${action.segment}`,
+  }))
+
   const dashboardQuery = useQuery({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => fetchDashboard(5),
@@ -259,7 +269,7 @@ export function DashboardPage() {
               </div>
 
               <Link
-                to="/admin/restaurant"
+                to={`/${slug}/restaurant`}
                 className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
               >
                 Manage restaurant info
@@ -299,7 +309,7 @@ export function DashboardPage() {
                 <p className="truncate rounded-xl bg-background px-3 py-2 text-center text-xs text-muted-foreground">
                   {qrQuery.data.menuUrl}
                 </p>
-                <Link to="/admin/qr" className={cn(buttonVariants(), 'w-full')}>
+                <Link to={`/${slug}/qr`} className={cn(buttonVariants(), 'w-full')}>
                   <QrCode className="h-4 w-4" />
                   Open QR studio
                 </Link>

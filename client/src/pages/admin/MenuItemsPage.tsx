@@ -11,7 +11,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -43,6 +43,8 @@ import { cn } from '@/lib/utils'
 export function MenuItemsPage() {
   const queryClient = useQueryClient()
   const { pushToast } = useToast()
+  const { restaurantSlug } = useParams()
+  const slug = restaurantSlug ?? ''
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -409,7 +411,7 @@ export function MenuItemsPage() {
           title="Create a category first"
           description="Menu items must belong to a category before you can add them."
           action={
-            <Link to="/admin/categories" className={cn(buttonVariants())}>
+            <Link to={`/${slug}/categories`} className={cn(buttonVariants())}>
               Go to categories
             </Link>
           }

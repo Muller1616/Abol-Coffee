@@ -255,9 +255,9 @@ export function LoginPage() {
     async (values) => {
       clearLoginError()
       try {
-        await login(values)
+        const signedIn = await login(values)
         pushToast('Login successful. Redirecting to your dashboard...', 'success')
-        navigate('/admin/dashboard', { replace: true })
+        navigate(`/${signedIn.restaurantSlug}/dashboard`, { replace: true })
       } catch (error) {
         handleFormMutationError({
           setError: setLoginFieldError,

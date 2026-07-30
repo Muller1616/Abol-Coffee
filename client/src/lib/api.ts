@@ -5,6 +5,7 @@ import {
   notifyUnauthorized,
 } from '@/features/auth/session/unauthorized'
 import { getCsrfToken } from '@/lib/csrf'
+import { peekActiveRestaurantSlug } from '@/features/restaurant/workspace'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL?.trim() || undefined
 
@@ -21,7 +22,17 @@ api.interceptors.request.use((config) => {
     config.headers.set('X-CSRF-Token', csrfToken)
   }
 
-  const url = config.url ?? ''
+  let url = config.url ?? ''
+
+  // Rewrite legacy /api/admin/* calls to slug-scoped /api/r/:slug/* owner APIs.
+  if (url.startsWith('/api/admin/')) {
+    const slug = peekActiveRestaurantSlug()
+    if (slug) {
+      url = url.replace('/api/admin/', `/api/r/${slug}/`)
+      config.url = url
+    }
+  }
+
   const isLogout = url.includes('/api/auth/logout')
   const isMe = url.includes('/api/auth/me')
   const isPublicAuth =

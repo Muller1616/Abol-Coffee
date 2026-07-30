@@ -16,6 +16,7 @@ import {
   Check,
 } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useParams } from 'react-router-dom'
 import { BackLink } from '@/components/BackLink'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -38,6 +39,7 @@ import { formatRestaurantAddress } from '@/lib/location'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { MenuNotFoundPage } from '@/pages/public/MenuNotFoundPage'
 
 function FacebookIcon({ className }: { className?: string }) {
   return (
@@ -85,6 +87,7 @@ function getTodayOpeningStatus(hours: OpeningHours): { isOpen: boolean; text: st
 }
 
 export function MenuPage() {
+  const { publicMenuToken = '' } = useParams()
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<PublicMenuItem | null>(null)
@@ -105,8 +108,9 @@ export function MenuPage() {
   }, [])
 
   const menuQuery = useQuery({
-    queryKey: ['public', 'menu'],
-    queryFn: fetchPublicMenu,
+    queryKey: ['public', 'menu', publicMenuToken],
+    queryFn: () => fetchPublicMenu(publicMenuToken),
+    enabled: Boolean(publicMenuToken),
     // Guests scanning a printed QR must see owner edits without reprinting.
     staleTime: 15_000,
     gcTime: 5 * 60_000,
@@ -114,7 +118,8 @@ export function MenuPage() {
     refetchOnMount: true,
     refetchInterval: 30_000,
     retry: (failureCount, error) => {
-      if (getApiErrorMessage(error).toLowerCase().includes('maintenance')) return false
+      const message = getApiErrorMessage(error).toLowerCase()
+      if (message.includes('maintenance') || message.includes('not found')) return false
       return failureCount < 2
     },
   })
@@ -158,6 +163,14 @@ export function MenuPage() {
     } catch {
       // User cancelled share dialog
     }
+  }
+
+  if (
+    !publicMenuToken ||
+    (menuQuery.isError &&
+      getApiErrorMessage(menuQuery.error).toLowerCase().includes('not found'))
+  ) {
+    return <MenuNotFoundPage />
   }
 
   if (menuQuery.isLoading) {
