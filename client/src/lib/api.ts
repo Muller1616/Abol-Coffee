@@ -1,4 +1,9 @@
 import axios from 'axios'
+import { recordSessionActivity } from '@/features/auth/session/activity-bus'
+import {
+  isExemptUnauthorizedUrl,
+  notifyUnauthorized,
+} from '@/features/auth/session/unauthorized'
 import { getCsrfToken } from '@/lib/csrf'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL?.trim() || undefined
@@ -16,8 +21,35 @@ api.interceptors.request.use((config) => {
     config.headers.set('X-CSRF-Token', csrfToken)
   }
 
+  const url = config.url ?? ''
+  const isLogout = url.includes('/api/auth/logout')
+  const isMe = url.includes('/api/auth/me')
+  const isPublicAuth =
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/csrf') ||
+    url.includes('/api/auth/send-otp') ||
+    url.includes('/api/auth/reset-password-otp')
+
+  // Owner data mutations / fetches count as activity (not silent /me hydration).
+  if (!isLogout && !isMe && !isPublicAuth) {
+    recordSessionActivity('api')
+  }
+
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      const url = error.config?.url
+      if (!isExemptUnauthorizedUrl(url)) {
+        notifyUnauthorized()
+      }
+    }
+    return Promise.reject(error)
+  },
+)
 
 export type ApiSuccess<T> = {
   success: true

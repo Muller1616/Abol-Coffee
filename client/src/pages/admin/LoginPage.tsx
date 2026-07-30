@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { BackLink } from '@/components/BackLink'
@@ -38,6 +38,7 @@ import {
   type ResetWithOtpFormValues,
   type SendOtpFormValues,
 } from '@/features/auth/schema'
+import { consumeSessionMessage } from '@/features/auth/session/session-message'
 import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 import { cn } from '@/lib/utils'
 
@@ -71,6 +72,13 @@ export function LoginPage() {
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [otpError, setOtpError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const message = consumeSessionMessage()
+    if (message) {
+      pushToast(message, 'warning')
+    }
+  }, [pushToast])
 
   // 1. Login Form
   const loginForm = useForm<LoginFormValues>({
