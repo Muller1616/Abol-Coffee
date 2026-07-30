@@ -22,8 +22,15 @@ async function main(): Promise<void> {
 
   // Warm public menu cache so the first guest request avoids a cold Neon round-trip.
   try {
-    const { getPublicMenu } = await import('./services/publicMenu.service.js');
-    await getPublicMenu({});
+    const { prisma: db } = await import('./config/database.js');
+    const restaurant = await db.restaurant.findFirst({
+      orderBy: { createdAt: 'asc' },
+      select: { publicMenuToken: true },
+    });
+    if (restaurant?.publicMenuToken) {
+      const { getPublicMenu } = await import('./services/publicMenu.service.js');
+      await getPublicMenu(restaurant.publicMenuToken, {});
+    }
   } catch (error) {
     logger.warn('Public menu warm-up skipped', { error });
   }

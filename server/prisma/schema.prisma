@@ -42,6 +42,7 @@ model Owner {
   updatedAt         DateTime               @updatedAt
   passwordResetOtps PasswordResetOtp[]
   resetSessions     PasswordResetSession[]
+  restaurant        Restaurant?
 
   @@map("owners")
 }
@@ -84,27 +85,33 @@ model PasswordResetSession {
 }
 
 model Restaurant {
-  id           String           @id @default(cuid())
-  name         String
-  logo         String?
-  coverImage   String?
-  address      String?
-  city         String?
-  state        String?
-  country      String?
-  postalCode   String?
-  latitude     Float?
-  longitude    Float?
-  phone        String?
-  email        String?
-  openingHours Json
-  description  String?
-  facebook     String?
-  instagram    String?
-  telegram     String?
-  status       RestaurantStatus @default(ACTIVE)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id              String           @id @default(cuid())
+  /** Permanent owner dashboard namespace, e.g. abol-coffee → /abol-coffee/dashboard */
+  slug            String           @unique
+  /** Permanent public menu token → /menu/{publicMenuToken}. Never changes on menu edits. */
+  publicMenuToken String           @unique
+  ownerId         String           @unique
+  name            String
+  logo            String?
+  coverImage      String?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  postalCode      String?
+  latitude        Float?
+  longitude       Float?
+  phone           String?
+  email           String?
+  openingHours    Json
+  description     String?
+  facebook        String?
+  instagram       String?
+  telegram        String?
+  status          RestaurantStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  owner           Owner            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
 
   @@index([updatedAt])
   @@map("restaurants")

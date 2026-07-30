@@ -3,6 +3,10 @@ import bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, RestaurantStatus } from '../src/generated/prisma/client.js';
 import { createDefaultOpeningHours } from '../src/types/openingHours.js';
+import {
+  generatePublicMenuToken,
+  slugifyRestaurantName,
+} from '../src/utils/restaurantIdentity.js';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -27,34 +31,43 @@ async function main(): Promise<void> {
     orderBy: { createdAt: 'asc' },
   });
 
+  let ownerId: string;
+
   if (existingByEmail) {
-    await prisma.owner.update({
+    const updated = await prisma.owner.update({
       where: { id: existingByEmail.id },
       data: { password: passwordHash },
     });
+    ownerId = updated.id;
   } else if (anyOwner) {
-    await prisma.owner.update({
+    const updated = await prisma.owner.update({
       where: { id: anyOwner.id },
       data: {
         email: normalizedEmail,
         password: passwordHash,
       },
     });
+    ownerId = updated.id;
   } else {
-    await prisma.owner.create({
+    const created = await prisma.owner.create({
       data: {
         email: normalizedEmail,
         password: passwordHash,
       },
     });
+    ownerId = created.id;
   }
 
   const restaurantCount = await prisma.restaurant.count();
 
   if (restaurantCount === 0) {
+    const name = 'Abol Coffee';
     await prisma.restaurant.create({
       data: {
-        name: 'Abol Coffee',
+        name,
+        slug: slugifyRestaurantName(name),
+        publicMenuToken: generatePublicMenuToken(),
+        ownerId,
         description: 'Premium Ethiopian coffee and café menu.',
         phone: '+251 11 123 4567',
         address: 'Bole Road, Addis Ababa, Ethiopia',
@@ -66,9 +79,24 @@ async function main(): Promise<void> {
         openingHours: createDefaultOpeningHours(),
       },
     });
+  } else {
+    const restaurant = await prisma.restaurant.findFirst({
+      orderBy: { createdAt: 'asc' },
+    });
+    if (restaurant && (!restaurant.ownerId || restaurant.ownerId !== ownerId)) {
+      await prisma.restaurant.update({
+        where: { id: restaurant.id },
+        data: { ownerId },
+      });
+    }
   }
 
+  const restaurant = await prisma.restaurant.findUnique({ where: { ownerId } });
   console.log(`Seed complete. Owner email: ${normalizedEmail}`);
+  if (restaurant) {
+    console.log(`Restaurant slug: /${restaurant.slug}/dashboard`);
+    console.log(`Public menu: /menu/${restaurant.publicMenuToken}`);
+  }
 }
 
 main()

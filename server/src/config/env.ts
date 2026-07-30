@@ -69,27 +69,24 @@ function assertProductionReady(data: Env): void {
 
   const failures: string[] = [];
 
-  if (isLocalhostUrl(data.CLIENT_URL)) {
-    failures.push(
-      'CLIENT_URL cannot be localhost/127.0.0.1 in production (used for CORS and cookie auth).',
-    );
-  }
-
-  if (isLocalhostUrl(data.PUBLIC_MENU_URL)) {
-    failures.push(
-      'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (printed on QR codes — must be permanent).',
-    );
-  }
-
-  try {
-    const menuPath = new URL(data.PUBLIC_MENU_URL).pathname.replace(/\/$/, '') || '/';
-    if (menuPath !== '/menu' && !menuPath.startsWith('/menu/')) {
+  if (isLocalhostUrl(data.PUBLIC_MENU_URL) || isLocalhostUrl(data.CLIENT_URL)) {
+    if (isLocalhostUrl(data.CLIENT_URL)) {
       failures.push(
-        'PUBLIC_MENU_URL path should be /menu (or /menu/<slug>) so printed QR codes stay stable.',
+        'CLIENT_URL cannot be localhost/127.0.0.1 in production (used for CORS and cookie auth).',
       );
     }
+    if (isLocalhostUrl(data.PUBLIC_MENU_URL)) {
+      failures.push(
+        'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (origin used for printed QR codes).',
+      );
+    }
+  }
+
+  // PUBLIC_MENU_URL is treated as the public web origin; /menu/{token} is appended from the DB.
+  try {
+    new URL(data.PUBLIC_MENU_URL);
   } catch {
-    failures.push('PUBLIC_MENU_URL must be a valid absolute URL.');
+    failures.push('PUBLIC_MENU_URL must be a valid absolute URL (public site origin).');
   }
 
   if (isPlaceholderSecret(data.JWT_SECRET)) {
