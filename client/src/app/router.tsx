@@ -39,6 +39,11 @@ const AccountPage = lazy(async () => {
   return { default: mod.AccountPage }
 })
 
+const ActivityPage = lazy(async () => {
+  const mod = await import('@/pages/admin/ActivityPage')
+  return { default: mod.ActivityPage }
+})
+
 const MenuPage = lazy(async () => {
   const mod = await import('@/pages/public/MenuPage')
   return { default: mod.MenuPage }
@@ -122,6 +127,14 @@ const router = createBrowserRouter([
         element: (
           <LazyPage>
             <AccountPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'activity',
+        element: (
+          <LazyPage>
+            <ActivityPage />
           </LazyPage>
         ),
       },

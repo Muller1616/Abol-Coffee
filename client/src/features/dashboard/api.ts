@@ -1,3 +1,4 @@
+import type { AdminActivity } from '@/features/activity/api'
 import { api, type ApiSuccess } from '@/lib/api'
 
 export type DashboardData = {
@@ -19,17 +20,10 @@ export type DashboardData = {
     email: string | null
     address: string | null
   }
-  recentUpdates: Array<{
-    id: string
-    action: string
-    entity: string
-    entityId: string | null
-    summary: string
-    createdAt: string
-  }>
+  recentUpdates: AdminActivity[]
 }
 
-export async function fetchDashboard(recentLimit = 8) {
+export async function fetchDashboard(recentLimit = 5) {
   const { data } = await api.get<ApiSuccess<DashboardData>>('/api/admin/dashboard', {
     params: { recentLimit },
   })
