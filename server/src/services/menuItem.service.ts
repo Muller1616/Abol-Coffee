@@ -177,16 +177,19 @@ export async function updateMenuItem(
       include: menuItemInclude,
     });
 
-    const summary =
-      input.price !== undefined && Object.keys(input).length === 1
-        ? `Updated price for "${item.name}" to ${formatMoney(item.price)} ETB`
-        : `Updated menu item "${item.name}"`;
+    const priceOnly = input.price !== undefined && Object.keys(input).length === 1;
+    const summary = priceOnly
+      ? `Updated price for "${item.name}" to ${formatMoney(item.price)} ETB`
+      : `Updated menu item "${item.name}"`;
 
     await logAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.MENU_ITEM,
       entityId: item.id,
       summary,
+      ...(priceOnly
+        ? { type: 'MENU_ITEM_PRICE_UPDATED', title: 'Price updated' }
+        : {}),
     });
 
     return toMenuItemResponse(item);

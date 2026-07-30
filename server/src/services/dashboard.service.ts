@@ -25,6 +25,8 @@ export type DashboardResponse = {
     id: string;
     action: string;
     entity: string;
+    type: string;
+    title: string;
     entityId: string | null;
     summary: string;
     createdAt: string;
@@ -58,7 +60,7 @@ async function getLastUpdatedAt(): Promise<Date | null> {
   return timestamps.reduce((latest, current) => (current > latest ? current : latest));
 }
 
-export async function getDashboard(recentLimit = 10): Promise<DashboardResponse> {
+export async function getDashboard(recentLimit = 5): Promise<DashboardResponse> {
   const restaurant = await prisma.restaurant.findFirst({
     orderBy: { createdAt: 'asc' },
     select: {
@@ -98,13 +100,6 @@ export async function getDashboard(recentLimit = 10): Promise<DashboardResponse>
       restaurantStatus: restaurant.status,
     },
     restaurant,
-    recentUpdates: recentUpdates.map((activity) => ({
-      id: activity.id,
-      action: activity.action,
-      entity: activity.entity,
-      entityId: activity.entityId,
-      summary: activity.summary,
-      createdAt: activity.createdAt.toISOString(),
-    })),
+    recentUpdates: recentUpdates,
   };
 }

@@ -26,6 +26,8 @@ export async function uploadMenuItemImage(
       entity: AdminEntity.MENU_ITEM,
       entityId: itemId,
       summary: `Updated image for menu item "${existing.name}"`,
+      type: 'MENU_ITEM_IMAGE_UPDATED',
+      title: 'Menu item photo updated',
     });
 
     return getMenuItemById(itemId);
@@ -54,6 +56,8 @@ export async function removeMenuItemImage(itemId: string): Promise<MenuItemRespo
     entity: AdminEntity.MENU_ITEM,
     entityId: itemId,
     summary: `Removed image for menu item "${existing.name}"`,
+    type: 'MENU_ITEM_IMAGE_REMOVED',
+    title: 'Menu item photo removed',
   });
 
   return getMenuItemById(itemId);
@@ -76,6 +80,8 @@ export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<R
       entity: AdminEntity.RESTAURANT,
       entityId: existing.id,
       summary: 'Updated restaurant logo',
+      type: 'RESTAURANT_LOGO_UPDATED',
+      title: 'Logo updated',
     });
 
     return getRestaurant();
@@ -104,6 +110,8 @@ export async function removeRestaurantLogo(): Promise<RestaurantResponse> {
     entity: AdminEntity.RESTAURANT,
     entityId: existing.id,
     summary: 'Removed restaurant logo',
+    type: 'RESTAURANT_LOGO_REMOVED',
+    title: 'Logo removed',
   });
 
   return getRestaurant();
@@ -126,6 +134,8 @@ export async function uploadRestaurantCover(file: Express.Multer.File): Promise<
       entity: AdminEntity.RESTAURANT,
       entityId: existing.id,
       summary: 'Updated restaurant cover image',
+      type: 'RESTAURANT_COVER_UPDATED',
+      title: 'Cover image updated',
     });
 
     return getRestaurant();
@@ -154,6 +164,8 @@ export async function removeRestaurantCover(): Promise<RestaurantResponse> {
     entity: AdminEntity.RESTAURANT,
     entityId: existing.id,
     summary: 'Removed restaurant cover image',
+    type: 'RESTAURANT_COVER_REMOVED',
+    title: 'Cover image removed',
   });
 
   return getRestaurant();
