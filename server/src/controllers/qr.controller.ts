@@ -23,7 +23,6 @@ export async function getQrPreviewHandler(
       data: {
         menuUrl: preview.menuUrl,
         pngDataUrl: preview.pngDataUrl,
-        svg: preview.svg,
         note: 'This QR code always points to the permanent public menu URL. Menu content changes do not require a new QR code.',
       },
     });
