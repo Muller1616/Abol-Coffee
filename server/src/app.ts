@@ -6,12 +6,14 @@ import { appConfig } from './config/app.js';
 import { env } from './config/env.js';
 import { uploadConfig } from './config/upload.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requestIdMiddleware } from './middleware/requestId.js';
 import { apiRouter } from './routes/index.js';
 
 export function createApp() {
   const app = express();
 
   app.set('trust proxy', 1);
+  app.use(requestIdMiddleware);
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -29,7 +31,8 @@ export function createApp() {
   app.use(
     uploadConfig.publicPathPrefix,
     express.static(uploadConfig.uploadsRoot, {
-      fallthrough: false,
+      // Missing files fall through to the global 404 handler (avoid raw 500s).
+      fallthrough: true,
       maxAge: env.NODE_ENV === 'production' ? '7d' : 0,
     }),
   );

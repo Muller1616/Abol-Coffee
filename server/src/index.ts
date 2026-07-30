@@ -1,25 +1,80 @@
 import 'dotenv/config';
-import { createApp } from './app.js';
-import { env } from './config/env.js';
-import { ensureUploadDirectories } from './services/storage.service.js';
 
-const app = createApp();
+async function main(): Promise<void> {
+  const { env } = await import('./config/env.js');
+  const { prisma } = await import('./config/database.js');
+  const { createApp } = await import('./app.js');
+  const { ensureUploadDirectories } = await import('./services/storage.service.js');
+  const { logger } = await import('./utils/logger.js');
 
-await ensureUploadDirectories();
-
-const server = app.listen(env.PORT, () => {
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : env.PORT;
-  console.log(`Abol Coffee API running in ${env.NODE_ENV} mode on port ${port}`);
-});
-
-server.on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(
-      `Port ${env.PORT} is already in use. Stop the other process or set a free PORT in server/.env.`,
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (error) {
+    logger.error('Database connection failed on startup', { error });
+    throw new Error(
+      'Missing or unreachable database.\nDATABASE_URL connection failed.\nApplication cannot start.',
     );
-  } else {
-    console.error('Failed to start API server:', error);
   }
+
+  await ensureUploadDirectories();
+
+  const app = createApp();
+  const server = app.listen(env.PORT, () => {
+    const address = server.address();
+    const port = typeof address === 'object' && address ? address.port : env.PORT;
+    logger.info('Abol Coffee API started', {
+      env: env.NODE_ENV,
+      port,
+      uploadsRoot: env.UPLOADS_DIR || 'uploads',
+    });
+  });
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      logger.error(`Port ${env.PORT} is already in use. Stop the other process or set a free PORT.`, {
+        error,
+      });
+    } else {
+      logger.error('Failed to start API server', { error });
+    }
+    process.exit(1);
+  });
+
+  const shutdown = (signal: string) => {
+    logger.info(`Received ${signal}, shutting down gracefully`);
+    server.close(async (closeError) => {
+      if (closeError) {
+        logger.error('Error while closing HTTP server', { error: closeError });
+      }
+
+      try {
+        await prisma.$disconnect();
+      } catch (error) {
+        logger.error('Error while disconnecting Prisma', { error });
+      }
+
+      process.exit(closeError ? 1 : 0);
+    });
+
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10_000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+}
+
+main().catch((error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(
+    `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      message: 'Application failed to start',
+      error: message,
+    })}\n`,
+  );
   process.exit(1);
 });

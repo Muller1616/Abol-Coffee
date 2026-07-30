@@ -1,9 +1,10 @@
 import path from 'node:path';
+import { env } from './env.js';
 
 export const uploadConfig = {
   maxFileSizeBytes: 5 * 1024 * 1024,
   allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
-  uploadsRoot: path.resolve(process.cwd(), 'uploads'),
+  uploadsRoot: path.resolve(env.UPLOADS_DIR?.trim() || path.join(process.cwd(), 'uploads')),
   publicPathPrefix: '/uploads',
   variants: {
     menuItem: {
