@@ -37,6 +37,13 @@ export async function loginOwner(input: LoginInput): Promise<AuthenticatedOwner>
     throw AppError.field('password', 'Incorrect password.', 401);
   }
 
+  await logAdminActivity({
+    action: AdminAction.LOGIN,
+    entity: AdminEntity.OWNER,
+    entityId: owner.id,
+    summary: `Owner signed in (${owner.email})`,
+  });
+
   return {
     id: owner.id,
     email: owner.email,
