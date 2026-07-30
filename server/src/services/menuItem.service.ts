@@ -11,6 +11,7 @@ import type {
   UpdateMenuItemInput,
 } from '../validators/menuItem.validators.js';
 import { logAdminActivity } from './activity.service.js';
+import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 import { deleteStoredImage } from './storage.service.js';
 
 const menuItemInclude = {
@@ -115,6 +116,12 @@ export async function getMenuItemById(id: string): Promise<MenuItemResponse> {
 export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuItemResponse> {
   await assertCategoryExists(input.categoryId);
 
+  const maxOrder = await prisma.menuItem.aggregate({
+    where: { categoryId: input.categoryId },
+    _max: { displayOrder: true },
+  });
+  const displayOrder = input.displayOrder ?? (maxOrder._max.displayOrder ?? -1) + 1;
+
   try {
     const item = await prisma.menuItem.create({
       data: {
@@ -125,7 +132,7 @@ export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuIt
         currency: 'ETB',
         image: input.image ?? null,
         isAvailable: input.isAvailable,
-        displayOrder: input.displayOrder,
+        displayOrder,
       },
       include: menuItemInclude,
     });
@@ -137,6 +144,7 @@ export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuIt
       summary: `Created menu item "${item.name}" (${formatMoney(item.price)} ETB)`,
     });
 
+    invalidatePublicMenuCache();
     return toMenuItemResponse(item);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -192,6 +200,7 @@ export async function updateMenuItem(
         : {}),
     });
 
+    invalidatePublicMenuCache();
     return toMenuItemResponse(item);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -225,6 +234,7 @@ export async function updateMenuItemAvailability(
     summary: `Menu item "${item.name}" marked as ${input.isAvailable ? 'available' : 'hidden'}`,
   });
 
+  invalidatePublicMenuCache();
   return toMenuItemResponse(item);
 }
 
@@ -240,6 +250,8 @@ export async function deleteMenuItem(id: string): Promise<void> {
     entityId: id,
     summary: `Deleted menu item "${item.name}"`,
   });
+
+  invalidatePublicMenuCache();
 }
 
 export async function reorderMenuItems(input: ReorderMenuItemsInput): Promise<MenuItemResponse[]> {
@@ -272,6 +284,8 @@ export async function reorderMenuItems(input: ReorderMenuItemsInput): Promise<Me
     entity: AdminEntity.MENU_ITEM,
     summary: `Reordered ${input.items.length} menu items`,
   });
+
+  invalidatePublicMenuCache();
 
   const items = await prisma.menuItem.findMany({
     where: { id: { in: ids } },

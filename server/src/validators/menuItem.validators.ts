@@ -35,7 +35,7 @@ export const createMenuItemSchema = z.object({
     .max(1_000_000, 'Price is too large.'),
   image: z.string().trim().max(500).nullable().optional(),
   isAvailable: z.boolean().optional().default(true),
-  displayOrder: z.number().int().min(0).optional().default(0),
+  displayOrder: z.number().int().min(0).optional(),
 });
 
 export const updateMenuItemSchema = z
