@@ -2,6 +2,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import type { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 
 export type ActivityRecord = {
   id: string;
@@ -125,6 +126,16 @@ export async function logAdminActivity(input: LogActivityInput): Promise<void> {
       type: meta.type,
       title: meta.title,
     },
+  });
+}
+
+/**
+ * Non-blocking activity write — keeps CRUD responses off the activity-log critical path.
+ * Failures are logged but never fail the parent mutation.
+ */
+export function queueAdminActivity(input: LogActivityInput): void {
+  void logAdminActivity(input).catch((error: unknown) => {
+    logger.error('Failed to record admin activity', { error });
   });
 }
 
