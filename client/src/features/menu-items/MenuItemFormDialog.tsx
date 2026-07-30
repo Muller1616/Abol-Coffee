@@ -194,7 +194,7 @@ export function MenuItemFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        className="sm:max-w-2xl"
         title={isEditing ? 'Edit menu item' : 'Create menu item'}
         description="Set pricing, category, availability, and an optional food image."
       >
@@ -310,12 +310,13 @@ export function MenuItemFormDialog({
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full sm:w-auto"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" loading={loading} disabled={loading}>
+            <Button type="submit" loading={loading} disabled={loading} className="h-11 w-full sm:w-auto">
               {isEditing ? 'Save changes' : 'Create item'}
             </Button>
           </div>
