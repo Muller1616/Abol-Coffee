@@ -158,7 +158,7 @@ export function AccountPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Settings</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             Account settings
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -322,14 +322,15 @@ export function AccountPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Button type="submit" loading={pending} disabled={pending}>
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button type="submit" loading={pending} disabled={pending} className="h-11 w-full sm:w-auto">
               Update password
             </Button>
             {isDirty ? (
               <Button
                 type="button"
                 variant="ghost"
+                className="h-11 w-full sm:w-auto"
                 disabled={pending}
                 onClick={() => {
                   reset()
