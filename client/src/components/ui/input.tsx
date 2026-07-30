@@ -1,4 +1,5 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react'
+import { FieldError } from '@/components/ui/field-error'
 import { cn } from '@/lib/utils'
 
 type FloatingInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'placeholder'> & {
@@ -13,6 +14,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
     const generatedId = useId()
     const inputId = id ?? generatedId
     const errorId = `${inputId}-error`
+    const hintId = `${inputId}-hint`
 
     return (
       <div className="space-y-2" data-invalid={error ? 'true' : undefined}>
@@ -22,7 +24,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
             id={inputId}
             placeholder=" "
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
+            aria-describedby={error ? errorId : hint ? hintId : undefined}
             className={cn(
               'peer h-14 w-full cursor-text rounded-2xl border bg-white/70 px-4 pt-5 pb-2 text-sm text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] outline-none transition-all duration-200 backdrop-blur disabled:cursor-not-allowed disabled:opacity-60',
               'border-border/80 hover:border-primary/40',
@@ -48,12 +50,12 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
             <div className="absolute top-1/2 right-3 -translate-y-1/2">{trailing}</div>
           ) : null}
         </div>
-        {error ? (
-          <p id={errorId} className="px-1 text-xs font-medium text-danger">
-            ❌ {error}
+        <FieldError id={errorId} message={error} />
+        {!error && hint ? (
+          <p id={hintId} className="px-1 text-xs text-muted-foreground">
+            {hint}
           </p>
         ) : null}
-        {!error && hint ? <p className="px-1 text-xs text-muted-foreground">{hint}</p> : null}
       </div>
     )
   },

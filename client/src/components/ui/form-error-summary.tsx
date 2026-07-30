@@ -6,15 +6,21 @@ import { countFieldErrors } from '@/lib/form'
 type FormErrorSummaryProps = {
   errors: FieldErrors
   submitCount: number
+  message?: string
 }
 
-export function FormErrorSummary({ errors, submitCount }: FormErrorSummaryProps) {
+/** Top-of-form summary shown after submit when any fields are invalid. */
+export function FormErrorSummary({
+  errors,
+  submitCount,
+  message = 'Please correct the highlighted fields before continuing.',
+}: FormErrorSummaryProps) {
   const count = countFieldErrors(errors)
   if (submitCount < 1 || count < 1) return null
 
   return (
-    <Alert icon={AlertTriangle}>
-      Please correct the highlighted fields before continuing.
+    <Alert tone="warning" icon={AlertTriangle}>
+      {message}
     </Alert>
   )
 }

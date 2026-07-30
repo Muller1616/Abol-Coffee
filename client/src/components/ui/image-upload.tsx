@@ -1,7 +1,25 @@
 import { ImagePlus, Trash2, Upload } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { FieldError } from '@/components/ui/field-error'
 import { cn } from '@/lib/utils'
+
+export const IMAGE_UPLOAD_ACCEPTED = 'image/jpeg,image/png,image/webp'
+export const IMAGE_UPLOAD_ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+export const IMAGE_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+
+export function validateImageFile(file: File): string | null {
+  if (!file || file.size === 0) {
+    return 'Please select a non-empty image file.'
+  }
+  if (!IMAGE_UPLOAD_ACCEPTED_TYPES.has(file.type)) {
+    return 'Use a JPG, PNG, or WebP image.'
+  }
+  if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+    return 'Image must be 5 MB or smaller.'
+  }
+  return null
+}
 
 type ImageUploadProps = {
   label?: string
@@ -11,11 +29,9 @@ type ImageUploadProps = {
   onRemoveExisting?: () => void
   disabled?: boolean
   hint?: string
+  /** External / server-side error (e.g. upload API failure). */
+  error?: string | null
 }
-
-const ACCEPTED = 'image/jpeg,image/png,image/webp'
-const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const MAX_BYTES = 5 * 1024 * 1024
 
 export function ImageUpload({
   label = 'Food image',
@@ -25,10 +41,15 @@ export function ImageUpload({
   onRemoveExisting,
   disabled = false,
   hint = 'JPG, PNG, or WebP up to 5 MB. Optional.',
+  error = null,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const generatedId = useId()
+  const errorId = `${generatedId}-error`
   const [isDragging, setIsDragging] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+
+  const displayError = error || localError
 
   const previewUrl = useMemo(() => {
     if (file) return URL.createObjectURL(file)
@@ -46,13 +67,9 @@ export function ImageUpload({
     const next = files?.[0]
     if (!next) return
 
-    if (!ACCEPTED_TYPES.has(next.type)) {
-      setLocalError('Use a JPG, PNG, or WebP image.')
-      return
-    }
-
-    if (next.size > MAX_BYTES) {
-      setLocalError('Image must be 5 MB or smaller.')
+    const validationError = validateImageFile(next)
+    if (validationError) {
+      setLocalError(validationError)
       return
     }
 
@@ -68,7 +85,7 @@ export function ImageUpload({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-invalid={displayError ? 'true' : undefined}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{label}</p>
@@ -105,11 +122,13 @@ export function ImageUpload({
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
+        aria-invalid={displayError ? true : undefined}
+        aria-describedby={displayError ? errorId : undefined}
         className={cn(
           'relative overflow-hidden rounded-2xl border border-dashed bg-[#f8fafc] transition-all duration-200',
           disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-primary/50 hover:bg-primary/5',
           isDragging ? 'border-2 border-primary bg-primary/10 shadow-lg' : 'border-border/80',
-          localError && 'border-danger/50',
+          displayError && 'border-danger/50',
         )}
       >
         {isDragging ? (
@@ -127,12 +146,12 @@ export function ImageUpload({
           >
             <img
               src={previewUrl}
-              alt="Menu item preview"
+              alt={`${label} preview`}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100 flex items-center justify-center">
               <span className="inline-flex items-center gap-2 rounded-xl bg-white/95 px-4 py-2 text-xs font-bold text-foreground shadow-md backdrop-blur transform translate-y-1 transition-transform group-hover:translate-y-0">
-                📷 Change Image
+                Change image
               </span>
             </div>
             <button
@@ -158,20 +177,20 @@ export function ImageUpload({
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
               <ImagePlus className="h-5 w-5" />
             </div>
-            <p className="text-sm font-semibold transition-colors group-hover:text-primary">Drag & drop or click to upload</p>
+            <p className="text-sm font-semibold transition-colors group-hover:text-primary">
+              Drag & drop or click to upload
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">Optimized automatically to WebP</p>
           </button>
         )}
       </div>
 
-      {localError ? (
-        <p className="px-1 text-xs font-medium text-danger">❌ {localError}</p>
-      ) : null}
+      <FieldError id={errorId} message={displayError} />
 
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED}
+        accept={IMAGE_UPLOAD_ACCEPTED}
         className="hidden"
         disabled={disabled}
         onChange={(event) => handleFiles(event.target.files)}
