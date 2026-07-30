@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { env, isSmtpConfigured } from '../config/env.js';
+import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 
 let transporterPromise: Promise<Transporter> | null = null;
 
@@ -19,7 +21,14 @@ async function getTransporter(): Promise<Transporter> {
         });
       }
 
-      // Development fallback: JSON transport logs the message (including OTP) to the console.
+      if (env.NODE_ENV === 'production') {
+        throw new AppError(
+          'Email delivery is not configured. Password reset is unavailable.',
+          503,
+        );
+      }
+
+      // Development fallback: JSON transport (OTP logged once without secrets dump of full MIME).
       return nodemailer.createTransport({ jsonTransport: true });
     })();
   }
@@ -114,7 +123,7 @@ export async function sendPasswordResetOtpEmail(options: {
   const transporter = await getTransporter();
   const from = env.SMTP_FROM ?? 'Abol Coffee <noreply@abolcoffee.local>';
 
-  const info = await transporter.sendMail({
+  await transporter.sendMail({
     from,
     to: options.to,
     subject: 'Password Reset Verification Code',
@@ -123,12 +132,13 @@ export async function sendPasswordResetOtpEmail(options: {
   });
 
   if (!isSmtpConfigured()) {
-    console.info(
-      `[mail:dev] Password reset OTP for ${options.to}: ${options.otpCode} (expires in ${options.expiresMinutes}m)`,
-    );
-    console.info('[mail:dev] Configure SMTP_HOST/SMTP_PORT/SMTP_FROM to send real email.');
-    if (typeof info.message === 'string') {
-      console.info('[mail:dev] Message payload logged via JSON transport.');
-    }
+    // Development-only: surface the code so local password reset can be tested without SMTP.
+    logger.info('Password reset OTP issued (SMTP not configured — development only)', {
+      to: options.to,
+      otpCode: options.otpCode,
+      expiresMinutes: options.expiresMinutes,
+    });
+  } else {
+    logger.info('Password reset OTP email sent', { to: options.to });
   }
 }
