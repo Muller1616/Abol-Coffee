@@ -4,6 +4,10 @@ import { AppError } from '../utils/AppError.js';
 import { formatMoney, toMoneyNumber } from '../utils/money.js';
 import { parseOpeningHours } from '../utils/openingHours.js';
 import type { PublicMenuQuery } from '../validators/publicMenu.validators.js';
+import {
+  getCachedPublicMenu,
+  setCachedPublicMenu,
+} from './publicMenu.cache.js';
 
 type PublicMenuItem = {
   id: string;
@@ -93,8 +97,26 @@ function toPublicRestaurant(restaurant: {
 }
 
 export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuResponse> {
+  const cached = getCachedPublicMenu(query.search, query.categoryId);
+  if (cached) return cached;
+
   const restaurant = await prisma.restaurant.findFirst({
     orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      logo: true,
+      coverImage: true,
+      address: true,
+      phone: true,
+      email: true,
+      description: true,
+      facebook: true,
+      instagram: true,
+      telegram: true,
+      openingHours: true,
+      status: true,
+    },
   });
 
   if (!restaurant) {
@@ -102,7 +124,7 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
   }
 
   if (restaurant.status === RestaurantStatus.MAINTENANCE) {
-    return {
+    const maintenance: PublicMenuMaintenanceResponse = {
       status: 'MAINTENANCE',
       message: 'The menu is temporarily unavailable for maintenance.',
       restaurant: {
@@ -115,6 +137,8 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
         description: restaurant.description,
       },
     };
+    setCachedPublicMenu(maintenance, query.search, query.categoryId);
+    return maintenance;
   }
 
   const categories = await prisma.category.findMany({
@@ -123,7 +147,10 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
       ...(query.categoryId ? { id: query.categoryId } : {}),
     },
     orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-    include: {
+    select: {
+      id: true,
+      name: true,
+      displayOrder: true,
       menuItems: {
         where: {
           isAvailable: true,
@@ -137,6 +164,14 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
             : {}),
         },
         orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          image: true,
+          displayOrder: true,
+        },
       },
     },
   });
@@ -165,7 +200,6 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
       };
     })
     .filter((category) => {
-      // When searching, hide empty categories. When browsing all, keep empty active categories.
       if (query.search || query.categoryId) {
         return category.items.length > 0;
       }
@@ -174,10 +208,13 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
 
   const items = publicCategories.flatMap((category) => category.items);
 
-  return {
+  const response: PublicMenuActiveResponse = {
     status: 'ACTIVE',
     restaurant: toPublicRestaurant(restaurant),
     categories: publicCategories,
     items,
   };
+
+  setCachedPublicMenu(response, query.search, query.categoryId);
+  return response;
 }
