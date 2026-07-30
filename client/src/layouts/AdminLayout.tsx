@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import {
   Coffee,
   ExternalLink,
@@ -6,12 +7,13 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Menu,
   QrCode,
   Store,
   UtensilsCrossed,
+  X,
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BackLink } from '@/components/BackLink'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
@@ -25,62 +27,101 @@ const navItems = [
   { to: '/admin/account', label: 'Settings', icon: KeyRound },
 ]
 
+function NavItems({
+  onNavigate,
+  className,
+}: {
+  onNavigate?: () => void
+  className?: string
+}) {
+  return (
+    <nav className={cn('flex flex-col gap-1.5', className)}>
+      {navItems.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            cn(
+              'group flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
+              isActive
+                ? 'bg-primary font-semibold text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.22)]'
+                : 'text-muted-foreground hover:translate-x-1 hover:bg-primary/10 hover:text-primary',
+            )
+          }
+        >
+          <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+          {item.label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { owner, logout } = useAuth()
-  const isDashboard = location.pathname === '/admin/dashboard'
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previous
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mobileOpen])
 
   const handleLogout = async () => {
+    setMobileOpen(false)
     await logout()
     navigate('/admin/login', { replace: true })
   }
 
+  const activeLabel =
+    navItems.find((item) => location.pathname.startsWith(item.to))?.label ?? 'Console'
+
   return (
-    <div className="min-h-dvh bg-[linear-gradient(180deg,#f4fbf9_0%,#f8fafc_40%,#f8fafc_100%)]">
+    <div className="min-h-dvh overflow-x-clip bg-[linear-gradient(180deg,#f4f4f5_0%,#fafafa_45%,#f4f4f5_100%)]">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute top-1/2 -left-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
       <div className="relative flex min-h-dvh w-full">
-        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-border/70 bg-white/70 px-5 py-6 backdrop-blur-xl lg:flex">
+        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-border/70 bg-white/80 px-5 py-6 backdrop-blur-xl lg:flex">
           <div className="mb-8 flex items-center gap-3 px-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(15_118_110/0.28)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
               <Coffee className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-sm font-semibold tracking-tight">Abol Coffee</p>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
               <p className="text-xs text-muted-foreground">Owner console</p>
             </div>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-1.5">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn(
-                    'group flex cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(15_118_110/0.22)] font-semibold'
-                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary hover:translate-x-1',
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <NavItems className="flex-1" />
 
           <div className="mt-6 rounded-2xl border border-border/80 bg-white/80 p-4">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Signed in
             </p>
             <p className="mt-1 truncate text-sm font-semibold">{owner?.email}</p>
-            <Button variant="outline" className="mt-3 h-10 w-full" onClick={() => void handleLogout()}>
+            <Button
+              variant="outline"
+              className="mt-3 h-11 w-full"
+              onClick={() => void handleLogout()}
+            >
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>
@@ -88,77 +129,131 @@ export function AdminLayout() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border/70 bg-white/75 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                {!isDashboard ? (
-                  <BackLink
-                    to="/admin/dashboard"
-                    label="Back to dashboard"
-                    tone="light"
-                    className="h-10 w-10 shrink-0 lg:hidden"
-                  />
-                ) : null}
-                <div className="lg:hidden">
-                  <p className="text-sm font-semibold">Abol Coffee</p>
-                  <p className="text-xs text-muted-foreground">Owner console</p>
+          <header className="sticky top-0 z-20 border-b border-border/70 bg-white/85 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="lg:hidden"
+                  aria-label="Open navigation menu"
+                  aria-expanded={mobileOpen}
+                  onClick={() => setMobileOpen(true)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <div className="min-w-0 lg:hidden">
+                  <p className="truncate text-sm font-semibold">Abol Coffee</p>
+                  <p className="truncate text-xs text-muted-foreground">{activeLabel}</p>
                 </div>
-                <div className="hidden lg:block">
-                  <motion.p
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-muted-foreground"
-                  >
-                    Manage your digital menu with clarity and speed.
-                  </motion.p>
-                </div>
+                <p className="hidden text-sm text-muted-foreground lg:block">
+                  Manage your digital menu with clarity and speed.
+                </p>
               </div>
+
               <div className="flex shrink-0 items-center gap-2">
                 <Link
-                  to="/"
+                  to="/menu"
                   className={cn(
                     buttonVariants({ variant: 'ghost', size: 'sm' }),
                     'hidden text-muted-foreground sm:inline-flex',
                   )}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  View site
+                  Live menu
                 </Link>
-                <Button variant="ghost" className="lg:hidden" onClick={() => void handleLogout()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground lg:hidden"
+                  aria-label="Sign out"
+                  onClick={() => void handleLogout()}
+                >
                   <LogOut className="h-4 w-4" />
-                  Sign out
                 </Button>
               </div>
             </div>
-
-            <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      'inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-200 active:scale-95',
-                      isActive
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-white text-muted-foreground ring-1 ring-border hover:bg-primary/5 hover:text-primary',
-                    )
-                  }
-                >
-                  <item.icon className="h-3.5 w-3.5" />
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
           </header>
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <div className="mx-auto w-full max-w-7xl">
               <Outlet />
             </div>
           </main>
         </div>
       </div>
+
+      <AnimatePresence>
+        {mobileOpen ? (
+          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Owner navigation">
+            <motion.button
+              type="button"
+              aria-label="Close navigation menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+              className="absolute inset-y-0 left-0 flex h-dvh w-[min(100vw-3rem,20rem)] flex-col border-r border-border/80 bg-white shadow-[0_30px_80px_rgb(15_23_42/0.28)]"
+            >
+              <div className="flex h-full flex-col px-5 py-6">
+                <div className="mb-8 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
+                      <Coffee className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
+                      <p className="truncate text-xs text-muted-foreground">{owner?.email}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Close navigation menu"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                <NavItems onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
+
+                <div className="mt-6 space-y-2 border-t border-border/70 pt-4">
+                  <Link
+                    to="/menu"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      buttonVariants({ variant: 'outline' }),
+                      'h-11 w-full justify-center',
+                    )}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View live menu
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full"
+                    onClick={() => void handleLogout()}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </Button>
+                </div>
+              </div>
+            </motion.aside>
+          </div>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }
