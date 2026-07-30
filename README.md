@@ -44,8 +44,8 @@ npm run dev            # http://localhost:5173
 
 ### Default owner (seed)
 
-- Email: `owner@abolcoffee.com`
-- Password: `ChangeMe123!`
+- Email: `Habeshadreamer12@gmail.com` (from `OWNER_EMAIL` in `server/.env`)
+- Password: `ChangeMe123!` (from `OWNER_PASSWORD`)
 
 Change the password after first login at `/admin/account`.
 
