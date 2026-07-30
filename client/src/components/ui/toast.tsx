@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 import {
   createContext,
@@ -67,31 +66,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] mx-auto flex w-auto max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:left-auto sm:w-full"
+        className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-60 mx-auto flex w-auto max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:left-auto sm:w-full"
         aria-live="polite"
         aria-relevant="additions"
       >
-        <AnimatePresence>
-          {toasts.map((toast) => {
-            const { Icon, border, iconClass } = toneConfig[toast.tone]
-            return (
-              <motion.div
-                key={toast.id}
-                role="status"
-                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                className={cn(
-                  'pointer-events-auto flex items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 shadow-[0_18px_50px_rgb(15_23_42/0.14)] backdrop-blur',
-                  border,
-                )}
-              >
-                <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', iconClass)} aria-hidden />
-                <p className="text-sm font-medium text-foreground">{toast.title}</p>
-              </motion.div>
-            )
-          })}
-        </AnimatePresence>
+        {toasts.map((toast) => {
+          const { Icon, border, iconClass } = toneConfig[toast.tone]
+          return (
+            <div
+              key={toast.id}
+              role="status"
+              className={cn(
+                'pointer-events-auto flex animate-[toast-in_220ms_ease-out] items-start gap-3 rounded-2xl border bg-white/95 px-4 py-3 shadow-[0_18px_50px_rgb(15_23_42/0.14)] backdrop-blur',
+                border,
+              )}
+            >
+              <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', iconClass)} aria-hidden />
+              <p className="text-sm font-medium text-foreground">{toast.title}</p>
+            </div>
+          )
+        })}
       </div>
     </ToastContext.Provider>
   )

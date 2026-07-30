@@ -20,6 +20,7 @@ import type { SessionLogoutReason } from '@/features/auth/session/constants'
 import { stashSessionMessage } from '@/features/auth/session/session-message'
 import { publishSessionSync } from '@/features/auth/session/session-sync'
 import { setUnauthorizedHandler } from '@/features/auth/session/unauthorized'
+import { useAuthSessionEnabled } from '@/features/auth/use-auth-session-enabled'
 import { getApiErrorMessage } from '@/lib/api'
 
 export type LogoutOptions = {
@@ -56,12 +57,14 @@ async function fetchOwnerOrNull() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
+  const authEnabled = useAuthSessionEnabled()
 
   const meQuery = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: fetchOwnerOrNull,
     retry: false,
     staleTime: 5 * 60_000,
+    enabled: authEnabled,
   })
 
   const loginMutation = useMutation({
@@ -143,7 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       owner,
       isAuthenticated: Boolean(owner),
-      isLoading: meQuery.isLoading,
+      // Avoid blocking public pages while auth is intentionally skipped.
+      isLoading: authEnabled ? meQuery.isLoading : false,
       login,
       logout,
       loginError: loginMutation.error
@@ -153,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearLoginError,
     }
   }, [
+    authEnabled,
     clearLoginError,
     login,
     loginMutation.error,
