@@ -50,7 +50,7 @@ const FEATURES = [
 
 export function FeaturesSection() {
   return (
-    <LandingSection id="features" tone="ivory">
+    <LandingSection id="features" tone="soft">
       <LandingContainer>
         <LandingSectionHeader
           eyebrow="Why owners switch"
@@ -69,11 +69,11 @@ export function FeaturesSection() {
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.45, delay: idx * 0.05, ease: [0.22, 1, 0.36, 1] }}
               >
-                <LandingCard className="group h-full border-transparent bg-card/80 ring-1 ring-border/80 hover:ring-primary/25">
+                <LandingCard className="group h-full">
                   <LandingIconTile className="h-12 w-12 rounded-2xl transition-transform duration-300 group-hover:scale-105">
                     <Icon className="h-5 w-5" />
                   </LandingIconTile>
-                  <h3 className="font-display mt-5 text-lg font-semibold tracking-tight text-foreground">
+                  <h3 className="mt-5 font-display text-lg font-bold tracking-tight text-foreground">
                     {feature.title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

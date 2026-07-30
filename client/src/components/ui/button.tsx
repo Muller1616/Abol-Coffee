@@ -9,16 +9,16 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-[0_12px_30px_rgb(15_118_110/0.28)] hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgb(15_118_110/0.34)] active:translate-y-0',
+          'bg-primary text-primary-foreground shadow-[0_14px_40px_rgb(16_185_129/0.35)] hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgb(16_185_129/0.45)] active:translate-y-0',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-[0_10px_24px_rgb(92_64_51/0.2)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0',
+          'bg-secondary text-secondary-foreground shadow-[0_10px_28px_rgb(0_0_0/0.25)] hover:brightness-125 hover:-translate-y-0.5 active:translate-y-0',
         outline:
-          'border border-border bg-card text-foreground hover:border-primary/40 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0',
-        ghost: 'text-foreground hover:bg-muted hover:text-primary active:bg-muted',
+          'border border-border bg-card text-foreground hover:border-primary/50 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0',
+        ghost: 'text-foreground hover:bg-muted hover:text-foreground active:bg-muted',
         accent:
           'bg-accent text-accent-foreground hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
         danger:
-          'bg-danger text-white shadow-[0_12px_30px_rgb(220_38_38/0.28)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
+          'bg-danger text-white shadow-[0_12px_30px_rgb(239_68_68/0.28)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
       },
       size: {
         default: 'h-12 px-5',

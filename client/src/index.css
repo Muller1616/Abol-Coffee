@@ -1,29 +1,28 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Plus Jakarta Sans', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  /* Premium modern: cinematic black + luminous emerald + crisp white */
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Syne', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 
-  /* Brand palette — emerald + coffee + sparingly used gold */
-  --color-primary: #0f766e;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #5c4033;
-  --color-secondary-foreground: #ffffff;
-  --color-accent: #b8952e;
-  --color-accent-foreground: #1c1917;
-  --color-success: #15803d;
-  --color-danger: #dc2626;
-  --color-background: #faf7f2;
+  --color-primary: #10b981;
+  --color-primary-foreground: #042f2e;
+  --color-secondary: #18181b;
+  --color-secondary-foreground: #fafafa;
+  --color-accent: #6ee7b7;
+  --color-accent-foreground: #042f2e;
+  --color-success: #059669;
+  --color-danger: #ef4444;
+  --color-background: #f4f4f5;
   --color-card: #ffffff;
-  --color-foreground: #1c1917;
-  --color-muted: #efeae3;
-  --color-muted-foreground: #78716c;
-  --color-border: #e8e4de;
-  --color-ring: #0f766e;
+  --color-foreground: #09090b;
+  --color-muted: #e4e4e7;
+  --color-muted-foreground: #71717a;
+  --color-border: #e4e4e7;
+  --color-ring: #10b981;
 
-  /* Landing / brand surfaces */
-  --color-brand-ink: #0a1f1c;
-  --color-brand-ink-soft: #122e2a;
+  --color-brand-ink: #050505;
+  --color-brand-ink-soft: #121212;
 
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;

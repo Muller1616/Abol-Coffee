@@ -40,7 +40,7 @@ export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <LandingSection id="faq" tone="ivory">
+    <LandingSection id="faq" tone="soft">
       <LandingContainer className="max-w-3xl">
         <LandingSectionHeader
           eyebrow={
@@ -63,7 +63,7 @@ export function FaqSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: idx * 0.04 }}
-                className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_8px_30px_rgb(28_25_23/0.04)]"
+                className="overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <button
                   type="button"
@@ -71,7 +71,7 @@ export function FaqSection() {
                   className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
                   aria-expanded={isOpen}
                 >
-                  <span className="font-display text-base font-semibold text-foreground sm:text-lg">
+                  <span className="font-display text-base font-bold text-foreground sm:text-lg">
                     {faq.question}
                   </span>
                   <div

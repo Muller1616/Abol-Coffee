@@ -12,29 +12,29 @@ import { cn } from '@/lib/utils'
 
 export function ContactSection() {
   return (
-    <LandingSection id="contact" tone="ivory" className="pb-24">
+    <LandingSection id="contact" tone="soft" className="pb-24">
       <LandingContainer>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55 }}
-          className="relative overflow-hidden rounded-[36px] bg-brand-ink px-6 py-12 text-white shadow-[0_40px_100px_rgb(10_31_28/0.35)] sm:px-10 sm:py-14 lg:px-14"
+          className="relative overflow-hidden rounded-[32px] bg-brand-ink px-6 py-12 text-white sm:px-10 sm:py-14 lg:px-14"
         >
           <div className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-primary/30 blur-[100px]" />
-            <div className="absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-secondary/25 blur-[90px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_90%_10%,rgb(16_185_129/0.28),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_0%_100%,rgb(110_231_183/0.1),transparent_50%)]" />
           </div>
 
           <div className="relative grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
             <div className="lg:col-span-7">
-              <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-accent uppercase">
                 Get started
               </p>
-              <h2 className="font-display mt-3 max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              <h2 className="mt-3 max-w-xl font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl">
                 Your menu, always ready for the next guest.
               </h2>
-              <p className="mt-4 max-w-lg text-base leading-relaxed text-white/60">
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-white/55">
                 Log in to manage prices and categories—or open the live guest menu and see what
                 diners experience.
               </p>
@@ -42,10 +42,7 @@ export function ContactSection() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to="/admin/login"
-                  className={cn(
-                    buttonVariants({ size: 'lg' }),
-                    'h-14 justify-center px-8 shadow-[0_18px_50px_rgb(15_118_110/0.45)]',
-                  )}
+                  className={cn(buttonVariants({ size: 'lg' }), 'h-14 justify-center px-8')}
                 >
                   <LogIn className="h-5 w-5" />
                   Owner login
