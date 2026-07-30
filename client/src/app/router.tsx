@@ -4,8 +4,12 @@ import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticat
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RouteFallback } from '@/components/RouteFallback'
 import { SessionTimeoutProvider } from '@/features/auth/session/SessionTimeoutProvider'
-import { AdminLayout } from '@/layouts/AdminLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+
+const AdminLayout = lazy(async () => {
+  const mod = await import('@/layouts/AdminLayout')
+  return { default: mod.AdminLayout }
+})
 
 const HomePage = lazy(async () => {
   const mod = await import('@/pages/HomePage')
@@ -94,7 +98,9 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <SessionTimeoutProvider>
-          <AdminLayout />
+          <Suspense fallback={<RouteFallback />}>
+            <AdminLayout />
+          </Suspense>
         </SessionTimeoutProvider>
       </RequireAuth>
     ),

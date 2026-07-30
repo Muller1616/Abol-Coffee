@@ -19,18 +19,16 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
+        // Only isolate heavy, lazily used map libs. Over-aggressive manualChunks
+        // created circular imports (e.g. query → motion) that pulled framer-motion
+        // onto every route including the public menu.
         manualChunks(id) {
-          if (!id.includes('node_modules')) return
-          if (id.includes('leaflet') || id.includes('react-leaflet')) return 'maps'
-          if (id.includes('framer-motion')) return 'motion'
-          if (id.includes('lucide-react')) return 'icons'
-          if (id.includes('@tanstack')) return 'query'
-          if (id.includes('react-router')) return 'router'
-          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('/zod')) {
-            return 'forms'
+          if (
+            id.includes(`${path.sep}leaflet${path.sep}`) ||
+            id.includes(`${path.sep}react-leaflet${path.sep}`)
+          ) {
+            return 'maps'
           }
-          if (id.includes('axios')) return 'http'
-          if (id.includes('react-dom') || id.includes('/react/')) return 'react-vendor'
         },
       },
     },
