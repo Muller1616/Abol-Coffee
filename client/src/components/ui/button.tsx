@@ -21,9 +21,10 @@ export const buttonVariants = cva(
           'bg-danger text-white shadow-[0_12px_30px_rgb(239_68_68/0.28)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
       },
       size: {
-        default: 'h-12 px-5',
-        sm: 'h-9 px-3 text-xs',
-        lg: 'h-14 px-6 text-base',
+        default: 'h-12 min-h-11 px-5',
+        sm: 'h-11 min-h-11 px-3.5 text-xs',
+        lg: 'h-14 min-h-11 px-6 text-base',
+        icon: 'h-11 w-11 min-h-11 min-w-11 shrink-0 p-0',
       },
     },
     defaultVariants: {

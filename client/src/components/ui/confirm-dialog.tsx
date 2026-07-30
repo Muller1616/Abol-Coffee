@@ -90,6 +90,7 @@ export function ConfirmDialog({
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full sm:w-auto"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
@@ -100,7 +101,7 @@ export function ConfirmDialog({
                 type="button"
                 loading={loading}
                 disabled={loading}
-                className={styles.confirmClass}
+                className={cn('h-11 w-full sm:w-auto', styles.confirmClass)}
                 onClick={onConfirm}
               >
                 {confirmLabel}

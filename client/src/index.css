@@ -44,10 +44,11 @@
 
   html {
     @apply scroll-smooth antialiased;
+    overflow-x: clip;
   }
 
   body {
-    @apply m-0 min-h-dvh bg-background font-sans text-foreground;
+    @apply m-0 min-h-dvh overflow-x-clip bg-background font-sans text-foreground;
   }
 
   #root {
