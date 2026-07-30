@@ -6,7 +6,7 @@ import type {
   UpdateRestaurantInput,
   UpdateRestaurantStatusInput,
 } from '../validators/restaurant.validators.js';
-import { logAdminActivity } from './activity.service.js';
+import { queueAdminActivity } from './activity.service.js';
 import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 
 export type RestaurantResponse = Omit<Restaurant, 'openingHours'> & {
@@ -67,7 +67,7 @@ export async function updateRestaurant(input: UpdateRestaurantInput): Promise<Re
     },
   });
 
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.RESTAURANT,
     entityId: updated.id,
