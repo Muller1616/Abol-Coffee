@@ -262,9 +262,9 @@ export function MenuPage() {
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-5"
           >
-            {/* Brand header — centered on mobile, side-by-side from sm+ */}
-            <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:gap-5 sm:text-left">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white p-1.5 shadow-2xl ring-2 ring-white/25 sm:h-20 sm:w-20">
+            {/* Brand header — centered on all breakpoints */}
+            <div className="flex flex-col items-center text-center">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white p-1.5 shadow-2xl ring-2 ring-white/25">
                 {logoUrl ? (
                   <img
                     src={logoUrl}
@@ -276,12 +276,12 @@ export function MenuPage() {
                 )}
               </div>
 
-              <div className="mt-4 min-w-0 w-full sm:mt-0 sm:flex-1">
+              <div className="mt-4 min-w-0 w-full">
                 <h1 className="font-display text-2xl font-extrabold tracking-tight text-balance text-white sm:text-3xl lg:text-4xl">
                   {restaurant.name}
                 </h1>
 
-                <div className="mt-2.5 flex justify-center sm:justify-start">
+                <div className="mt-2.5 flex justify-center">
                   <button
                     type="button"
                     onClick={() => setShowHoursModal(true)}
@@ -303,7 +303,7 @@ export function MenuPage() {
                   </button>
                 </div>
 
-                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/75 sm:mx-0 sm:mt-2 sm:text-sm">
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/75">
                   {restaurant.description?.trim() ||
                     'Handcrafted beverages and gourmet dining experience.'}
                 </p>
