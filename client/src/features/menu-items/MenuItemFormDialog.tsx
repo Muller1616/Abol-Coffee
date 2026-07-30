@@ -14,7 +14,8 @@ import type { Category } from '@/features/categories/api'
 import type { MenuItem } from '@/features/menu-items/api'
 import { menuItemFormSchema, type MenuItemFormValues } from '@/features/menu-items/schema'
 import { resolveMediaUrl } from '@/lib/format'
-import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
+import { getApiFieldErrors } from '@/lib/api'
+import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 
 export type MenuItemFormSubmitPayload = {
   values: MenuItemFormValues
@@ -43,6 +44,7 @@ export function MenuItemFormDialog({
   const { pushToast } = useToast()
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [removeImage, setRemoveImage] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
 
   const {
     register,
@@ -80,6 +82,7 @@ export function MenuItemFormDialog({
     })
     setImageFile(null)
     setRemoveImage(false)
+    setImageError(null)
   }, [categories, item, open, reset])
 
   const currentImageUrl =
@@ -97,12 +100,19 @@ export function MenuItemFormDialog({
           noValidate
           onSubmit={handleSubmit(
             async (values) => {
+              setImageError(null)
               try {
                 await onSubmit({ values, imageFile, removeImage })
               } catch (error) {
-                if (applyServerFieldErrors(setError, error)) {
-                  pushToast('Please complete all required fields.', 'error')
-                }
+                const uploadMessage =
+                  getApiFieldErrors(error).find((item) => item.path === 'image')?.message ?? null
+                setImageError(uploadMessage)
+                handleFormMutationError({
+                  setError,
+                  error,
+                  pushToast,
+                  fallbackMessage: 'Unable to save menu item. Please try again.',
+                })
               }
             },
             createFormInvalidHandler(pushToast),
@@ -162,8 +172,10 @@ export function MenuItemFormDialog({
             currentImageUrl={currentImageUrl}
             file={imageFile}
             disabled={loading}
+            error={imageError}
             onFileChange={(file) => {
               setImageFile(file)
+              setImageError(null)
               if (file) setRemoveImage(false)
             }}
             onRemoveExisting={() => {

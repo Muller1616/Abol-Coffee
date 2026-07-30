@@ -28,7 +28,11 @@ export type ApiSuccess<T> = {
 export type ApiErrorBody = {
   success: false
   message: string
+  /** Preferred field-keyed validation / business errors. */
+  errors?: Record<string, string>
+  /** @deprecated Legacy single-field marker — still parsed for compatibility. */
   field?: string
+  /** @deprecated Legacy Zod details array — still parsed for compatibility. */
   details?: unknown
 }
 
@@ -37,18 +41,33 @@ export type ApiFieldError = {
   message: string
 }
 
-export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong') {
+function readErrorBody(error: unknown): ApiErrorBody | null {
+  if (!axios.isAxiosError<ApiErrorBody>(error)) return null
+  return error.response?.data ?? null
+}
+
+export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.') {
   if (axios.isAxiosError<ApiErrorBody>(error)) {
     if (!error.response) {
       return 'Unable to connect to the server. Please check your internet connection.'
     }
 
     const status = error.response.status
-    if (status === 500) {
+    if (status === 500 || status === 502 || status === 503) {
+      // Preserve intentional maintenance messaging when provided.
+      if (status === 503 && error.response.data?.message) {
+        return error.response.data.message
+      }
       return 'Something went wrong on our side. Please try again later.'
     }
     if (status === 429) {
-      return error.response.data?.message || 'Too many login attempts. Please try again later.'
+      return error.response.data?.message || 'Too many attempts. Please try again later.'
+    }
+    if (status === 401) {
+      return error.response.data?.message || 'Your session has expired. Please sign in again.'
+    }
+    if (status === 403) {
+      return error.response.data?.message || 'You do not have permission to perform this action.'
     }
 
     return error.response.data?.message ?? fallback
@@ -61,31 +80,61 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
   return fallback
 }
 
+/** Normalize every known server error shape into path → message entries. */
+export function getApiFieldErrors(error: unknown): ApiFieldError[] {
+  const data = readErrorBody(error)
+  if (!data) return []
+
+  const collected: ApiFieldError[] = []
+  const seen = new Set<string>()
+
+  const push = (path: string, message: string) => {
+    if (!path || !message || seen.has(path)) return
+    seen.add(path)
+    collected.push({ path, message })
+  }
+
+  if (data.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+    for (const [path, message] of Object.entries(data.errors)) {
+      if (typeof message === 'string') push(path, message)
+    }
+  }
+
+  if (typeof data.field === 'string' && data.field.length > 0 && typeof data.message === 'string') {
+    push(data.field, data.message)
+  }
+
+  if (Array.isArray(data.details)) {
+    for (const item of data.details) {
+      if (
+        item &&
+        typeof item === 'object' &&
+        typeof (item as ApiFieldError).path === 'string' &&
+        typeof (item as ApiFieldError).message === 'string'
+      ) {
+        push((item as ApiFieldError).path, (item as ApiFieldError).message)
+      }
+    }
+  }
+
+  return collected
+}
+
+export function hasApiFieldErrors(error: unknown): boolean {
+  return getApiFieldErrors(error).length > 0
+}
+
+/** @deprecated Prefer getApiFieldErrors — kept for call-site compatibility. */
 export function getApiErrorField(
   error: unknown,
 ): { field: string; message: string } | null {
-  if (!axios.isAxiosError<ApiErrorBody>(error)) return null
-  const data = error.response?.data
-  if (data?.field && data?.message) {
-    return { field: data.field, message: data.message }
-  }
-  return null
+  const [first] = getApiFieldErrors(error)
+  if (!first) return null
+  return { field: first.path, message: first.message }
 }
 
+/** @deprecated Prefer getApiFieldErrors — kept for call-site compatibility. */
 export function getApiValidationDetails(error: unknown): ApiFieldError[] | null {
-  if (!axios.isAxiosError<ApiErrorBody>(error)) return null
-
-  const details = error.response?.data?.details
-  if (!Array.isArray(details)) return null
-
-  const fieldErrors = details.filter(
-    (item): item is ApiFieldError =>
-      Boolean(item) &&
-      typeof item === 'object' &&
-      typeof (item as ApiFieldError).path === 'string' &&
-      typeof (item as ApiFieldError).message === 'string' &&
-      (item as ApiFieldError).path.length > 0,
-  )
-
-  return fieldErrors.length > 0 ? fieldErrors : null
+  const errors = getApiFieldErrors(error)
+  return errors.length > 0 ? errors : null
 }
