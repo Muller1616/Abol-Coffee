@@ -163,7 +163,8 @@ export function MenuItemsPage() {
       setDeleting(null)
       pushToast('Menu item deleted successfully')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not delete item'), 'error'),
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Unable to delete menu item.'), 'error'),
   })
 
   const reorderMutation = useMutation({
@@ -463,15 +464,25 @@ export function MenuItemsPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => {
-          if (!open) setDeleting(null)
+          if (!open && !deleteMutation.isPending) setDeleting(null)
         }}
-        title="Delete menu item?"
+        title="Delete menu item"
         description={
           deleting
-            ? `This will permanently remove "${deleting.name}" from your catalog.`
-            : ''
+            ? `You are about to permanently delete "${deleting.name}".`
+            : 'You are about to permanently delete this menu item.'
         }
-        confirmLabel="Delete item"
+        warning={
+          <>
+            <p className="font-semibold">This action cannot be undone.</p>
+            <p className="mt-1">
+              The item will be removed from your catalog and will no longer appear on the public QR
+              menu.
+            </p>
+          </>
+        }
+        confirmLabel="Delete menu item"
+        cancelLabel="Cancel"
         tone="danger"
         loading={deleteMutation.isPending}
         onConfirm={() => {

@@ -18,15 +18,21 @@ export const listMenuItemsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
+const menuItemNameSchema = z
+  .string({ message: 'Menu item name is required.' })
+  .trim()
+  .min(1, 'Menu item name is required.')
+  .min(2, 'Menu item name must be at least 2 characters.')
+  .max(120, 'Menu item name is too long. Keep it under 120 characters.');
+
 export const createMenuItemSchema = z.object({
   categoryId: z.string().min(1, 'Category is required.'),
-  name: z
-    .string()
-    .trim()
-    .min(1, 'Menu item name is required.')
-    .max(120, 'Keep item names under 120 characters.'),
-  description: z.string().trim().max(2000).optional().default(''),
-  price: z.number().positive('Price must be greater than 0.').max(1_000_000, 'Price is too large.'),
+  name: menuItemNameSchema,
+  description: z.string().trim().max(2000, 'Description is too long.').optional().default(''),
+  price: z
+    .number({ message: 'Price is required.' })
+    .positive('Price must be greater than 0.')
+    .max(1_000_000, 'Price is too large.'),
   image: z.string().trim().max(500).nullable().optional(),
   isAvailable: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
@@ -35,15 +41,10 @@ export const createMenuItemSchema = z.object({
 export const updateMenuItemSchema = z
   .object({
     categoryId: z.string().min(1, 'Category is required.').optional(),
-    name: z
-      .string()
-      .trim()
-      .min(1, 'Menu item name is required.')
-      .max(120, 'Keep item names under 120 characters.')
-      .optional(),
-    description: z.string().trim().max(2000).optional(),
+    name: menuItemNameSchema.optional(),
+    description: z.string().trim().max(2000, 'Description is too long.').optional(),
     price: z
-      .number()
+      .number({ message: 'Price is required.' })
       .positive('Price must be greater than 0.')
       .max(1_000_000, 'Price is too large.')
       .optional(),
