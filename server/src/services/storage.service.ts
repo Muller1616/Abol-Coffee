@@ -23,7 +23,10 @@ export async function processAndStoreImage(
   variant: ImageVariant,
 ): Promise<string> {
   if (!uploadConfig.allowedMimeTypes.includes(file.mimetype as (typeof uploadConfig.allowedMimeTypes)[number])) {
-    throw new AppError('Only JPG, JPEG, PNG, and WebP images are allowed', 400);
+    throw AppError.field(
+      'image',
+      'Only JPG, JPEG, PNG, and WebP images are allowed. Please choose a supported image file.',
+    );
   }
 
   const settings = uploadConfig.variants[variant];
@@ -44,7 +47,10 @@ export async function processAndStoreImage(
       .webp({ quality: settings.quality })
       .toFile(absolutePath);
   } catch {
-    throw new AppError('Invalid or corrupted image file', 400);
+    throw AppError.field(
+      'image',
+      'This image appears to be invalid or corrupted. Please try another file.',
+    );
   }
 
   return publicPath;

@@ -6,15 +6,15 @@ const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 const dayHoursSchema = z
   .object({
     isClosed: z.boolean(),
-    open: z.string().regex(timeRegex, 'Open time must be HH:mm').nullable(),
-    close: z.string().regex(timeRegex, 'Close time must be HH:mm').nullable(),
+    open: z.string().regex(timeRegex, 'Open time must use HH:mm format (e.g. 09:00).').nullable(),
+    close: z.string().regex(timeRegex, 'Close time must use HH:mm format (e.g. 17:00).').nullable(),
   })
   .superRefine((day, ctx) => {
     if (day.isClosed) {
       if (day.open !== null || day.close !== null) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Closed days must not include open or close times',
+          message: 'Closed days must not include open or close times.',
         });
       }
       return;
@@ -23,7 +23,7 @@ const dayHoursSchema = z
     if (day.open === null || day.close === null) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Open days require both open and close times',
+        message: 'Open days require both open and close times.',
       });
       return;
     }
@@ -31,7 +31,7 @@ const dayHoursSchema = z
     if (day.open >= day.close) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Open time must be earlier than close time',
+        message: 'Open time must be earlier than close time.',
       });
     }
   });

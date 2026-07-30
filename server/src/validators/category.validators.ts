@@ -5,19 +5,28 @@ export const categoryIdParamsSchema = z.object({
 });
 
 export const createCategorySchema = z.object({
-  name: z.string().trim().min(1, 'Category name is required').max(80),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Category name is required.')
+    .max(80, 'Keep category names under 80 characters.'),
   displayOrder: z.number().int().min(0).optional().default(0),
   isActive: z.boolean().optional().default(true),
 });
 
 export const updateCategorySchema = z
   .object({
-    name: z.string().trim().min(1, 'Category name is required').max(80).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Category name is required.')
+      .max(80, 'Keep category names under 80 characters.')
+      .optional(),
     displayOrder: z.number().int().min(0).optional(),
     isActive: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided',
+    message: 'At least one field must be provided.',
   });
 
 export const updateCategoryStatusSchema = z.object({

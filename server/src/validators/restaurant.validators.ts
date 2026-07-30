@@ -7,12 +7,12 @@ const phoneRegex = /^[+]?[\d\s().-]{7,40}$/;
 
 const optionalEmail = z.preprocess(
   (value) => (value === '' ? null : value),
-  z.email('A valid email is required').nullish(),
+  z.email('Please enter a valid email address.').nullish(),
 );
 
 const optionalUrl = z.preprocess(
   (value) => (value === '' ? null : value),
-  z.url('A valid URL is required').nullish(),
+  z.url('Please enter a valid URL.').nullish(),
 );
 
 const requiredPhone = z.preprocess(
@@ -20,24 +20,29 @@ const requiredPhone = z.preprocess(
   z
     .string()
     .trim()
-    .min(1, 'Phone number is required')
-    .regex(phoneRegex, 'Please enter a valid phone number')
+    .min(1, 'Phone number is required.')
+    .regex(phoneRegex, 'Please enter a valid phone number.')
     .optional(),
 );
 
 const requiredDescription = z.preprocess(
   (value) => (value === '' || value === null || value === undefined ? undefined : value),
-  z.string().trim().min(1, 'Description is required').max(2000).optional(),
+  z.string().trim().min(1, 'Description is required.').max(2000).optional(),
 );
 
 const requiredAddress = z.preprocess(
   (value) => (value === '' || value === null || value === undefined ? undefined : value),
-  z.string().trim().min(1, 'Address is required').max(500).optional(),
+  z.string().trim().min(1, 'Address is required.').max(500).optional(),
 );
 
 export const updateRestaurantSchema = z
   .object({
-    name: z.string().trim().min(1, 'Restaurant name is required').max(120).optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Restaurant name is required.')
+      .max(120, 'Restaurant name must be at most 120 characters.')
+      .optional(),
     logo: optionalText,
     coverImage: optionalText,
     address: requiredAddress,
@@ -51,7 +56,7 @@ export const updateRestaurantSchema = z
     status: z.enum([RestaurantStatus.ACTIVE, RestaurantStatus.MAINTENANCE]).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided',
+    message: 'At least one field must be provided.',
   });
 
 export const updateRestaurantStatusSchema = z.object({

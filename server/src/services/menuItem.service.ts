@@ -140,7 +140,11 @@ export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuIt
     return toMenuItemResponse(item);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new AppError('A menu item with this name already exists in the category', 409);
+      throw AppError.field(
+        'name',
+        'A menu item with this name already exists in the category. Please choose a different name.',
+        409,
+      );
     }
 
     handlePrismaError(error, 'Failed to create menu item');
@@ -188,7 +192,11 @@ export async function updateMenuItem(
     return toMenuItemResponse(item);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new AppError('A menu item with this name already exists in the category', 409);
+      throw AppError.field(
+        'name',
+        'A menu item with this name already exists in the category. Please choose a different name.',
+        409,
+      );
     }
 
     handlePrismaError(error, 'Failed to update menu item');

@@ -1,20 +1,24 @@
-import { Prisma } from '../generated/prisma/client.js';
-import { AppError } from './AppError.js';
+import { Prisma } from '../generated/prisma/client.js'
+import { AppError } from './AppError.js'
 
 export function handlePrismaError(error: unknown, fallbackMessage: string): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === 'P2002') {
-      throw new AppError('A record with this value already exists', 409);
+      throw new AppError('A record with this value already exists', 409)
     }
 
     if (error.code === 'P2025') {
-      throw new AppError('Record not found', 404);
+      throw new AppError('Record not found', 404)
     }
   }
 
   if (error instanceof AppError) {
-    throw error;
+    throw error
   }
 
-  throw new AppError(fallbackMessage, 500);
+  console.error('Unexpected database error:', error)
+  throw new AppError(fallbackMessage, 500, {
+    isOperational: false,
+    cause: error,
+  })
 }

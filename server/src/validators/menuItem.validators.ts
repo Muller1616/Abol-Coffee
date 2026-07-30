@@ -19,10 +19,14 @@ export const listMenuItemsQuerySchema = z.object({
 });
 
 export const createMenuItemSchema = z.object({
-  categoryId: z.string().min(1, 'Category is required'),
-  name: z.string().trim().min(1, 'Item name is required').max(120),
+  categoryId: z.string().min(1, 'Category is required.'),
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Menu item name is required.')
+    .max(120, 'Keep item names under 120 characters.'),
   description: z.string().trim().max(2000).optional().default(''),
-  price: z.number().positive('Price must be greater than 0').max(1_000_000),
+  price: z.number().positive('Price must be greater than 0.').max(1_000_000, 'Price is too large.'),
   image: z.string().trim().max(500).nullable().optional(),
   isAvailable: z.boolean().optional().default(true),
   displayOrder: z.number().int().min(0).optional().default(0),
@@ -30,16 +34,25 @@ export const createMenuItemSchema = z.object({
 
 export const updateMenuItemSchema = z
   .object({
-    categoryId: z.string().min(1, 'Category is required').optional(),
-    name: z.string().trim().min(1, 'Item name is required').max(120).optional(),
+    categoryId: z.string().min(1, 'Category is required.').optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Menu item name is required.')
+      .max(120, 'Keep item names under 120 characters.')
+      .optional(),
     description: z.string().trim().max(2000).optional(),
-    price: z.number().positive('Price must be greater than 0').max(1_000_000).optional(),
+    price: z
+      .number()
+      .positive('Price must be greater than 0.')
+      .max(1_000_000, 'Price is too large.')
+      .optional(),
     image: z.string().trim().max(500).nullable().optional(),
     isAvailable: z.boolean().optional(),
     displayOrder: z.number().int().min(0).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided',
+    message: 'At least one field must be provided.',
   });
 
 export const updateMenuItemAvailabilitySchema = z.object({
