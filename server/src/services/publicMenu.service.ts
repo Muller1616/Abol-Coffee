@@ -56,7 +56,6 @@ export type PublicMenuActiveResponse = {
   status: 'ACTIVE';
   restaurant: PublicRestaurant;
   categories: PublicCategory[];
-  items: PublicMenuItem[];
 };
 
 export type PublicMenuMaintenanceResponse = {
@@ -230,13 +229,10 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
       return true;
     });
 
-  const items = publicCategories.flatMap((category) => category.items);
-
   const response: PublicMenuActiveResponse = {
     status: 'ACTIVE',
     restaurant: toPublicRestaurant(restaurant),
     categories: publicCategories,
-    items,
   };
 
   setCachedPublicMenu(response, query.search, query.categoryId);

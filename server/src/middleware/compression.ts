@@ -1,6 +1,8 @@
-import { constants, gzipSync } from 'node:zlib';
+import { gzip, constants } from 'node:zlib';
+import { promisify } from 'node:util';
 import type { NextFunction, Request, Response } from 'express';
 
+const gzipAsync = promisify(gzip);
 const MIN_SIZE = 1024;
 
 function acceptsGzip(req: Request): boolean {
@@ -12,8 +14,8 @@ function acceptsGzip(req: Request): boolean {
 }
 
 /**
- * Lightweight gzip for JSON/text API responses using Node's built-in zlib.
- * Skips tiny payloads and responses that already set Content-Encoding.
+ * Async gzip for JSON/text API responses — avoids blocking the event loop
+ * on larger public-menu payloads under concurrency.
  */
 export function gzipCompression(req: Request, res: Response, next: NextFunction): void {
   if (req.method === 'HEAD' || !acceptsGzip(req)) {
@@ -23,33 +25,45 @@ export function gzipCompression(req: Request, res: Response, next: NextFunction)
 
   const originalJson = res.json.bind(res);
   const originalSend = res.send.bind(res);
+  let compressPending = false;
 
-  const compressBody = (body: Buffer, contentType?: string) => {
+  const finishCompressed = (body: Buffer, contentType?: string) => {
     if (res.headersSent || res.getHeader('Content-Encoding') || body.length < MIN_SIZE) {
       return null;
     }
-    try {
-      const compressed = gzipSync(body, { level: constants.Z_DEFAULT_COMPRESSION });
-      res.setHeader('Content-Encoding', 'gzip');
-      res.setHeader('Vary', 'Accept-Encoding');
-      res.removeHeader('Content-Length');
-      if (contentType && !res.getHeader('Content-Type')) {
-        res.setHeader('Content-Type', contentType);
-      }
-      return compressed;
-    } catch {
-      return null;
-    }
+    return gzipAsync(body, { level: constants.Z_DEFAULT_COMPRESSION })
+      .then((compressed) => {
+        if (res.headersSent) return;
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.removeHeader('Content-Length');
+        if (contentType && !res.getHeader('Content-Type')) {
+          res.setHeader('Content-Type', contentType);
+        }
+        originalSend(compressed);
+      })
+      .catch(() => {
+        if (!res.headersSent) originalSend(body);
+      });
   };
 
   res.json = ((payload: unknown) => {
     const body = Buffer.from(JSON.stringify(payload));
-    const compressed = compressBody(body, 'application/json; charset=utf-8');
-    if (compressed) return originalSend(compressed);
-    return originalJson(payload);
+    if (body.length < MIN_SIZE) {
+      return originalJson(payload);
+    }
+    compressPending = true;
+    void finishCompressed(body, 'application/json; charset=utf-8')?.finally(() => {
+      compressPending = false;
+    });
+    return res;
   }) as typeof res.json;
 
   res.send = ((payload: unknown) => {
+    if (compressPending) {
+      return originalSend(payload as never);
+    }
+
     let body: Buffer;
     if (Buffer.isBuffer(payload)) {
       body = payload;
@@ -61,9 +75,12 @@ export function gzipCompression(req: Request, res: Response, next: NextFunction)
       return originalSend(payload as never);
     }
 
-    const compressed = compressBody(body);
-    if (compressed) return originalSend(compressed);
-    return originalSend(body);
+    if (body.length < MIN_SIZE) {
+      return originalSend(body);
+    }
+
+    void finishCompressed(body);
+    return res;
   }) as typeof res.send;
 
   next();

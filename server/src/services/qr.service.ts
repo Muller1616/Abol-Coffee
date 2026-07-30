@@ -7,7 +7,6 @@ import { MemoryCache } from '../utils/memoryCache.js';
 export type QrPreview = {
   menuUrl: string;
   pngDataUrl: string;
-  svg: string;
 };
 
 type QrAssets = {
@@ -65,7 +64,6 @@ export async function getQrPreview(): Promise<QrPreview> {
   return {
     menuUrl: assets.menuUrl,
     pngDataUrl: assets.pngDataUrl,
-    svg: assets.svg,
   };
 }
 
