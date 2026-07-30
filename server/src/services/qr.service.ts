@@ -1,12 +1,19 @@
 import { createHash } from 'node:crypto';
 import QRCode from 'qrcode';
-import { env } from '../config/env.js';
 import { qrConfig } from '../config/qr.js';
 import { MemoryCache } from '../utils/memoryCache.js';
+import {
+  buildPublicMenuUrl,
+  getRestaurantByOwnerId,
+  getRestaurantPublicIdentity,
+  regeneratePublicMenuToken,
+} from './restaurantIdentity.service.js';
 
 export type QrPreview = {
   menuUrl: string;
   pngDataUrl: string;
+  publicMenuToken: string;
+  restaurantSlug: string;
 };
 
 type QrAssets = {
@@ -14,21 +21,30 @@ type QrAssets = {
   pngDataUrl: string;
   svg: string;
   pngBuffer: Buffer;
+  publicMenuToken: string;
+  restaurantSlug: string;
 };
 
-/** QR only changes when PUBLIC_MENU_URL changes — cache aggressively. */
+/** QR only changes when the permanent public menu URL changes — cache aggressively. */
 const qrCache = new MemoryCache<QrAssets>(60 * 60 * 1000);
 
 function cacheKey(menuUrl: string): string {
   return createHash('sha1').update(menuUrl).digest('hex');
 }
 
-export function getPermanentMenuUrl(): string {
-  return env.PUBLIC_MENU_URL;
+export async function getPermanentMenuUrlForOwner(ownerId: string): Promise<string> {
+  const restaurant = await getRestaurantByOwnerId(ownerId);
+  return buildPublicMenuUrl(restaurant.publicMenuToken);
 }
 
-async function getOrCreateQrAssets(): Promise<QrAssets> {
-  const menuUrl = getPermanentMenuUrl();
+export async function getPermanentMenuUrl(restaurantId?: string): Promise<string> {
+  const restaurant = await getRestaurantPublicIdentity(restaurantId);
+  return buildPublicMenuUrl(restaurant.publicMenuToken);
+}
+
+async function getOrCreateQrAssets(ownerId: string): Promise<QrAssets> {
+  const restaurant = await getRestaurantByOwnerId(ownerId);
+  const menuUrl = buildPublicMenuUrl(restaurant.publicMenuToken);
   const key = cacheKey(menuUrl);
   const cached = qrCache.get(key);
   if (cached) return cached;
@@ -54,25 +70,48 @@ async function getOrCreateQrAssets(): Promise<QrAssets> {
     }),
   ]);
 
-  const assets: QrAssets = { menuUrl, pngDataUrl, svg, pngBuffer };
+  const assets: QrAssets = {
+    menuUrl,
+    pngDataUrl,
+    svg,
+    pngBuffer,
+    publicMenuToken: restaurant.publicMenuToken,
+    restaurantSlug: restaurant.slug,
+  };
   qrCache.set(key, assets);
   return assets;
 }
 
-export async function getQrPreview(): Promise<QrPreview> {
-  const assets = await getOrCreateQrAssets();
+export async function getQrPreview(ownerId: string): Promise<QrPreview> {
+  const assets = await getOrCreateQrAssets(ownerId);
   return {
     menuUrl: assets.menuUrl,
     pngDataUrl: assets.pngDataUrl,
+    publicMenuToken: assets.publicMenuToken,
+    restaurantSlug: assets.restaurantSlug,
   };
 }
 
-export async function generateQrPngBuffer(): Promise<Buffer> {
-  const assets = await getOrCreateQrAssets();
+export async function generateQrPngBuffer(ownerId: string): Promise<Buffer> {
+  const assets = await getOrCreateQrAssets(ownerId);
   return assets.pngBuffer;
 }
 
-export async function generateQrSvg(): Promise<string> {
-  const assets = await getOrCreateQrAssets();
+export async function generateQrSvg(ownerId: string): Promise<string> {
+  const assets = await getOrCreateQrAssets(ownerId);
   return assets.svg;
+}
+
+export async function rotatePublicMenuToken(ownerId: string) {
+  const restaurant = await getRestaurantByOwnerId(ownerId);
+  const previousUrl = buildPublicMenuUrl(restaurant.publicMenuToken);
+  qrCache.delete(cacheKey(previousUrl));
+
+  const updated = await regeneratePublicMenuToken(restaurant.id);
+  const menuUrl = buildPublicMenuUrl(updated.publicMenuToken);
+  return {
+    restaurantSlug: updated.slug,
+    publicMenuToken: updated.publicMenuToken,
+    menuUrl,
+  };
 }

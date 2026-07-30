@@ -113,12 +113,20 @@ function toPublicRestaurant(restaurant: {
   };
 }
 
-export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuResponse> {
-  const cached = getCachedPublicMenu(query.search, query.categoryId);
+export async function getPublicMenu(
+  publicMenuToken: string,
+  query: PublicMenuQuery,
+): Promise<PublicMenuResponse> {
+  const token = publicMenuToken.trim();
+  if (!token) {
+    throw new AppError('Menu not found', 404);
+  }
+
+  const cached = getCachedPublicMenu(token, query.search, query.categoryId);
   if (cached) return cached;
 
-  const restaurant = await prisma.restaurant.findFirst({
-    orderBy: { createdAt: 'asc' },
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { publicMenuToken: token },
     select: {
       id: true,
       name: true,
@@ -143,7 +151,7 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
   });
 
   if (!restaurant) {
-    throw new AppError('Restaurant menu is not available', 404);
+    throw new AppError('Menu not found', 404);
   }
 
   if (restaurant.status === RestaurantStatus.MAINTENANCE) {
@@ -160,7 +168,7 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
         description: restaurant.description,
       },
     };
-    setCachedPublicMenu(maintenance, query.search, query.categoryId);
+    setCachedPublicMenu(token, maintenance, query.search, query.categoryId);
     return maintenance;
   }
 
@@ -230,6 +238,6 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
     categories: publicCategories,
   };
 
-  setCachedPublicMenu(response, query.search, query.categoryId);
+  setCachedPublicMenu(token, response, query.search, query.categoryId);
   return response;
 }

@@ -20,6 +20,19 @@ function toRestaurantResponse(restaurant: Restaurant): RestaurantResponse {
   };
 }
 
+export async function getRestaurantForOwner(ownerId: string): Promise<RestaurantResponse> {
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { ownerId },
+  });
+
+  if (!restaurant) {
+    throw new AppError('Restaurant profile has not been configured', 404);
+  }
+
+  return toRestaurantResponse(restaurant);
+}
+
+/** @deprecated Prefer getRestaurantForOwner — kept for scripts that assume single-tenant. */
 export async function getRestaurant(): Promise<RestaurantResponse> {
   const restaurant = await prisma.restaurant.findFirst({
     orderBy: { createdAt: 'asc' },
@@ -32,9 +45,12 @@ export async function getRestaurant(): Promise<RestaurantResponse> {
   return toRestaurantResponse(restaurant);
 }
 
-export async function updateRestaurant(input: UpdateRestaurantInput): Promise<RestaurantResponse> {
-  const existing = await prisma.restaurant.findFirst({
-    orderBy: { createdAt: 'asc' },
+export async function updateRestaurantForOwner(
+  ownerId: string,
+  input: UpdateRestaurantInput,
+): Promise<RestaurantResponse> {
+  const existing = await prisma.restaurant.findUnique({
+    where: { ownerId },
   });
 
   if (!existing) {
@@ -76,6 +92,25 @@ export async function updateRestaurant(input: UpdateRestaurantInput): Promise<Re
 
   invalidatePublicMenuCache();
   return toRestaurantResponse(updated);
+}
+
+export async function updateRestaurant(input: UpdateRestaurantInput): Promise<RestaurantResponse> {
+  const existing = await prisma.restaurant.findFirst({
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (!existing) {
+    throw new AppError('Restaurant profile has not been configured', 404);
+  }
+
+  return updateRestaurantForOwner(existing.ownerId, input);
+}
+
+export async function updateRestaurantStatusForOwner(
+  ownerId: string,
+  input: UpdateRestaurantStatusInput,
+): Promise<RestaurantResponse> {
+  return updateRestaurantForOwner(ownerId, { status: input.status });
 }
 
 export async function updateRestaurantStatus(
