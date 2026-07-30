@@ -70,7 +70,7 @@ export function QrPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-20 w-full max-w-xl" />
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <Skeleton className="h-[480px]" />
           <Skeleton className="h-[480px]" />
         </div>
@@ -98,7 +98,7 @@ export function QrPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Distribution</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             QR studio
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -113,7 +113,7 @@ export function QrPage() {
         ) : null}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
