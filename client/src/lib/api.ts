@@ -27,8 +27,10 @@ api.interceptors.request.use((config) => {
   const isPublicAuth =
     url.includes('/api/auth/login') ||
     url.includes('/api/auth/csrf') ||
+    url.includes('/api/auth/forgot-password') ||
     url.includes('/api/auth/send-otp') ||
-    url.includes('/api/auth/reset-password-otp')
+    url.includes('/api/auth/verify-otp') ||
+    url.includes('/api/auth/reset-password')
 
   // Owner data mutations / fetches count as activity (not silent /me hydration).
   if (!isLogout && !isMe && !isPublicAuth) {
@@ -94,6 +96,9 @@ export function getApiErrorMessage(
         return error.response.data.message
       }
       return 'Something went wrong. Please try again later.'
+    }
+    if (status === 410) {
+      return error.response.data?.message || 'This verification code is no longer valid.'
     }
     if (status === 429) {
       return error.response.data?.message || 'Too many attempts. Please try again later.'
