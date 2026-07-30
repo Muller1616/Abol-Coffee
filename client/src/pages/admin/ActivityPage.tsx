@@ -29,6 +29,14 @@ import { getApiErrorMessage } from '@/lib/api'
 import { formatActivityDayLabel, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
+const filterSelectClassName =
+  'h-12 w-full min-w-0 max-w-full cursor-pointer appearance-none rounded-2xl border border-border/80 bg-[#f8fafc] bg-[length:1rem] bg-[right_0.85rem_center] bg-no-repeat px-4 pr-10 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10'
+
+const selectChevronStyle = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+} as const
+
 function groupByDay(items: AdminActivity[]) {
   const groups: Array<{ label: string; items: AdminActivity[] }> = []
   const indexByLabel = new Map<string, number>()
@@ -182,20 +190,21 @@ export function ActivityPage() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-[28px] border border-border/80 bg-white/90 p-4 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-5"
       >
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
-          <div className="relative lg:col-span-2 xl:col-span-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="relative min-w-0 sm:col-span-2 xl:col-span-1">
             <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search title, description..."
-              className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+              className="h-12 w-full min-w-0 rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
             />
           </div>
           <select
             value={entity}
             onChange={(event) => setEntity(event.target.value)}
-            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className={filterSelectClassName}
+            style={selectChevronStyle}
           >
             {ACTIVITY_ENTITY_FILTERS.map((option) => (
               <option key={option.label} value={option.value}>
@@ -206,7 +215,8 @@ export function ActivityPage() {
           <select
             value={action}
             onChange={(event) => setAction(event.target.value)}
-            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className={filterSelectClassName}
+            style={selectChevronStyle}
           >
             {ACTIVITY_ACTION_FILTERS.map((option) => (
               <option key={option.label} value={option.value}>
@@ -217,7 +227,8 @@ export function ActivityPage() {
           <select
             value={datePreset}
             onChange={(event) => setDatePreset(event.target.value as ActivityDatePreset)}
-            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className={filterSelectClassName}
+            style={selectChevronStyle}
           >
             {ACTIVITY_DATE_PRESETS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -255,25 +266,28 @@ export function ActivityPage() {
             <p className="text-sm font-semibold text-foreground">
               {selectedIds.length} activit{selectedIds.length === 1 ? 'y' : 'ies'} selected
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-row items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 w-full sm:w-auto"
+                size="sm"
+                className="min-w-0 flex-1 border-border/80 bg-white shadow-sm sm:flex-none"
                 onClick={() => setSelectedIds([])}
                 disabled={pending}
               >
-                <X className="h-4 w-4" />
-                Cancel selection
+                <X className="size-4 shrink-0" aria-hidden />
+                Cancel
               </Button>
               <Button
                 type="button"
-                className="h-11 w-full bg-danger text-white hover:brightness-105 sm:w-auto"
+                variant="danger"
+                size="sm"
+                className="min-w-0 flex-1 sm:flex-none"
                 onClick={() => setBulkOpen(true)}
                 disabled={pending}
               >
-                <Trash2 className="h-4 w-4" />
-                Delete selected
+                <Trash2 className="size-4 shrink-0" aria-hidden />
+                Delete
               </Button>
             </div>
           </div>

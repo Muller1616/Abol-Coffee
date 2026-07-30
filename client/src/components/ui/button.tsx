@@ -56,8 +56,10 @@ export function Button({
       className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     >
-      {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-      <span className={cn(loading && 'opacity-90')}>{children}</span>
+      {loading ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" /> : null}
+      <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-90')}>
+        {children}
+      </span>
     </button>
   )
 }

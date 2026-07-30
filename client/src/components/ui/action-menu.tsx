@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { MoreVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,10 +16,53 @@ type ActionMenuProps = {
   className?: string
 }
 
+type MenuPlacement = {
+  openUp: boolean
+  alignStart: boolean
+}
+
+const VIEWPORT_PAD = 12
+
 export function ActionMenu({ label, items, className }: ActionMenuProps) {
   const [open, setOpen] = useState(false)
+  const [placement, setPlacement] = useState<MenuPlacement>({
+    openUp: false,
+    alignStart: false,
+  })
   const rootRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const updatePlacement = () => {
+      const trigger = rootRef.current
+      const menu = menuRef.current
+      if (!trigger || !menu) return
+
+      const triggerRect = trigger.getBoundingClientRect()
+      const menuRect = menu.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - triggerRect.bottom - VIEWPORT_PAD
+      const spaceAbove = triggerRect.top - VIEWPORT_PAD
+      const openUp = spaceBelow < menuRect.height && spaceAbove > spaceBelow
+
+      // Prefer right-aligned (menu grows left). Flip if that would clip the left edge.
+      const wouldOverflowLeft = triggerRect.right - menuRect.width < VIEWPORT_PAD
+      const wouldOverflowRight = triggerRect.left + menuRect.width > window.innerWidth - VIEWPORT_PAD
+      const alignStart = wouldOverflowLeft && !wouldOverflowRight
+
+      setPlacement({ openUp, alignStart })
+    }
+
+    updatePlacement()
+    window.addEventListener('resize', updatePlacement)
+    window.addEventListener('scroll', updatePlacement, true)
+    return () => {
+      window.removeEventListener('resize', updatePlacement)
+      window.removeEventListener('scroll', updatePlacement, true)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -59,9 +102,14 @@ export function ActionMenu({ label, items, className }: ActionMenuProps) {
 
       {open ? (
         <div
+          ref={menuRef}
           id={menuId}
           role="menu"
-          className="absolute top-full right-0 z-30 mt-1 min-w-44 overflow-hidden rounded-2xl border border-border/80 bg-white py-1.5 shadow-[0_18px_50px_rgb(15_23_42/0.16)]"
+          className={cn(
+            'absolute z-30 max-w-[min(16rem,calc(100vw-1.5rem))] min-w-44 overflow-hidden rounded-2xl border border-border/80 bg-white py-1.5 shadow-[0_18px_50px_rgb(15_23_42/0.16)]',
+            placement.openUp ? 'bottom-full mb-1' : 'top-full mt-1',
+            placement.alignStart ? 'left-0' : 'right-0',
+          )}
         >
           {items.map((item) => (
             <button
