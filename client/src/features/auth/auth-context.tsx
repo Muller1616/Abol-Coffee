@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import {
   fetchCurrentOwner,
   loginRequest,
@@ -8,14 +8,27 @@ import {
   type LoginPayload,
   type Owner,
 } from '@/features/auth/api'
+import { clearClientAuthState } from '@/features/auth/session/clear-client-auth'
+import type { SessionLogoutReason } from '@/features/auth/session/constants'
+import { stashSessionMessage } from '@/features/auth/session/session-message'
+import { publishSessionSync } from '@/features/auth/session/session-sync'
+import { setUnauthorizedHandler } from '@/features/auth/session/unauthorized'
 import { getApiErrorMessage } from '@/lib/api'
+
+export type LogoutOptions = {
+  reason?: SessionLogoutReason
+  /** Skip calling POST /logout when the server session is already gone. */
+  skipServer?: boolean
+  /** Skip multi-tab broadcast (used when handling a remote logout event). */
+  skipBroadcast?: boolean
+}
 
 type AuthContextValue = {
   owner: Owner | null
   isAuthenticated: boolean
   isLoading: boolean
   login: (payload: LoginPayload) => Promise<Owner>
-  logout: () => Promise<void>
+  logout: (options?: LogoutOptions) => Promise<void>
   loginError: string | null
   isLoggingIn: boolean
   clearLoginError: () => void
@@ -51,14 +64,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   })
 
+  const clearSession = (reason: SessionLogoutReason) => {
+    clearClientAuthState(queryClient)
+    if (reason !== 'manual') {
+      stashSessionMessage(reason)
+    }
+  }
+
   const logoutMutation = useMutation({
-    mutationFn: logoutRequest,
-    onSuccess: () => {
-      queryClient.setQueryData(['auth', 'me'], null)
-      queryClient.removeQueries({ queryKey: ['auth'] })
-      queryClient.removeQueries({ queryKey: ['admin'] })
+    mutationFn: async (options: LogoutOptions = {}) => {
+      const reason = options.reason ?? 'manual'
+      if (!options.skipServer) {
+        try {
+          await logoutRequest()
+        } catch {
+          // Always clear local auth even if the network/server call fails.
+        }
+      }
+      return reason
+    },
+    onSuccess: (reason, options) => {
+      clearSession(reason)
+      if (!options?.skipBroadcast) {
+        publishSessionSync({ type: 'LOGOUT', reason, at: Date.now() })
+      }
+    },
+    onError: (_error, options) => {
+      const reason = options?.reason ?? 'manual'
+      clearSession(reason)
+      if (!options?.skipBroadcast) {
+        publishSessionSync({ type: 'LOGOUT', reason, at: Date.now() })
+      }
     },
   })
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      const owner = queryClient.getQueryData<Owner | null>(['auth', 'me'])
+      if (!owner) return
+
+      clearClientAuthState(queryClient)
+      stashSessionMessage('expired')
+      publishSessionSync({ type: 'LOGOUT', reason: 'expired', at: Date.now() })
+    })
+
+    return () => setUnauthorizedHandler(null)
+  }, [queryClient])
 
   const value = useMemo<AuthContextValue>(() => {
     const owner = meQuery.data ?? null
@@ -68,8 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(owner),
       isLoading: meQuery.isLoading,
       login: async (payload) => loginMutation.mutateAsync(payload),
-      logout: async () => {
-        await logoutMutation.mutateAsync()
+      logout: async (options) => {
+        await logoutMutation.mutateAsync(options ?? {})
       },
       loginError: loginMutation.error
         ? getApiErrorMessage(loginMutation.error, 'Unable to sign in. Please check your credentials.')
