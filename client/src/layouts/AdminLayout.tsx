@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import {
+  Activity,
   Coffee,
   ExternalLink,
   FolderTree,
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed },
   { to: '/admin/restaurant', label: 'Restaurant', icon: Store },
   { to: '/admin/qr', label: 'QR code', icon: QrCode },
+  { to: '/admin/activity', label: 'Activity', icon: Activity },
   { to: '/admin/account', label: 'Settings', icon: KeyRound },
 ]
 
