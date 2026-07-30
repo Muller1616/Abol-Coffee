@@ -3,6 +3,7 @@ import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import { logAdminActivity } from './activity.service.js';
 import { getMenuItemById, type MenuItemResponse } from './menuItem.service.js';
+import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 import { getRestaurant, type RestaurantResponse } from './restaurant.service.js';
 import { deleteStoredImage, processAndStoreImage } from './storage.service.js';
 
@@ -30,6 +31,7 @@ export async function uploadMenuItemImage(
       title: 'Menu item photo updated',
     });
 
+    invalidatePublicMenuCache();
     return getMenuItemById(itemId);
   } catch (error) {
     await deleteStoredImage(publicPath);
@@ -60,6 +62,7 @@ export async function removeMenuItemImage(itemId: string): Promise<MenuItemRespo
     title: 'Menu item photo removed',
   });
 
+  invalidatePublicMenuCache();
   return getMenuItemById(itemId);
 }
 
@@ -84,6 +87,7 @@ export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<R
       title: 'Logo updated',
     });
 
+    invalidatePublicMenuCache();
     return getRestaurant();
   } catch (error) {
     await deleteStoredImage(publicPath);
@@ -114,6 +118,7 @@ export async function removeRestaurantLogo(): Promise<RestaurantResponse> {
     title: 'Logo removed',
   });
 
+  invalidatePublicMenuCache();
   return getRestaurant();
 }
 
@@ -138,6 +143,7 @@ export async function uploadRestaurantCover(file: Express.Multer.File): Promise<
       title: 'Cover image updated',
     });
 
+    invalidatePublicMenuCache();
     return getRestaurant();
   } catch (error) {
     await deleteStoredImage(publicPath);
@@ -168,6 +174,7 @@ export async function removeRestaurantCover(): Promise<RestaurantResponse> {
     title: 'Cover image removed',
   });
 
+  invalidatePublicMenuCache();
   return getRestaurant();
 }
 
