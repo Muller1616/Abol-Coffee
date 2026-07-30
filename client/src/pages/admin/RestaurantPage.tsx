@@ -213,7 +213,7 @@ export function RestaurantPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Restaurant</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             Restaurant profile
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -425,11 +425,12 @@ export function RestaurantPage() {
           <OpeningHoursEditor control={control} errors={errors} />
         </section>
 
-        <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-2">
+        <div className="sticky bottom-3 z-10 -mx-1 flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/95 p-2 shadow-[0_12px_40px_rgb(15_23_42/0.12)] backdrop-blur sm:bottom-4 sm:mx-0 sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
           {formDirty ? (
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full sm:w-auto"
               disabled={pending}
               onClick={() => {
                 if (!restaurantQuery.data) return
@@ -457,7 +458,7 @@ export function RestaurantPage() {
             type="submit"
             loading={pending}
             disabled={pending}
-            className="min-w-48 shadow-[0_16px_40px_rgb(15_118_110/0.28)]"
+            className="h-11 w-full shadow-[0_16px_40px_rgb(16_185_129/0.28)] sm:min-w-48 sm:w-auto"
           >
             <Save className="h-4 w-4" />
             Save changes
