@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import {
   Activity,
@@ -200,76 +199,64 @@ export function AdminLayout() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {mobileOpen ? (
-          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Owner navigation">
-            <motion.button
-              type="button"
-              aria-label="Close navigation menu"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
-              className="absolute inset-y-0 left-0 flex h-dvh w-[min(100vw-3rem,20rem)] flex-col border-r border-border/80 bg-white shadow-[0_30px_80px_rgb(15_23_42/0.28)]"
-            >
-              <div className="flex h-full flex-col px-5 py-6">
-                <div className="mb-8 flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
-                      <Coffee className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
-                      <p className="truncate text-xs text-muted-foreground">{owner?.email}</p>
-                    </div>
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Owner navigation">
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 animate-[toast-in_180ms_ease-out] bg-black/45 backdrop-blur-[2px]"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 flex h-dvh w-[min(100vw-3rem,20rem)] translate-x-0 animate-[drawer-in_220ms_ease-out] flex-col border-r border-border/80 bg-white shadow-[0_30px_80px_rgb(15_23_42/0.28)]">
+            <div className="flex h-full flex-col px-5 py-6">
+              <div className="mb-8 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
+                    <Coffee className="h-5 w-5" />
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Close navigation menu"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
+                    <p className="truncate text-xs text-muted-foreground">{owner?.email}</p>
+                  </div>
                 </div>
-
-                <NavItems onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
-
-                <div className="mt-6 space-y-2 border-t border-border/70 pt-4">
-                  <Link
-                    to="/menu"
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      buttonVariants({ variant: 'outline' }),
-                      'h-11 w-full justify-center',
-                    )}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    View live menu
-                  </Link>
-                  <Button
-                    variant="outline"
-                    className="h-11 w-full"
-                    onClick={() => void handleLogout()}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close navigation menu"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
-            </motion.aside>
-          </div>
-        ) : null}
-      </AnimatePresence>
+
+              <NavItems onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
+
+              <div className="mt-6 space-y-2 border-t border-border/70 pt-4">
+                <Link
+                  to="/menu"
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: 'outline' }),
+                    'h-11 w-full justify-center',
+                  )}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View live menu
+                </Link>
+                <Button
+                  variant="outline"
+                  className="h-11 w-full"
+                  onClick={() => void handleLogout()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </Button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : null}
     </div>
   )
 }

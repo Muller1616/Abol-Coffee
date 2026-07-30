@@ -3,8 +3,7 @@ import { api, type ApiSuccess } from '@/lib/api'
 export type QrPreview = {
   menuUrl: string
   pngDataUrl: string
-  svg: string
-  note: string
+  note?: string
 }
 
 export async function fetchQrPreview() {

@@ -79,6 +79,8 @@ export function DashboardPage() {
     queryFn: fetchQrPreview,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
+    // Defer non-critical QR until dashboard stats are ready.
+    enabled: dashboardQuery.isSuccess,
   })
 
   if (dashboardQuery.isLoading) {

@@ -90,12 +90,14 @@ export function ActivityPage() {
     setSelectedIds([])
   }, [action, entity, datePreset, customFrom, customTo, debouncedSearch])
 
+  const activitiesQueryKey = [
+    'admin',
+    'activities',
+    { page, debouncedSearch, action, entity, datePreset, customFrom, customTo },
+  ] as const
+
   const listQuery = useQuery({
-    queryKey: [
-      'admin',
-      'activities',
-      { page, debouncedSearch, action, entity, datePreset, customFrom, customTo },
-    ],
+    queryKey: activitiesQueryKey,
     queryFn: () =>
       fetchActivities({
         page,
@@ -131,35 +133,79 @@ export function ActivityPage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteActivity,
-    onSuccess: async () => {
-      const remainingOnPage = Math.max(0, items.length - 1)
-      const id = deleting?.id
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'activities'] })
+      const previous = queryClient.getQueryData(activitiesQueryKey)
+      queryClient.setQueryData(activitiesQueryKey, (current: typeof listQuery.data) => {
+        if (!current) return current
+        return {
+          ...current,
+          items: current.items.filter((item) => item.id !== id),
+          pagination: {
+            ...current.pagination,
+            total: Math.max(0, current.pagination.total - 1),
+          },
+        }
+      })
       setDeleting(null)
-      if (id) setSelectedIds((current) => current.filter((value) => value !== id))
-      await invalidate()
-      adjustPageIfEmptied(remainingOnPage)
+      setSelectedIds((current) => current.filter((value) => value !== id))
+      return { previous }
+    },
+    onError: (error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(activitiesQueryKey, context.previous)
+      }
+      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error')
+    },
+    onSuccess: () => {
       pushToast('Activity deleted successfully.')
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error'),
+    onSettled: async () => {
+      const remainingOnPage = Math.max(0, items.length - 1)
+      await invalidate()
+      adjustPageIfEmptied(remainingOnPage)
+    },
   })
 
   const bulkDeleteMutation = useMutation({
     mutationFn: bulkDeleteActivities,
-    onSuccess: async (result) => {
-      const remainingOnPage = items.filter((item) => !selectedIds.includes(item.id)).length
+    onMutate: async (ids: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'activities'] })
+      const previous = queryClient.getQueryData(activitiesQueryKey)
+      const idSet = new Set(ids)
+      queryClient.setQueryData(activitiesQueryKey, (current: typeof listQuery.data) => {
+        if (!current) return current
+        const nextItems = current.items.filter((item) => !idSet.has(item.id))
+        return {
+          ...current,
+          items: nextItems,
+          pagination: {
+            ...current.pagination,
+            total: Math.max(0, current.pagination.total - ids.length),
+          },
+        }
+      })
       setBulkOpen(false)
       setSelectedIds([])
-      await invalidate()
-      adjustPageIfEmptied(remainingOnPage)
+      return { previous, count: ids.length }
+    },
+    onError: (error, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(activitiesQueryKey, context.previous)
+      }
+      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error')
+    },
+    onSuccess: (_result, _ids, context) => {
+      const count = context?.count ?? 0
       pushToast(
-        result.deletedCount === 1
+        count === 1
           ? 'Activity deleted successfully.'
-          : `${result.deletedCount} activities deleted successfully.`,
+          : `${count} activities deleted successfully.`,
       )
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error'),
+    onSettled: async () => {
+      await invalidate()
+    },
   })
 
   const toggleSelectAllVisible = () => {
