@@ -1,18 +1,33 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Activity, Search } from 'lucide-react'
+import { Activity, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { ActivityFeedItem } from '@/features/activity/ActivityFeedItem'
-import { fetchActivities, type AdminActivity } from '@/features/activity/api'
+import {
+  bulkDeleteActivities,
+  deleteActivity,
+  fetchActivities,
+  type AdminActivity,
+} from '@/features/activity/api'
+import {
+  ACTIVITY_DATE_PRESETS,
+  resolveActivityDateRange,
+  type ActivityDatePreset,
+} from '@/features/activity/date-range'
 import {
   ACTIVITY_ACTION_FILTERS,
   ACTIVITY_ENTITY_FILTERS,
+  getActivityDisplayTitle,
 } from '@/features/activity/meta'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useToast } from '@/components/ui/toast'
 import { getApiErrorMessage } from '@/lib/api'
-import { formatActivityDayLabel } from '@/lib/format'
+import { formatActivityDayLabel, formatDateTime } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 function groupByDay(items: AdminActivity[]) {
   const groups: Array<{ label: string; items: AdminActivity[] }> = []
@@ -33,11 +48,26 @@ function groupByDay(items: AdminActivity[]) {
 }
 
 export function ActivityPage() {
+  const queryClient = useQueryClient()
+  const { pushToast } = useToast()
+
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [action, setAction] = useState('')
   const [entity, setEntity] = useState('')
+  const [datePreset, setDatePreset] = useState<ActivityDatePreset>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [deleting, setDeleting] = useState<AdminActivity | null>(null)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [details, setDetails] = useState<AdminActivity | null>(null)
+
+  const dateRange = useMemo(
+    () => resolveActivityDateRange(datePreset, customFrom, customTo),
+    [datePreset, customFrom, customTo],
+  )
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -49,10 +79,15 @@ export function ActivityPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [action, entity])
+    setSelectedIds([])
+  }, [action, entity, datePreset, customFrom, customTo, debouncedSearch])
 
   const listQuery = useQuery({
-    queryKey: ['admin', 'activities', { page, debouncedSearch, action, entity }],
+    queryKey: [
+      'admin',
+      'activities',
+      { page, debouncedSearch, action, entity, datePreset, customFrom, customTo },
+    ],
     queryFn: () =>
       fetchActivities({
         page,
@@ -60,12 +95,74 @@ export function ActivityPage() {
         search: debouncedSearch,
         action: action || undefined,
         entity: entity || undefined,
+        from: dateRange.from,
+        to: dateRange.to,
       }),
   })
 
   const items = listQuery.data?.items ?? []
   const pagination = listQuery.data?.pagination
   const groups = useMemo(() => groupByDay(items), [items])
+  const pageIds = items.map((item) => item.id)
+  const allVisibleSelected =
+    pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
+  const someVisibleSelected = pageIds.some((id) => selectedIds.includes(id))
+
+  const invalidate = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
+    ])
+  }
+
+  const adjustPageIfEmptied = (remainingOnPage: number) => {
+    if (remainingOnPage === 0 && page > 1) {
+      setPage((current) => Math.max(1, current - 1))
+    }
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteActivity,
+    onSuccess: async () => {
+      const remainingOnPage = Math.max(0, items.length - 1)
+      const id = deleting?.id
+      setDeleting(null)
+      if (id) setSelectedIds((current) => current.filter((value) => value !== id))
+      await invalidate()
+      adjustPageIfEmptied(remainingOnPage)
+      pushToast('Activity deleted successfully.')
+    },
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error'),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: bulkDeleteActivities,
+    onSuccess: async (result) => {
+      const remainingOnPage = items.filter((item) => !selectedIds.includes(item.id)).length
+      setBulkOpen(false)
+      setSelectedIds([])
+      await invalidate()
+      adjustPageIfEmptied(remainingOnPage)
+      pushToast(
+        result.deletedCount === 1
+          ? 'Activity deleted successfully.'
+          : `${result.deletedCount} activities deleted successfully.`,
+      )
+    },
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Unable to delete activity.'), 'error'),
+  })
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((current) => current.filter((id) => !pageIds.includes(id)))
+      return
+    }
+    setSelectedIds((current) => [...new Set([...current, ...pageIds])])
+  }
+
+  const pending = deleteMutation.isPending || bulkDeleteMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -75,7 +172,8 @@ export function ActivityPage() {
           Activity history
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-          Search and filter every administrative action across your restaurant console.
+          Search, filter, and clean up administrative history. Deleting a log never undoes the
+          original business action.
         </p>
       </div>
 
@@ -84,13 +182,13 @@ export function ActivityPage() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-[28px] border border-border/80 bg-white/90 p-4 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-5"
       >
-        <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-          <div className="relative">
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+          <div className="relative lg:col-span-2 xl:col-span-1">
             <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search activity..."
+              placeholder="Search title, description..."
               className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] pr-4 pl-11 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
             />
           </div>
@@ -116,13 +214,76 @@ export function ActivityPage() {
               </option>
             ))}
           </select>
+          <select
+            value={datePreset}
+            onChange={(event) => setDatePreset(event.target.value as ActivityDatePreset)}
+            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+          >
+            {ACTIVITY_DATE_PRESETS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {datePreset === 'custom' ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium text-muted-foreground">From</span>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(event) => setCustomFrom(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium text-muted-foreground">To</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(event) => setCustomTo(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {selectedIds.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-semibold text-foreground">
+              {selectedIds.length} activit{selectedIds.length === 1 ? 'y' : 'ies'} selected
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full sm:w-auto"
+                onClick={() => setSelectedIds([])}
+                disabled={pending}
+              >
+                <X className="h-4 w-4" />
+                Cancel selection
+              </Button>
+              <Button
+                type="button"
+                className="h-11 w-full bg-danger text-white hover:brightness-105 sm:w-auto"
+                onClick={() => setBulkOpen(true)}
+                disabled={pending}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete selected
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5">
           {listQuery.isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-16 rounded-2xl" />
+                <Skeleton key={index} className="h-20 rounded-2xl" />
               ))}
             </div>
           ) : listQuery.isError ? (
@@ -141,6 +302,27 @@ export function ActivityPage() {
             />
           ) : (
             <div className="space-y-6">
+              <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-3">
+                <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm font-medium text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(element) => {
+                      if (element) {
+                        element.indeterminate = someVisibleSelected && !allVisibleSelected
+                      }
+                    }}
+                    onChange={toggleSelectAllVisible}
+                    className="h-5 w-5 cursor-pointer rounded-md border border-border accent-primary"
+                    aria-label="Select all visible activities"
+                  />
+                  Select all on this page
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {pagination?.total ?? items.length} total
+                </p>
+              </div>
+
               {groups.map((group) => (
                 <div key={group.label}>
                   <p className="mb-2 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
@@ -148,7 +330,21 @@ export function ActivityPage() {
                   </p>
                   <ul className="space-y-2">
                     {group.items.map((activity) => (
-                      <ActivityFeedItem key={activity.id} activity={activity} />
+                      <ActivityFeedItem
+                        key={activity.id}
+                        activity={activity}
+                        selectable
+                        selected={selectedIds.includes(activity.id)}
+                        onSelectedChange={(checked) => {
+                          setSelectedIds((current) =>
+                            checked
+                              ? [...new Set([...current, activity.id])]
+                              : current.filter((id) => id !== activity.id),
+                          )
+                        }}
+                        onViewDetails={setDetails}
+                        onDelete={setDeleting}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -185,6 +381,111 @@ export function ActivityPage() {
           </p>
         ) : null}
       </motion.section>
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) setDeleting(null)
+        }}
+        title="Delete Activity"
+        description="You are about to permanently remove this activity from your history."
+        warning={
+          <>
+            <p className="font-semibold">This action cannot be undone.</p>
+            <p className="mt-1">
+              Deleting this activity only removes the history record. It does not undo or change
+              the original action
+              {deleting ? ` (“${getActivityDisplayTitle(deleting)}”).` : '.'}
+            </p>
+          </>
+        }
+        confirmLabel="Delete Activity"
+        cancelLabel="Cancel"
+        tone="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deleting) return
+          deleteMutation.mutate(deleting.id)
+        }}
+      />
+
+      <ConfirmDialog
+        open={bulkOpen}
+        onOpenChange={(open) => {
+          if (!open && !bulkDeleteMutation.isPending) setBulkOpen(false)
+        }}
+        title="Delete Selected Activities"
+        description={`You are about to permanently delete ${selectedIds.length} selected activity record${selectedIds.length === 1 ? '' : 's'}.`}
+        warning={
+          <>
+            <p className="font-semibold">This action cannot be undone.</p>
+            <p className="mt-1">
+              Only history records are removed. Categories, menu items, prices, and restaurant
+              settings are not affected.
+            </p>
+          </>
+        }
+        confirmLabel="Delete Selected"
+        cancelLabel="Cancel"
+        tone="danger"
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => {
+          if (selectedIds.length === 0) return
+          bulkDeleteMutation.mutate(selectedIds)
+        }}
+      />
+
+      <Dialog
+        open={Boolean(details)}
+        onOpenChange={(open) => {
+          if (!open) setDetails(null)
+        }}
+      >
+        <DialogContent
+          title="Activity details"
+          description="Full details for this administrative event."
+          className="sm:max-w-lg"
+        >
+          {details ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Title
+                </p>
+                <p className="mt-1 text-base font-semibold">{getActivityDisplayTitle(details)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Description
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{details.summary}</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailCell label="Type" value={details.type} />
+                <DetailCell label="Action" value={details.action} />
+                <DetailCell label="Entity" value={details.entity.replaceAll('_', ' ')} />
+                <DetailCell label="When" value={formatDateTime(details.createdAt)} />
+              </div>
+              <div className="flex justify-end pt-1">
+                <Button type="button" variant="outline" onClick={() => setDetails(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function DetailCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={cn('rounded-2xl border border-border/70 bg-[#f8fafc] px-3.5 py-3')}>
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium break-all text-foreground">{value}</p>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { ensureCsrfToken } from '@/features/auth/api'
 import { api, type ApiSuccess } from '@/lib/api'
 
 export type AdminActivity = {
@@ -28,6 +29,8 @@ export type ActivityListParams = {
   action?: string
   entity?: string
   type?: string
+  from?: string
+  to?: string
 }
 
 export async function fetchActivities(params: ActivityListParams = {}) {
@@ -39,7 +42,23 @@ export async function fetchActivities(params: ActivityListParams = {}) {
       ...(params.action ? { action: params.action } : {}),
       ...(params.entity ? { entity: params.entity } : {}),
       ...(params.type ? { type: params.type } : {}),
+      ...(params.from ? { from: params.from } : {}),
+      ...(params.to ? { to: params.to } : {}),
     },
   })
+  return data.data
+}
+
+export async function deleteActivity(id: string) {
+  await ensureCsrfToken()
+  const { data } = await api.delete<ApiSuccess<{ id: string }>>(`/api/admin/activities/${id}`)
+  return data.data
+}
+
+export async function bulkDeleteActivities(ids: string[]) {
+  await ensureCsrfToken()
+  const { data } = await api.post<
+    ApiSuccess<{ deletedCount: number; requestedCount: number }>
+  >('/api/admin/activities/bulk-delete', { ids })
   return data.data
 }
