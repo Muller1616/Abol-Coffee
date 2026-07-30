@@ -36,6 +36,12 @@ type PublicRestaurant = {
   logo: string | null;
   coverImage: string | null;
   address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   phone: string | null;
   email: string | null;
   description: string | null;
@@ -70,6 +76,12 @@ function toPublicRestaurant(restaurant: {
   logo: string | null;
   coverImage: string | null;
   address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   phone: string | null;
   email: string | null;
   description: string | null;
@@ -85,6 +97,12 @@ function toPublicRestaurant(restaurant: {
     logo: restaurant.logo,
     coverImage: restaurant.coverImage,
     address: restaurant.address,
+    city: restaurant.city,
+    state: restaurant.state,
+    country: restaurant.country,
+    postalCode: restaurant.postalCode,
+    latitude: restaurant.latitude,
+    longitude: restaurant.longitude,
     phone: restaurant.phone,
     email: restaurant.email,
     description: restaurant.description,
@@ -108,6 +126,12 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
       logo: true,
       coverImage: true,
       address: true,
+      city: true,
+      state: true,
+      country: true,
+      postalCode: true,
+      latitude: true,
+      longitude: true,
       phone: true,
       email: true,
       description: true,
