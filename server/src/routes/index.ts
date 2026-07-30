@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { apiRateLimiter } from '../middleware/rateLimit.js';
 import { activityRouter } from './activity.routes.js';
 import { authRouter } from './auth.routes.js';
 import { categoryRouter } from './category.routes.js';
@@ -11,6 +12,7 @@ import { restaurantRouter } from './restaurant.routes.js';
 
 const apiRouter = Router();
 
+apiRouter.use(apiRateLimiter);
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/admin/dashboard', dashboardRouter);
