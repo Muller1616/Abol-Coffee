@@ -100,6 +100,7 @@ model Restaurant {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
+  @@index([updatedAt])
   @@map("restaurants")
 }
 
@@ -114,6 +115,8 @@ model Category {
 
   @@index([displayOrder])
   @@index([isActive])
+  @@index([isActive, displayOrder])
+  @@index([updatedAt])
   @@map("categories")
 }
 
@@ -135,6 +138,8 @@ model MenuItem {
   @@index([categoryId])
   @@index([isAvailable])
   @@index([displayOrder])
+  @@index([categoryId, isAvailable, displayOrder])
+  @@index([updatedAt])
   @@map("menu_items")
 }
 
