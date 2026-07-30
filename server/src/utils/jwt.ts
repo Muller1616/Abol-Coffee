@@ -5,6 +5,8 @@ import { AppError } from './AppError.js';
 export type JwtPayload = {
   sub: string;
   email: string;
+  /** Owner.tokenVersion at issue time — rejects revoked sessions. */
+  tv: number;
 };
 
 export function signAccessToken(payload: JwtPayload, expiresInMs: number): string {
@@ -23,12 +25,16 @@ export function verifyAccessToken(token: string): JwtPayload {
 
     const sub = 'sub' in decoded ? decoded.sub : undefined;
     const email = 'email' in decoded ? decoded.email : undefined;
+    const tv = 'tv' in decoded ? decoded.tv : undefined;
 
     if (typeof sub !== 'string' || typeof email !== 'string') {
       throw new AppError('Invalid authentication token', 401);
     }
 
-    return { sub, email };
+    // Legacy tokens without tv are treated as version 0.
+    const tokenVersion = typeof tv === 'number' && Number.isFinite(tv) ? tv : 0;
+
+    return { sub, email, tv: tokenVersion };
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
