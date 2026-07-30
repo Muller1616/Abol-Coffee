@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from 'react'
 import {
   fetchCurrentOwner,
   loginRequest,
@@ -54,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['auth', 'me'],
     queryFn: fetchOwnerOrNull,
     retry: false,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
   })
 
   const loginMutation = useMutation({
@@ -64,12 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   })
 
-  const clearSession = (reason: SessionLogoutReason) => {
-    clearClientAuthState(queryClient)
-    if (reason !== 'manual') {
-      stashSessionMessage(reason)
-    }
-  }
+  const clearSession = useCallback(
+    (reason: SessionLogoutReason) => {
+      clearClientAuthState(queryClient)
+      if (reason !== 'manual') {
+        stashSessionMessage(reason)
+      }
+    },
+    [queryClient],
+  )
 
   const logoutMutation = useMutation({
     mutationFn: async (options: LogoutOptions = {}) => {
@@ -98,6 +108,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   })
 
+  const login = useCallback(
+    async (payload: LoginPayload) => loginMutation.mutateAsync(payload),
+    [loginMutation.mutateAsync],
+  )
+
+  const logout = useCallback(
+    async (options?: LogoutOptions) => {
+      await logoutMutation.mutateAsync(options ?? {})
+    },
+    [logoutMutation.mutateAsync],
+  )
+
+  const clearLoginError = useCallback(() => {
+    loginMutation.reset()
+  }, [loginMutation.reset])
+
   useEffect(() => {
     setUnauthorizedHandler(() => {
       const owner = queryClient.getQueryData<Owner | null>(['auth', 'me'])
@@ -118,17 +144,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       owner,
       isAuthenticated: Boolean(owner),
       isLoading: meQuery.isLoading,
-      login: async (payload) => loginMutation.mutateAsync(payload),
-      logout: async (options) => {
-        await logoutMutation.mutateAsync(options ?? {})
-      },
+      login,
+      logout,
       loginError: loginMutation.error
         ? getApiErrorMessage(loginMutation.error, 'Unable to sign in. Please check your credentials.')
         : null,
       isLoggingIn: loginMutation.isPending,
-      clearLoginError: () => loginMutation.reset(),
+      clearLoginError,
     }
-  }, [loginMutation, logoutMutation, meQuery.data, meQuery.isLoading])
+  }, [
+    clearLoginError,
+    login,
+    loginMutation.error,
+    loginMutation.isPending,
+    logout,
+    meQuery.data,
+    meQuery.isLoading,
+  ])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
