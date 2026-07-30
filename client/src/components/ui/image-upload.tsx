@@ -1,6 +1,7 @@
 import { ImagePlus, Trash2, Upload } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FieldError } from '@/components/ui/field-error'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,10 @@ type ImageUploadProps = {
   hint?: string
   /** External / server-side error (e.g. upload API failure). */
   error?: string | null
+  /** Confirm before removing a saved image. Defaults to true. */
+  confirmRemoveExisting?: boolean
+  removeConfirmTitle?: string
+  removeConfirmDescription?: string
 }
 
 export function ImageUpload({
@@ -42,12 +47,16 @@ export function ImageUpload({
   disabled = false,
   hint = 'JPG, PNG, or WebP up to 5 MB. Optional.',
   error = null,
+  confirmRemoveExisting = true,
+  removeConfirmTitle,
+  removeConfirmDescription,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const generatedId = useId()
   const errorId = `${generatedId}-error`
   const [isDragging, setIsDragging] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const displayError = error || localError
 
@@ -62,6 +71,43 @@ export function ImageUpload({
       URL.revokeObjectURL(previewUrl)
     }
   }, [file, previewUrl])
+
+  const resetFileInput = () => {
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const clearPendingSelection = () => {
+    onFileChange(null)
+    setLocalError(null)
+    resetFileInput()
+  }
+
+  const removeExistingImage = () => {
+    onFileChange(null)
+    setLocalError(null)
+    onRemoveExisting?.()
+    resetFileInput()
+    setConfirmOpen(false)
+  }
+
+  const handleRemoveClick = () => {
+    if (disabled) return
+
+    // Discarding a new (unsaved) selection restores the existing preview.
+    if (file) {
+      clearPendingSelection()
+      return
+    }
+
+    if (!currentImageUrl) return
+
+    if (confirmRemoveExisting) {
+      setConfirmOpen(true)
+      return
+    }
+
+    removeExistingImage()
+  }
 
   const handleFiles = (files: FileList | null) => {
     const next = files?.[0]
@@ -97,17 +143,7 @@ export function ImageUpload({
             variant="outline"
             size="sm"
             disabled={disabled}
-            onClick={() => {
-              const hadPendingFile = Boolean(file)
-              onFileChange(null)
-              setLocalError(null)
-              // Discarding a new selection should restore the existing preview,
-              // not mark the stored image for deletion.
-              if (!hadPendingFile) {
-                onRemoveExisting?.()
-              }
-              if (inputRef.current) inputRef.current.value = ''
-            }}
+            onClick={handleRemoveClick}
           >
             <Trash2 className="h-3.5 w-3.5" />
             Remove
@@ -194,6 +230,20 @@ export function ImageUpload({
         className="hidden"
         disabled={disabled}
         onChange={(event) => handleFiles(event.target.files)}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={removeConfirmTitle ?? `Remove ${label.toLowerCase()}?`}
+        description={
+          removeConfirmDescription ??
+          'This image will be permanently deleted when you save. Guests will no longer see it on the public menu.'
+        }
+        warning="This action cannot be undone after you save your changes."
+        confirmLabel="Remove image"
+        tone="danger"
+        onConfirm={removeExistingImage}
       />
     </div>
   )

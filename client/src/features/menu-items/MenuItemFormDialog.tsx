@@ -296,6 +296,8 @@ export function MenuItemFormDialog({
             file={imageFile}
             disabled={loading}
             error={imageError}
+            removeConfirmTitle="Remove menu item image?"
+            removeConfirmDescription="This food image will be permanently deleted when you save the menu item. Guests will no longer see it on the public menu."
             onFileChange={(file) => {
               setImageFile(file)
               setImageError(null)

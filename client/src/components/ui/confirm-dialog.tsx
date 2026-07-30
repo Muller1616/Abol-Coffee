@@ -56,7 +56,13 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={title} description={description} hideHeader>
+      <DialogContent
+        title={title}
+        description={description}
+        hideHeader
+        className="z-[60] sm:max-w-md"
+        overlayClassName="z-[60]"
+      >
         <div className="space-y-5">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
             <div

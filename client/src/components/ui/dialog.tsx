@@ -9,12 +9,14 @@ export const DialogClose = DialogPrimitive.Close
 
 export function DialogContent({
   className,
+  overlayClassName,
   children,
   title,
   description,
   hideHeader = false,
 }: {
   className?: string
+  overlayClassName?: string
   children: ReactNode
   title: string
   description?: string
@@ -23,7 +25,9 @@ export function DialogContent({
 }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#06120f]/45 backdrop-blur-sm" />
+      <DialogPrimitive.Overlay
+        className={cn('fixed inset-0 z-50 bg-[#06120f]/45 backdrop-blur-sm', overlayClassName)}
+      />
       <DialogPrimitive.Content
         className={cn(
           // Mobile: bottom sheet. Desktop: centered modal.
