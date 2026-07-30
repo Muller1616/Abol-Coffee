@@ -20,7 +20,7 @@ export function FooterSection() {
                 <Coffee className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="font-display text-lg font-semibold tracking-tight text-white">
+                <span className="font-display text-lg font-bold tracking-tight text-white">
                   Abol Coffee
                 </span>
                 <span className="text-[10px] font-medium tracking-[0.16em] text-white/55 uppercase">

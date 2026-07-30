@@ -21,19 +21,19 @@ export function LandingSection({
   id,
   children,
   className,
-  tone = 'ivory',
+  tone = 'soft',
 }: {
   id?: string
   children: ReactNode
   className?: string
-  tone?: 'ivory' | 'white' | 'ink'
+  tone?: 'soft' | 'white' | 'ink'
 }) {
   return (
     <section
       id={id}
       className={cn(
         'relative py-20 sm:py-24 lg:py-28',
-        tone === 'ivory' && 'bg-background',
+        tone === 'soft' && 'bg-background',
         tone === 'white' && 'bg-card',
         tone === 'ink' && 'bg-brand-ink text-white',
         className,
@@ -56,10 +56,8 @@ export function LandingEyebrow({
   return (
     <p
       className={cn(
-        'inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-semibold tracking-wide uppercase',
-        onDark
-          ? 'border border-white/15 bg-white/10 text-white/90'
-          : 'border border-primary/20 bg-primary/10 text-primary',
+        'inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.2em] uppercase',
+        onDark ? 'text-accent' : 'text-primary',
         className,
       )}
     >
@@ -80,7 +78,7 @@ export function LandingHeading({
   return (
     <Tag
       className={cn(
-        'font-display font-semibold tracking-tight text-balance',
+        'font-display font-bold tracking-tight text-balance',
         Tag === 'h1' && 'text-4xl sm:text-5xl lg:text-6xl',
         Tag === 'h2' && 'text-3xl sm:text-4xl',
         Tag === 'h3' && 'text-xl sm:text-2xl',
@@ -122,13 +120,11 @@ export function LandingSectionHeader({
   return (
     <div className={cn('max-w-2xl', align === 'center' ? 'mx-auto text-center' : 'text-left')}>
       <LandingEyebrow onDark={onDark}>{eyebrow}</LandingEyebrow>
-      <LandingHeading
-        className={cn('mt-4', onDark ? 'text-white' : 'text-foreground')}
-      >
+      <LandingHeading className={cn('mt-3', onDark ? 'text-white' : 'text-foreground')}>
         {title}
       </LandingHeading>
       {description ? (
-        <LandingLead className={cn(onDark && 'text-white/70', align === 'center' && 'mx-auto')}>
+        <LandingLead className={cn(onDark && 'text-white/65', align === 'center' && 'mx-auto')}>
           {description}
         </LandingLead>
       ) : null}
@@ -146,7 +142,7 @@ export function LandingCard({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-border bg-card p-6 shadow-[0_8px_30px_rgb(28_25_23/0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-[0_16px_40px_rgb(28_25_23/0.08)] sm:p-7',
+        'rounded-2xl border border-border bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_20px_50px_rgb(9_9_11/0.06)] sm:p-7',
         className,
       )}
     >

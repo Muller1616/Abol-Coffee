@@ -45,11 +45,11 @@ export function Navbar() {
           onClick={(e) => handleNavClick(e, '#hero')}
           className="group flex items-center gap-3 text-white transition-opacity hover:opacity-90"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_20px_rgb(15_118_110/0.35)] transition-transform group-hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_8px_20px_rgb(16_185_129/0.4)] transition-transform group-hover:scale-105">
             <Coffee className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <span className="font-display text-lg font-semibold tracking-tight text-white">
+            <span className="font-display text-lg font-bold tracking-tight text-white">
               Abol Coffee
             </span>
             <span className="text-[10px] font-medium tracking-[0.16em] text-white/60 uppercase">

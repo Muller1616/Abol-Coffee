@@ -44,7 +44,7 @@ export function HowItWorksSection() {
         />
 
         <div className="relative mt-16">
-          <div className="pointer-events-none absolute top-10 right-0 left-0 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent lg:block" />
+          <div className="pointer-events-none absolute top-10 right-0 left-0 hidden h-px bg-linear-to-r from-transparent via-border to-transparent lg:block" />
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {STEPS.map((item, idx) => {
@@ -58,13 +58,13 @@ export function HowItWorksSection() {
                   transition={{ duration: 0.45, delay: idx * 0.07 }}
                   className="relative text-center lg:text-left"
                 >
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_14px_36px_rgb(15_118_110/0.3)] lg:mx-0">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_14px_36px_rgb(16_185_129/0.35)] lg:mx-0">
                     <Icon className="h-6 w-6" />
                   </div>
                   <p className="mt-5 text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
                     Step {item.step}
                   </p>
-                  <h3 className="font-display mt-2 text-xl font-semibold tracking-tight text-foreground">
+                  <h3 className="mt-2 font-display text-xl font-bold tracking-tight text-foreground">
                     {item.title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
