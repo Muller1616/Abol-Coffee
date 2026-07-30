@@ -20,6 +20,9 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -44,7 +47,21 @@ function isPlaceholderSecret(secret: string): boolean {
 }
 
 function smtpConfigured(data: Env): boolean {
-  return Boolean(data.SMTP_HOST && data.SMTP_PORT && data.SMTP_FROM);
+  return Boolean(
+    data.SMTP_HOST &&
+      data.SMTP_PORT &&
+      data.SMTP_FROM &&
+      data.SMTP_USER &&
+      data.SMTP_PASS,
+  );
+}
+
+function cloudinaryConfigured(data: Env): boolean {
+  return Boolean(
+    data.CLOUDINARY_CLOUD_NAME?.trim() &&
+      data.CLOUDINARY_API_KEY?.trim() &&
+      data.CLOUDINARY_API_SECRET?.trim(),
+  );
 }
 
 function assertProductionReady(data: Env): void {
@@ -60,8 +77,19 @@ function assertProductionReady(data: Env): void {
 
   if (isLocalhostUrl(data.PUBLIC_MENU_URL)) {
     failures.push(
-      'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (printed on QR codes).',
+      'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (printed on QR codes — must be permanent).',
     );
+  }
+
+  try {
+    const menuPath = new URL(data.PUBLIC_MENU_URL).pathname.replace(/\/$/, '') || '/';
+    if (menuPath !== '/menu' && !menuPath.startsWith('/menu/')) {
+      failures.push(
+        'PUBLIC_MENU_URL path should be /menu (or /menu/<slug>) so printed QR codes stay stable.',
+      );
+    }
+  } catch {
+    failures.push('PUBLIC_MENU_URL must be a valid absolute URL.');
   }
 
   if (isPlaceholderSecret(data.JWT_SECRET)) {
@@ -70,12 +98,20 @@ function assertProductionReady(data: Env): void {
 
   if (!smtpConfigured(data)) {
     failures.push(
-      'SMTP_HOST, SMTP_PORT, and SMTP_FROM are required in production for password-reset emails.',
+      'SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM are required in production for password-reset emails.',
     );
   }
 
-  if (data.COOKIE_SAME_SITE === 'none' && data.NODE_ENV === 'production') {
-    // Browsers require Secure when SameSite=None — we always set secure in production.
+  if (!cloudinaryConfigured(data)) {
+    failures.push(
+      'CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are required in production so images survive redeploys.',
+    );
+  }
+
+  if (data.COOKIE_SAME_SITE === 'none' && !data.COOKIE_DOMAIN?.trim()) {
+    failures.push(
+      'COOKIE_DOMAIN is required when COOKIE_SAME_SITE=none (cross-site SPA ↔ API cookie auth).',
+    );
   }
 
   if (failures.length > 0) {
@@ -106,4 +142,8 @@ export const env = loadEnv();
 
 export function isSmtpConfigured(): boolean {
   return smtpConfigured(env);
+}
+
+export function isCloudinaryEnvConfigured(): boolean {
+  return cloudinaryConfigured(env);
 }
