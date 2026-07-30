@@ -1,10 +1,12 @@
 import 'dotenv/config';
 
 async function main(): Promise<void> {
-  const { env } = await import('./config/env.js');
+  const { env, isCloudinaryEnvConfigured } = await import('./config/env.js');
   const { prisma } = await import('./config/database.js');
   const { createApp } = await import('./app.js');
-  const { ensureUploadDirectories } = await import('./services/storage.service.js');
+  const { ensureUploadDirectories, usesCloudinaryStorage } = await import(
+    './services/storage.service.js'
+  );
   const { logger } = await import('./utils/logger.js');
 
   try {
@@ -33,7 +35,8 @@ async function main(): Promise<void> {
     logger.info('Abol Coffee API started', {
       env: env.NODE_ENV,
       port,
-      uploadsRoot: env.UPLOADS_DIR || 'uploads',
+      storage: usesCloudinaryStorage() || isCloudinaryEnvConfigured() ? 'cloudinary' : 'local-disk',
+      publicMenuUrl: env.PUBLIC_MENU_URL,
     });
   });
 

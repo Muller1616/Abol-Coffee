@@ -172,12 +172,16 @@ async function main(): Promise<void> {
     assert(uploaded.status === 200, `Upload failed (${uploaded.status}): ${uploaded.body.message}`);
     const imagePath = uploaded.body.data?.item?.image;
     assert(typeof imagePath === 'string', 'Uploaded image path missing');
-    assert(imagePath.endsWith('.webp'), 'Uploaded image should be optimized to webp');
-    await access(toAbsoluteUploadPath(imagePath));
+    assert(imagePath.endsWith('.webp') || imagePath.includes('cloudinary.com'), 'Uploaded image should be webp or Cloudinary URL');
 
-    const staticResponse = await fetch(`http://127.0.0.1:${port}${imagePath}`);
-    assert(staticResponse.status === 200, `Static image serve failed (${staticResponse.status})`);
-
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      const remote = await fetch(imagePath);
+      assert(remote.status === 200, `Cloudinary image fetch failed (${remote.status})`);
+    } else {
+      await access(toAbsoluteUploadPath(imagePath));
+      const staticResponse = await fetch(`http://127.0.0.1:${port}${imagePath}`);
+      assert(staticResponse.status === 200, `Static image serve failed (${staticResponse.status})`);
+    }
     const rejected = await api(port, jar, `/api/admin/menu-items/${itemId}/image`, {
       method: 'POST',
       headers: {
