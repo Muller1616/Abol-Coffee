@@ -1,8 +1,12 @@
 import { prisma } from '../config/database.js';
 import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
-import { logAdminActivity } from './activity.service.js';
-import { getMenuItemById, type MenuItemResponse } from './menuItem.service.js';
+import { queueAdminActivity } from './activity.service.js';
+import {
+  menuItemInclude,
+  toMenuItemResponse,
+  type MenuItemResponse,
+} from './menuItem.service.js';
 import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 import { getRestaurant, type RestaurantResponse } from './restaurant.service.js';
 import { deleteStoredImage, processAndStoreImage } from './storage.service.js';
@@ -11,18 +15,27 @@ export async function uploadMenuItemImage(
   itemId: string,
   file: Express.Multer.File,
 ): Promise<MenuItemResponse> {
-  const existing = await getMenuItemById(itemId);
+  const existing = await prisma.menuItem.findUnique({
+    where: { id: itemId },
+    select: { id: true, name: true, image: true },
+  });
+
+  if (!existing) {
+    throw new AppError('Menu item not found', 404);
+  }
+
   const publicPath = await processAndStoreImage(file, 'menuItem');
 
   try {
-    await prisma.menuItem.update({
+    const updated = await prisma.menuItem.update({
       where: { id: itemId },
       data: { image: publicPath },
+      include: menuItemInclude,
     });
 
-    await deleteStoredImage(existing.image);
+    void deleteStoredImage(existing.image);
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.MENU_ITEM,
       entityId: itemId,
@@ -32,7 +45,7 @@ export async function uploadMenuItemImage(
     });
 
     invalidatePublicMenuCache();
-    return getMenuItemById(itemId);
+    return toMenuItemResponse(updated);
   } catch (error) {
     await deleteStoredImage(publicPath);
     throw error;
@@ -40,20 +53,28 @@ export async function uploadMenuItemImage(
 }
 
 export async function removeMenuItemImage(itemId: string): Promise<MenuItemResponse> {
-  const existing = await getMenuItemById(itemId);
-
-  if (!existing.image) {
-    return existing;
-  }
-
-  await prisma.menuItem.update({
+  const existing = await prisma.menuItem.findUnique({
     where: { id: itemId },
-    data: { image: null },
+    include: menuItemInclude,
   });
 
-  await deleteStoredImage(existing.image);
+  if (!existing) {
+    throw new AppError('Menu item not found', 404);
+  }
 
-  await logAdminActivity({
+  if (!existing.image) {
+    return toMenuItemResponse(existing);
+  }
+
+  const updated = await prisma.menuItem.update({
+    where: { id: itemId },
+    data: { image: null },
+    include: menuItemInclude,
+  });
+
+  void deleteStoredImage(existing.image);
+
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.MENU_ITEM,
     entityId: itemId,
@@ -63,7 +84,7 @@ export async function removeMenuItemImage(itemId: string): Promise<MenuItemRespo
   });
 
   invalidatePublicMenuCache();
-  return getMenuItemById(itemId);
+  return toMenuItemResponse(updated);
 }
 
 export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<RestaurantResponse> {
@@ -76,9 +97,9 @@ export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<R
       data: { logo: publicPath },
     });
 
-    await deleteStoredImage(existing.logo);
+    void deleteStoredImage(existing.logo);
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.RESTAURANT,
       entityId: existing.id,
@@ -88,7 +109,7 @@ export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<R
     });
 
     invalidatePublicMenuCache();
-    return getRestaurant();
+    return { ...existing, logo: publicPath };
   } catch (error) {
     await deleteStoredImage(publicPath);
     throw error;
@@ -107,9 +128,9 @@ export async function removeRestaurantLogo(): Promise<RestaurantResponse> {
     data: { logo: null },
   });
 
-  await deleteStoredImage(existing.logo);
+  void deleteStoredImage(existing.logo);
 
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.RESTAURANT,
     entityId: existing.id,
@@ -119,7 +140,7 @@ export async function removeRestaurantLogo(): Promise<RestaurantResponse> {
   });
 
   invalidatePublicMenuCache();
-  return getRestaurant();
+  return { ...existing, logo: null };
 }
 
 export async function uploadRestaurantCover(file: Express.Multer.File): Promise<RestaurantResponse> {
@@ -132,9 +153,9 @@ export async function uploadRestaurantCover(file: Express.Multer.File): Promise<
       data: { coverImage: publicPath },
     });
 
-    await deleteStoredImage(existing.coverImage);
+    void deleteStoredImage(existing.coverImage);
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.RESTAURANT,
       entityId: existing.id,
@@ -144,7 +165,7 @@ export async function uploadRestaurantCover(file: Express.Multer.File): Promise<
     });
 
     invalidatePublicMenuCache();
-    return getRestaurant();
+    return { ...existing, coverImage: publicPath };
   } catch (error) {
     await deleteStoredImage(publicPath);
     throw error;
@@ -163,9 +184,9 @@ export async function removeRestaurantCover(): Promise<RestaurantResponse> {
     data: { coverImage: null },
   });
 
-  await deleteStoredImage(existing.coverImage);
+  void deleteStoredImage(existing.coverImage);
 
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.RESTAURANT,
     entityId: existing.id,
@@ -175,7 +196,7 @@ export async function removeRestaurantCover(): Promise<RestaurantResponse> {
   });
 
   invalidatePublicMenuCache();
-  return getRestaurant();
+  return { ...existing, coverImage: null };
 }
 
 export function requireUploadedFile(file: Express.Multer.File | undefined): Express.Multer.File {
