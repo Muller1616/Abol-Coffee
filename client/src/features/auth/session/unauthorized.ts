@@ -26,8 +26,10 @@ const EXEMPT_401_PATHS = [
   '/api/auth/me',
   '/api/auth/csrf',
   '/api/auth/logout',
+  '/api/auth/forgot-password',
   '/api/auth/send-otp',
-  '/api/auth/reset-password-otp',
+  '/api/auth/verify-otp',
+  '/api/auth/reset-password',
 ]
 
 export function isExemptUnauthorizedUrl(url: string | undefined) {

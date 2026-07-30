@@ -8,10 +8,8 @@ import {
   Coffee,
   Eye,
   EyeOff,
-  HelpCircle,
   KeyRound,
   LockKeyhole,
-  RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
@@ -27,17 +25,31 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { FloatingInput } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { resetWithOtpRequest, sendOtpRequest } from '@/features/auth/api'
+import {
+  forgotPasswordRequest,
+  resetPasswordRequest,
+  verifyOtpRequest,
+} from '@/features/auth/api'
 import { useAuth } from '@/features/auth/auth-context'
 import { PasswordStrength } from '@/features/auth/PasswordStrength'
 import {
+  clearRecoveryState,
+  formatCountdown,
+  loadRecoveryState,
+  saveRecoveryState,
+  secondsUntil,
+  type RecoveryStep,
+} from '@/features/auth/recovery-session'
+import {
+  forgotPasswordSchema,
   loginSchema,
-  resetWithOtpSchema,
-  sendOtpSchema,
+  resetPasswordSchema,
   validateLoginFields,
+  verifyOtpSchema,
+  type ForgotPasswordFormValues,
   type LoginFormValues,
-  type ResetWithOtpFormValues,
-  type SendOtpFormValues,
+  type ResetPasswordFormValues,
+  type VerifyOtpFormValues,
 } from '@/features/auth/schema'
 import { consumeSessionMessage } from '@/features/auth/session/session-message'
 import {
@@ -47,10 +59,6 @@ import {
   handleFormMutationError,
 } from '@/lib/form'
 import { cn } from '@/lib/utils'
-
-/** Matches seeded owner from server OWNER_EMAIL (see server/.env). */
-const OWNER_SEED_EMAIL = 'Habeshadreamer12@gmail.com'
-const OWNER_SEED_PASSWORD = 'ChangeMe123!'
 
 const highlights = [
   {
@@ -75,88 +83,129 @@ export function LoginPage() {
   const [isFlipped, setIsFlipped] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [loginAttempted, setLoginAttempted] = useState(false)
 
-  // OTP Step Flow on Back Face
-  const [otpStep, setOtpStep] = useState<'request' | 'verify'>('request')
-  const [activeOtpCode, setActiveOtpCode] = useState<string | null>(null)
+  const [recoveryStep, setRecoveryStep] = useState<RecoveryStep>('request')
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [otpExpiresAt, setOtpExpiresAt] = useState<string | null>(null)
+  const [resendAvailableAt, setResendAvailableAt] = useState<string | null>(null)
+  const [resetToken, setResetToken] = useState<string | null>(null)
+  const [otpExpirySeconds, setOtpExpirySeconds] = useState(0)
+  const [resendSeconds, setResendSeconds] = useState(0)
+
   const [isSendingOtp, setIsSendingOtp] = useState(false)
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [otpError, setOtpError] = useState<string | null>(null)
 
   useEffect(() => {
     const message = consumeSessionMessage()
-    if (message) {
-      pushToast(message, 'warning')
-    }
+    if (message) pushToast(message, 'warning')
   }, [pushToast])
 
-  // 1. Login Form — subscribe to formState so validation errors re-render
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
     criteriaMode: 'all',
-    defaultValues: {
-      email: '',
-      password: '',
-      rememberMe: false,
-    },
+    defaultValues: { email: '', password: '', rememberMe: false },
   })
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
-    setError: setLoginError,
+    setError: setLoginFieldError,
     clearErrors: clearLoginErrors,
     getValues: getLoginValues,
     setValue: setLoginValue,
     formState: { errors: loginErrors, submitCount: loginSubmitCount },
   } = loginForm
-  const [loginAttempted, setLoginAttempted] = useState(false)
 
-  // 2. Request OTP Form
-  const sendOtpForm = useForm<SendOtpFormValues>({
-    resolver: zodResolver(sendOtpSchema),
+  const forgotForm = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
-    defaultValues: {
-      email: OWNER_SEED_EMAIL,
-    },
+    defaultValues: { email: '' },
   })
   const {
-    register: registerSendOtp,
-    handleSubmit: handleSendOtpSubmit,
-    setError: setSendOtpError,
-    clearErrors: clearSendOtpErrors,
-    setValue: setSendOtpValue,
-    formState: { errors: sendOtpErrors, submitCount: sendOtpSubmitCount },
-  } = sendOtpForm
+    register: registerForgot,
+    handleSubmit: handleForgotSubmit,
+    setError: setForgotError,
+    clearErrors: clearForgotErrors,
+    reset: resetForgotForm,
+    formState: { errors: forgotErrors, submitCount: forgotSubmitCount },
+  } = forgotForm
 
-  // 3. Verify OTP & Reset Password Form
-  const resetOtpForm = useForm<ResetWithOtpFormValues>({
-    resolver: zodResolver(resetWithOtpSchema),
+  const verifyForm = useForm<VerifyOtpFormValues>({
+    resolver: zodResolver(verifyOtpSchema),
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
-    defaultValues: {
-      email: '',
-      otpCode: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
+    defaultValues: { email: '', otpCode: '' },
   })
   const {
-    register: registerResetOtp,
-    handleSubmit: handleResetOtpSubmit,
-    setError: setResetOtpError,
-    clearErrors: clearResetOtpErrors,
-    setValue: setResetOtpValue,
-    control: resetOtpControl,
-    formState: { errors: resetOtpErrors, submitCount: resetOtpSubmitCount },
-  } = resetOtpForm
+    register: registerVerify,
+    handleSubmit: handleVerifySubmit,
+    setError: setVerifyError,
+    clearErrors: clearVerifyErrors,
+    setValue: setVerifyValue,
+    reset: resetVerifyForm,
+    formState: { errors: verifyErrors, submitCount: verifySubmitCount },
+  } = verifyForm
 
-  const resetNewPassword = useWatch({ control: resetOtpControl, name: 'newPassword' }) ?? ''
+  const resetForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    shouldFocusError: true,
+    defaultValues: { resetToken: '', newPassword: '', confirmPassword: '' },
+  })
+  const {
+    register: registerReset,
+    handleSubmit: handleResetSubmit,
+    setError: setResetError,
+    clearErrors: clearResetErrors,
+    setValue: setResetValue,
+    reset: resetPasswordForm,
+    control: resetControl,
+    formState: { errors: resetErrors, submitCount: resetSubmitCount },
+  } = resetForm
+
+  const resetNewPassword = useWatch({ control: resetControl, name: 'newPassword' }) ?? ''
+
+  // Restore recovery progress after refresh (countdown from server timestamps).
+  useEffect(() => {
+    const saved = loadRecoveryState()
+    if (!saved) return
+    setIsFlipped(true)
+    setRecoveryStep(saved.step)
+    setRecoveryEmail(saved.email)
+    setOtpExpiresAt(saved.expiresAt)
+    setResendAvailableAt(saved.resendAvailableAt)
+    setResetToken(saved.resetToken)
+    resetForgotForm({ email: saved.email })
+    resetVerifyForm({ email: saved.email, otpCode: '' })
+    if (saved.resetToken) {
+      resetPasswordForm({
+        resetToken: saved.resetToken,
+        newPassword: '',
+        confirmPassword: '',
+      })
+    }
+    // Intentionally hydrate once from sessionStorage on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const tick = () => {
+      setOtpExpirySeconds(secondsUntil(otpExpiresAt))
+      setResendSeconds(secondsUntil(resendAvailableAt))
+    }
+    tick()
+    const id = window.setInterval(tick, 250)
+    return () => window.clearInterval(id)
+  }, [otpExpiresAt, resendAvailableAt])
 
   const emailError =
     typeof loginErrors.email?.message === 'string' ? loginErrors.email.message : undefined
@@ -164,12 +213,44 @@ export function LoginPage() {
     typeof loginErrors.password?.message === 'string' ? loginErrors.password.message : undefined
   const showLoginBanner = Boolean(loginError) && !emailError && !passwordError
 
+  const persistRecovery = (partial: {
+    email?: string
+    step?: RecoveryStep
+    expiresAt?: string | null
+    resendAvailableAt?: string | null
+    resetToken?: string | null
+    resetExpiresAt?: string | null
+  }) => {
+    const next = {
+      email: partial.email ?? recoveryEmail,
+      step: partial.step ?? recoveryStep,
+      expiresAt: partial.expiresAt === undefined ? otpExpiresAt : partial.expiresAt,
+      resendAvailableAt:
+        partial.resendAvailableAt === undefined ? resendAvailableAt : partial.resendAvailableAt,
+      resetToken: partial.resetToken === undefined ? resetToken : partial.resetToken,
+      resetExpiresAt: partial.resetExpiresAt ?? null,
+    }
+    saveRecoveryState(next)
+  }
+
+  const exitRecovery = () => {
+    setIsFlipped(false)
+    setRecoveryStep('request')
+    setOtpError(null)
+    setOtpExpiresAt(null)
+    setResendAvailableAt(null)
+    setResetToken(null)
+    clearRecoveryState()
+    resetForgotForm({ email: '' })
+    resetVerifyForm({ email: '', otpCode: '' })
+    resetPasswordForm({ resetToken: '', newPassword: '', confirmPassword: '' })
+  }
+
   const showLoginInvalidFeedback = () => {
     pushToast(VALIDATION_TOAST, 'warning')
     focusFirstInvalidField()
   }
 
-  // Handlers
   const submitLogin = handleLoginSubmit(
     async (values) => {
       clearLoginError()
@@ -179,16 +260,14 @@ export function LoginPage() {
         navigate('/admin/dashboard', { replace: true })
       } catch (error) {
         handleFormMutationError({
-          setError: setLoginError,
+          setError: setLoginFieldError,
           error,
           pushToast,
           fallbackMessage: 'Unable to sign in. Please try again later.',
         })
       }
     },
-    () => {
-      showLoginInvalidFeedback()
-    },
+    () => showLoginInvalidFeedback(),
   )
 
   const onLoginSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -203,7 +282,7 @@ export function LoginPage() {
       keys.forEach((field, index) => {
         const message = manual[field]
         if (!message) return
-        setLoginError(field, { type: 'manual', message }, { shouldFocus: index === 0 })
+        setLoginFieldError(field, { type: 'manual', message }, { shouldFocus: index === 0 })
       })
       showLoginInvalidFeedback()
       return
@@ -213,23 +292,36 @@ export function LoginPage() {
     void submitLogin(event)
   }
 
-  const onSendOtpSubmit = handleSendOtpSubmit(
+  const applyForgotSuccess = (
+    email: string,
+    data: { expiresAt: string | null; resendAvailableAt: string | null },
+  ) => {
+    setRecoveryEmail(email)
+    setOtpExpiresAt(data.expiresAt)
+    setResendAvailableAt(data.resendAvailableAt)
+    setRecoveryStep('verify')
+    setVerifyValue('email', email)
+    setVerifyValue('otpCode', '')
+    persistRecovery({
+      email,
+      step: 'verify',
+      expiresAt: data.expiresAt,
+      resendAvailableAt: data.resendAvailableAt,
+      resetToken: null,
+    })
+  }
+
+  const onForgotSubmit = handleForgotSubmit(
     async (values) => {
       setOtpError(null)
       setIsSendingOtp(true)
       try {
-        const res = await sendOtpRequest(values)
-        const generatedCode = res.data.otpCode
-        setActiveOtpCode(generatedCode)
-
-        setResetOtpValue('email', values.email)
-        setResetOtpValue('otpCode', generatedCode)
-        setOtpStep('verify')
-
-        pushToast('OTP code sent successfully.', 'success')
+        const res = await forgotPasswordRequest(values)
+        applyForgotSuccess(values.email.trim().toLowerCase(), res.data)
+        pushToast('Verification code sent.', 'success')
       } catch (error) {
         handleFormMutationError({
-          setError: setSendOtpError,
+          setError: setForgotError,
           error,
           pushToast,
           onFormError: setOtpError,
@@ -242,28 +334,78 @@ export function LoginPage() {
     createFormInvalidHandler(pushToast),
   )
 
-  const onResetWithOtpSubmit = handleResetOtpSubmit(
+  const onResendCode = async () => {
+    if (resendSeconds > 0 || isSendingOtp || !recoveryEmail) return
+    setOtpError(null)
+    setIsSendingOtp(true)
+    try {
+      const res = await forgotPasswordRequest({ email: recoveryEmail })
+      applyForgotSuccess(recoveryEmail, res.data)
+      pushToast('Verification code sent.', 'success')
+    } catch (error) {
+      handleFormMutationError({
+        setError: setForgotError,
+        error,
+        pushToast,
+        onFormError: setOtpError,
+        fallbackMessage: 'Could not resend verification code. Please try again.',
+      })
+    } finally {
+      setIsSendingOtp(false)
+    }
+  }
+
+  const onVerifySubmit = handleVerifySubmit(
+    async (values) => {
+      setOtpError(null)
+      setIsVerifyingOtp(true)
+      try {
+        const res = await verifyOtpRequest(values)
+        setResetToken(res.data.resetToken)
+        setResetValue('resetToken', res.data.resetToken)
+        setResetValue('newPassword', '')
+        setResetValue('confirmPassword', '')
+        setRecoveryStep('reset')
+        persistRecovery({
+          email: values.email,
+          step: 'reset',
+          resetToken: res.data.resetToken,
+          resetExpiresAt: res.data.expiresAt,
+        })
+        pushToast('Verification successful.', 'success')
+      } catch (error) {
+        handleFormMutationError({
+          setError: setVerifyError,
+          error,
+          pushToast,
+          onFormError: setOtpError,
+          fallbackMessage: 'Invalid verification code.',
+        })
+      } finally {
+        setIsVerifyingOtp(false)
+      }
+    },
+    createFormInvalidHandler(pushToast),
+  )
+
+  const onResetSubmit = handleResetSubmit(
     async (values) => {
       setOtpError(null)
       setIsResetting(true)
       try {
-        await resetWithOtpRequest(values)
-        pushToast('Password reset successfully. Please sign in with your new password.', 'success')
-
-        setLoginValue('email', values.email)
+        await resetPasswordRequest(values)
+        pushToast('Your password has been reset successfully.', 'success')
+        setLoginValue('email', recoveryEmail)
         setLoginValue('password', '')
         clearLoginError()
-
-        setIsFlipped(false)
-        setOtpStep('request')
-        setActiveOtpCode(null)
+        exitRecovery()
       } catch (error) {
         handleFormMutationError({
-          setError: setResetOtpError,
+          setError: setResetError,
           error,
           pushToast,
           onFormError: setOtpError,
-          fallbackMessage: 'Failed to reset password. Check the OTP and try again.',
+          fallbackMessage: 'Unable to reset password. Please try again.',
         })
       } finally {
         setIsResetting(false)
@@ -271,6 +413,20 @@ export function LoginPage() {
     },
     createFormInvalidHandler(pushToast),
   )
+
+  const recoveryTitle =
+    recoveryStep === 'request'
+      ? 'Forgot password'
+      : recoveryStep === 'verify'
+        ? 'Enter verification code'
+        : 'Create a new password'
+
+  const recoveryDescription =
+    recoveryStep === 'request'
+      ? 'Enter your registered owner email. If an account exists, we will send a 6-digit verification code.'
+      : recoveryStep === 'verify'
+        ? `Enter the 6-digit code sent to ${recoveryEmail || 'your email'}. The code expires in 3 minutes.`
+        : 'Choose a strong password. You will need to sign in again with it.'
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#06120f] text-white">
@@ -296,7 +452,6 @@ export function LoginPage() {
       </div>
 
       <div className="relative mx-auto grid min-h-dvh w-full max-w-7xl lg:grid-cols-[1.05fr_0.95fr]">
-        {/* Left Hero Column */}
         <motion.section
           initial={{ opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
@@ -354,7 +509,6 @@ export function LoginPage() {
           </div>
         </motion.section>
 
-        {/* Right Interactive Column - 3D Flipping Card */}
         <motion.section
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -372,13 +526,12 @@ export function LoginPage() {
               </div>
             </div>
 
-            {/* 3D Flip Container — visible face stays in-flow so height never clips */}
             <div
               className={`relative w-full transition-transform duration-700 transform-3d ${
                 isFlipped ? 'rotate-y-180' : ''
               }`}
             >
-              {/* ================= FRONT FACE: LOGIN CARD ================= */}
+              {/* LOGIN */}
               <div
                 className={cn(
                   'w-full backface-hidden overflow-hidden rounded-[28px] border border-white/10 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl',
@@ -403,7 +556,6 @@ export function LoginPage() {
                       submitCount={loginAttempted ? Math.max(loginSubmitCount, 1) : 0}
                       message="Please complete the required fields before continuing."
                     />
-                    {/* General / System Level Error Banner ONLY (when not mapped to a field) */}
                     <AnimatePresence mode="wait">
                       {showLoginBanner ? (
                         <motion.div
@@ -463,8 +615,9 @@ export function LoginPage() {
                           setIsFlipped(true)
                           clearLoginError()
                           setOtpError(null)
+                          setRecoveryStep('request')
                         }}
-                        className="text-xs font-bold text-primary hover:underline focus:outline-hidden cursor-pointer"
+                        className="cursor-pointer text-xs font-bold text-primary hover:underline focus:outline-hidden"
                       >
                         Forgot password?
                       </button>
@@ -483,13 +636,14 @@ export function LoginPage() {
 
                   <div className="mt-8 rounded-2xl border border-border/70 bg-background px-4 py-3">
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      Access is limited to the restaurant owner account. Reset password via email OTP on the back card.
+                      Access is limited to the restaurant owner account. Password recovery uses a
+                      one-time email verification code.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* ================= BACK FACE: FORGOT PASSWORD (OTP) CARD ================= */}
+              {/* RECOVERY */}
               <div
                 className={cn(
                   'w-full backface-hidden rotate-y-180 overflow-hidden rounded-[28px] border border-amber-400/30 bg-white/6 p-px shadow-[0_30px_80px_rgb(0_0_0/0.35)] backdrop-blur-2xl',
@@ -498,22 +652,17 @@ export function LoginPage() {
               >
                 <div className="absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-amber-400/50 to-transparent" />
                 <div className="rounded-[27px] bg-linear-to-b from-white via-amber-50/30 to-white p-7 text-foreground sm:p-8">
-                  {/* Top Bar with Flip Back Action */}
                   <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsFlipped(false)
-                        setOtpError(null)
-                      }}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-1 text-xs font-bold text-slate-700 transition hover:text-primary cursor-pointer"
+                      onClick={exitRecovery}
+                      className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl px-1 text-xs font-bold text-slate-700 transition hover:text-primary"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back to Sign In
                     </button>
-
                     <span className="rounded-lg border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-800">
-                      OTP Recovery
+                      Secure recovery
                     </span>
                   </div>
 
@@ -522,16 +671,11 @@ export function LoginPage() {
                       <KeyRound className="h-6 w-6" />
                     </div>
                     <h2 className="font-display text-2xl font-bold tracking-tight text-slate-950">
-                      {otpStep === 'request' ? 'Request Verification OTP' : 'Enter OTP & New Password'}
+                      {recoveryTitle}
                     </h2>
-                    <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                      {otpStep === 'request'
-                        ? 'Enter your registered owner email address to receive a 6-digit OTP verification code.'
-                        : 'Check your email inbox for the 6-digit OTP code and choose a new password.'}
-                    </p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{recoveryDescription}</p>
                   </div>
 
-                  {/* General / System Level Error Banner ONLY */}
                   <AnimatePresence mode="wait">
                     {otpError ? (
                       <motion.div
@@ -541,32 +685,77 @@ export function LoginPage() {
                         exit={{ opacity: 0, y: -8 }}
                         className="mb-4"
                       >
-                        <Alert icon={AlertTriangle} title="Verification Failed">
+                        <Alert icon={AlertTriangle} title="Unable to continue">
                           {otpError}
                         </Alert>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
 
-                  {/* STEP 1: Request OTP Form */}
-                  {otpStep === 'request' ? (
-                    <form onSubmit={onSendOtpSubmit} className="space-y-4" noValidate>
-                      <FormErrorSummary
-                        errors={sendOtpErrors}
-                        submitCount={sendOtpSubmitCount}
-                      />
+                  {recoveryStep === 'request' ? (
+                    <form onSubmit={onForgotSubmit} className="space-y-4" noValidate>
+                      <FormErrorSummary errors={forgotErrors} submitCount={forgotSubmitCount} />
                       <FloatingInput
                         label="Owner Email Address"
                         type="email"
                         autoComplete="email"
                         error={
-                          typeof sendOtpErrors.email?.message === 'string'
-                            ? sendOtpErrors.email.message
+                          typeof forgotErrors.email?.message === 'string'
+                            ? forgotErrors.email.message
                             : undefined
                         }
-                        {...registerSendOtp('email', {
+                        {...registerForgot('email', {
                           onChange: () => {
-                            if (sendOtpErrors.email) clearSendOtpErrors('email')
+                            if (forgotErrors.email) clearForgotErrors('email')
+                            if (otpError) setOtpError(null)
+                          },
+                        })}
+                      />
+                      <Button
+                        type="submit"
+                        loading={isSendingOtp}
+                        disabled={isSendingOtp}
+                        className="h-13 w-full bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
+                      >
+                        <Send className="h-4 w-4" />
+                        {isSendingOtp ? 'Sending code...' : 'Send verification code'}
+                      </Button>
+                      <p className="text-[11px] leading-relaxed text-slate-500">
+                        If an account exists with this email, a verification code has been sent.
+                      </p>
+                    </form>
+                  ) : null}
+
+                  {recoveryStep === 'verify' ? (
+                    <form onSubmit={onVerifySubmit} className="space-y-4" noValidate>
+                      <FormErrorSummary errors={verifyErrors} submitCount={verifySubmitCount} />
+
+                      <div className="flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-50/80 px-3 py-2.5 text-xs text-emerald-950">
+                        <span className="inline-flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          Code expires in
+                        </span>
+                        <span className="font-mono text-sm font-bold tabular-nums">
+                          {formatCountdown(otpExpirySeconds)}
+                        </span>
+                      </div>
+
+                      <input type="hidden" {...registerVerify('email')} />
+
+                      <FloatingInput
+                        label="6-Digit OTP Code"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        error={
+                          typeof verifyErrors.otpCode?.message === 'string'
+                            ? verifyErrors.otpCode.message
+                            : undefined
+                        }
+                        {...registerVerify('otpCode', {
+                          onChange: () => {
+                            if (verifyErrors.otpCode) clearVerifyErrors('otpCode')
                             if (otpError) setOtpError(null)
                           },
                         })}
@@ -574,73 +763,54 @@ export function LoginPage() {
 
                       <Button
                         type="submit"
-                        loading={isSendingOtp}
-                        disabled={isSendingOtp}
-                        className="h-13 w-full font-bold bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
+                        loading={isVerifyingOtp}
+                        disabled={isVerifyingOtp || otpExpirySeconds === 0}
+                        className="h-12 w-full bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
                       >
-                        <Send className="h-4 w-4" />
-                        {isSendingOtp ? 'Sending OTP Code...' : 'Send Verification OTP'}
+                        {isVerifyingOtp ? 'Verifying...' : 'Verify code'}
                       </Button>
+
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRecoveryStep('request')
+                            persistRecovery({ step: 'request' })
+                          }}
+                          className="text-xs font-semibold text-slate-600 hover:text-primary"
+                        >
+                          Change email
+                        </button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={resendSeconds > 0 || isSendingOtp}
+                          loading={isSendingOtp}
+                          onClick={() => void onResendCode()}
+                          className="w-full border-amber-200 bg-white sm:w-auto"
+                        >
+                          {resendSeconds > 0
+                            ? `Resend available in ${resendSeconds}s`
+                            : 'Resend code'}
+                        </Button>
+                      </div>
                     </form>
-                  ) : (
-                    /* STEP 2: Verify OTP & Reset Password Form */
-                    <form onSubmit={onResetWithOtpSubmit} className="space-y-4" noValidate>
-                      <FormErrorSummary
-                        errors={resetOtpErrors}
-                        submitCount={resetOtpSubmitCount}
-                      />
-                      {activeOtpCode ? (
-                        <div className="rounded-xl border border-emerald-400/40 bg-emerald-50/80 p-3 text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-xs">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                            <span>OTP Code sent to email!</span>
-                          </div>
-                          <span className="font-mono font-extrabold text-sm tracking-widest bg-emerald-200/80 px-2 py-0.5 rounded-lg border border-emerald-300">
-                            {activeOtpCode}
-                          </span>
-                        </div>
-                      ) : null}
+                  ) : null}
 
-                      <FloatingInput
-                        label="Owner Email Address"
-                        type="email"
-                        error={
-                          typeof resetOtpErrors.email?.message === 'string'
-                            ? resetOtpErrors.email.message
-                            : undefined
-                        }
-                        {...registerResetOtp('email', {
-                          onChange: () => {
-                            if (resetOtpErrors.email) clearResetOtpErrors('email')
-                            if (otpError) setOtpError(null)
-                          },
-                        })}
-                      />
-
-                      <FloatingInput
-                        label="6-Digit OTP Code"
-                        type="text"
-                        maxLength={6}
-                        error={
-                          typeof resetOtpErrors.otpCode?.message === 'string'
-                            ? resetOtpErrors.otpCode.message
-                            : undefined
-                        }
-                        {...registerResetOtp('otpCode', {
-                          onChange: () => {
-                            if (resetOtpErrors.otpCode) clearResetOtpErrors('otpCode')
-                            if (otpError) setOtpError(null)
-                          },
-                        })}
-                      />
+                  {recoveryStep === 'reset' ? (
+                    <form onSubmit={onResetSubmit} className="space-y-4" noValidate>
+                      <FormErrorSummary errors={resetErrors} submitCount={resetSubmitCount} />
+                      <input type="hidden" {...registerReset('resetToken')} />
 
                       <div className="space-y-2">
                         <FloatingInput
                           label="New Password"
                           type={showNewPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
                           error={
-                            typeof resetOtpErrors.newPassword?.message === 'string'
-                              ? resetOtpErrors.newPassword.message
+                            typeof resetErrors.newPassword?.message === 'string'
+                              ? resetErrors.newPassword.message
                               : undefined
                           }
                           trailing={
@@ -650,12 +820,16 @@ export function LoginPage() {
                               className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                               aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                             >
-                              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {showNewPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
                             </button>
                           }
-                          {...registerResetOtp('newPassword', {
+                          {...registerReset('newPassword', {
                             onChange: () => {
-                              if (resetOtpErrors.newPassword) clearResetOtpErrors('newPassword')
+                              if (resetErrors.newPassword) clearResetErrors('newPassword')
                               if (otpError) setOtpError(null)
                             },
                           })}
@@ -666,72 +840,30 @@ export function LoginPage() {
                       <FloatingInput
                         label="Confirm New Password"
                         type={showNewPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
                         error={
-                          typeof resetOtpErrors.confirmPassword?.message === 'string'
-                            ? resetOtpErrors.confirmPassword.message
+                          typeof resetErrors.confirmPassword?.message === 'string'
+                            ? resetErrors.confirmPassword.message
                             : undefined
                         }
-                        {...registerResetOtp('confirmPassword', {
+                        {...registerReset('confirmPassword', {
                           onChange: () => {
-                            if (resetOtpErrors.confirmPassword)
-                              clearResetOtpErrors('confirmPassword')
+                            if (resetErrors.confirmPassword) clearResetErrors('confirmPassword')
                             if (otpError) setOtpError(null)
                           },
                         })}
                       />
 
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <button
-                          type="button"
-                          onClick={() => setOtpStep('request')}
-                          className="flex h-12 w-full items-center justify-center rounded-2xl border border-border/80 bg-white/70 px-3 text-xs font-bold text-slate-700 transition hover:text-primary sm:w-auto sm:shrink-0"
-                        >
-                          Resend OTP
-                        </button>
-
-                        <Button
-                          type="submit"
-                          loading={isResetting}
-                          disabled={isResetting}
-                          className="h-12 w-full flex-1 bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
-                        >
-                          {isResetting ? 'Resetting Password...' : 'Verify & reset'}
-                        </Button>
-                      </div>
+                      <Button
+                        type="submit"
+                        loading={isResetting}
+                        disabled={isResetting}
+                        className="h-12 w-full bg-linear-to-r from-amber-500 via-amber-600 to-amber-700 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:brightness-105"
+                      >
+                        {isResetting ? 'Updating password...' : 'Reset password'}
+                      </Button>
                     </form>
-                  )}
-
-                  {/* Seed / Default Credentials Quick Action */}
-                  <div className="mt-5 rounded-xl border border-amber-200/80 bg-white/90 p-3 text-xs text-slate-700 space-y-1.5">
-                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <HelpCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                      Default Owner Seed Credentials
-                    </p>
-                    <p className="text-[11px] leading-relaxed text-slate-600">
-                      Default Email:{' '}
-                      <code className="rounded bg-amber-100 px-1 py-0.5 font-mono font-bold text-slate-900">
-                        {OWNER_SEED_EMAIL}
-                      </code>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSendOtpValue('email', OWNER_SEED_EMAIL)
-                        setResetOtpValue('email', OWNER_SEED_EMAIL)
-                        setResetOtpValue('newPassword', OWNER_SEED_PASSWORD)
-                        setResetOtpValue('confirmPassword', OWNER_SEED_PASSWORD)
-                        setLoginValue('email', OWNER_SEED_EMAIL)
-                        setLoginValue('password', OWNER_SEED_PASSWORD)
-                        setOtpError(null)
-                        clearLoginError()
-                        pushToast('Default seed credentials filled into form', 'success')
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-800 hover:bg-amber-500/25 transition cursor-pointer"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Fill Default Owner Credentials
-                    </button>
-                  </div>
+                  ) : null}
                 </div>
               </div>
             </div>

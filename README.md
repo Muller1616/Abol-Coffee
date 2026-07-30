@@ -47,7 +47,9 @@ npm run dev            # http://localhost:5173
 - Email: `Habeshadreamer12@gmail.com` (from `OWNER_EMAIL` in `server/.env`)
 - Password: `ChangeMe123!` (from `OWNER_PASSWORD`)
 
-Change the password after first login at `/admin/account`.
+Change the password after first login at `/admin/account`, or use **Forgot password** on `/admin/login` (email OTP, 3-minute expiry).
+
+Configure SMTP in `server/.env` to deliver OTP emails; without SMTP, codes are logged to the API console in development.
 
 ## Key URLs
 
@@ -93,7 +95,7 @@ Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free
 - Currency is fixed to **ETB**
 - Public menu shows only **active categories** and **available items**
 - Restaurant status: `ACTIVE` | `MAINTENANCE` (maintenance returns 503 to guests)
-- Owner email is immutable; password change is in-app only (no forgot-password)
+- Owner email is immutable; password recovery uses hashed email OTPs (3 min expiry, one-time use, attempt limits, session invalidation on reset)
 - JWT in HttpOnly cookie; Remember Me = 30 days, otherwise 24 hours
 - Public menu is always fresh (`Cache-Control: no-store` / client refetch)
 - Item names are unique within a category

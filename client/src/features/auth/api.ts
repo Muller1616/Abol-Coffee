@@ -55,35 +55,67 @@ export type ChangePasswordPayload = {
 
 export async function changePasswordRequest(payload: ChangePasswordPayload) {
   await ensureCsrfToken()
-  const { data } = await api.post<ApiSuccess<undefined>>('/api/auth/change-password', payload)
+  const { data } = await api.post<ApiSuccess<{ csrfToken?: string } | undefined>>(
+    '/api/auth/change-password',
+    payload,
+  )
+  if (data.data?.csrfToken) setCsrfToken(data.data.csrfToken)
   return data
 }
 
-export type SendOtpPayload = {
+export type ForgotPasswordPayload = {
   email: string
 }
 
-export async function sendOtpRequest(payload: SendOtpPayload) {
+export type ForgotPasswordResult = {
+  email: string
+  expiresAt: string | null
+  resendAvailableAt: string | null
+}
+
+export async function forgotPasswordRequest(payload: ForgotPasswordPayload) {
   await fetchCsrfToken()
-  const { data } = await api.post<ApiSuccess<{ email: string; otpCode: string }>>(
-    '/api/auth/send-otp',
+  const { data } = await api.post<ApiSuccess<ForgotPasswordResult>>(
+    '/api/auth/forgot-password',
     payload,
   )
   return data
 }
 
-export type ResetWithOtpPayload = {
+/** @deprecated Prefer forgotPasswordRequest */
+export async function sendOtpRequest(payload: ForgotPasswordPayload) {
+  return forgotPasswordRequest(payload)
+}
+
+export type VerifyOtpPayload = {
   email: string
   otpCode: string
+}
+
+export type VerifyOtpResult = {
+  resetToken: string
+  expiresAt: string
+  email: string
+}
+
+export async function verifyOtpRequest(payload: VerifyOtpPayload) {
+  await fetchCsrfToken()
+  const { data } = await api.post<ApiSuccess<VerifyOtpResult>>('/api/auth/verify-otp', payload)
+  return data
+}
+
+export type ResetPasswordPayload = {
+  resetToken: string
   newPassword: string
   confirmPassword: string
 }
 
-export async function resetWithOtpRequest(payload: ResetWithOtpPayload) {
+export async function resetPasswordRequest(payload: ResetPasswordPayload) {
   await fetchCsrfToken()
-  const { data } = await api.post<ApiSuccess<undefined>>(
-    '/api/auth/reset-password-otp',
+  const { data } = await api.post<ApiSuccess<{ csrfToken?: string }>>(
+    '/api/auth/reset-password',
     payload,
   )
+  if (data.data?.csrfToken) setCsrfToken(data.data.csrfToken)
   return data
 }
