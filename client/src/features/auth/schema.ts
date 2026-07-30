@@ -1,11 +1,28 @@
 import { z } from 'zod'
 
-export const loginSchema = z.object({
-  email: z
-    .string()
+function requiredEmail() {
+  return z
+    .string({ error: 'Email is required.' })
+    .trim()
     .min(1, 'Email is required.')
-    .email('Please enter a valid email address.'),
-  password: z.string().min(1, 'Password is required.'),
+    .email('Please enter a valid email address.')
+}
+
+function requiredPassword() {
+  return z.string({ error: 'Password is required.' }).superRefine((value, ctx) => {
+    if (value.length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Password is required.' })
+      return
+    }
+    if (value.trim().length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Password cannot be empty.' })
+    }
+  })
+}
+
+export const loginSchema = z.object({
+  email: requiredEmail(),
+  password: requiredPassword(),
   rememberMe: z.boolean(),
 })
 
@@ -41,20 +58,14 @@ export const changePasswordSchema = z
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
 
 export const sendOtpSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required.')
-    .email('Please enter a valid email address.'),
+  email: requiredEmail(),
 })
 
 export type SendOtpFormValues = z.infer<typeof sendOtpSchema>
 
 export const resetWithOtpSchema = z
   .object({
-    email: z
-      .string()
-      .min(1, 'Email is required.')
-      .email('Please enter a valid email address.'),
+    email: requiredEmail(),
     otpCode: z
       .string()
       .min(1, 'OTP code is required.')
@@ -71,3 +82,27 @@ export const resetWithOtpSchema = z
   })
 
 export type ResetWithOtpFormValues = z.infer<typeof resetWithOtpSchema>
+
+/** Manual login validation — reliable fallback for empty submit UX. */
+export function validateLoginFields(values: {
+  email?: string
+  password?: string
+}): Partial<Record<'email' | 'password', string>> {
+  const errors: Partial<Record<'email' | 'password', string>> = {}
+  const email = values.email ?? ''
+  const password = values.password ?? ''
+
+  if (email.trim().length === 0) {
+    errors.email = 'Email is required.'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = 'Please enter a valid email address.'
+  }
+
+  if (password.length === 0) {
+    errors.password = 'Password is required.'
+  } else if (password.trim().length === 0) {
+    errors.password = 'Password cannot be empty.'
+  }
+
+  return errors
+}
