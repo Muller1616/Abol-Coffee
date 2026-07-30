@@ -166,20 +166,31 @@ export function RestaurantPage() {
         openingHours: values.openingHours,
       })
 
-      if (removeLogo && restaurant.logo) {
-        restaurant = await removeRestaurantLogo()
-      }
-      if (logoFile) {
-        setLogoUploadProgress(0)
-        restaurant = await uploadRestaurantLogo(logoFile, setLogoUploadProgress)
-      }
+      const [logoRestaurant, coverRestaurant] = await Promise.all([
+        (async () => {
+          let next = restaurant
+          if (removeLogo && next.logo) next = await removeRestaurantLogo()
+          if (logoFile) {
+            setLogoUploadProgress(0)
+            next = await uploadRestaurantLogo(logoFile, setLogoUploadProgress)
+          }
+          return next
+        })(),
+        (async () => {
+          let next = restaurant
+          if (removeCover && next.coverImage) next = await removeRestaurantCover()
+          if (coverFile) {
+            setCoverUploadProgress(0)
+            next = await uploadRestaurantCover(coverFile, setCoverUploadProgress)
+          }
+          return next
+        })(),
+      ])
 
-      if (removeCover && restaurant.coverImage) {
-        restaurant = await removeRestaurantCover()
-      }
-      if (coverFile) {
-        setCoverUploadProgress(0)
-        restaurant = await uploadRestaurantCover(coverFile, setCoverUploadProgress)
+      restaurant = {
+        ...coverRestaurant,
+        logo: logoRestaurant.logo,
+        coverImage: coverRestaurant.coverImage,
       }
 
       return restaurant

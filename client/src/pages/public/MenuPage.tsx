@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle,
   ArrowUp,
@@ -108,9 +107,9 @@ export function MenuPage() {
   const menuQuery = useQuery({
     queryKey: ['public', 'menu'],
     queryFn: fetchPublicMenu,
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: (failureCount, error) => {
       if (getApiErrorMessage(error).toLowerCase().includes('maintenance')) return false
@@ -264,12 +263,7 @@ export function MenuPage() {
             </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-5"
-          >
+          <div className="space-y-5">
             {/* Brand header — centered on all breakpoints */}
             <div className="flex flex-col items-center text-center">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white p-1.5 shadow-2xl ring-2 ring-white/25">
@@ -361,7 +355,7 @@ export function MenuPage() {
                 </span>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -497,15 +491,12 @@ export function MenuPage() {
           />
         ) : (
           <div className="space-y-14">
-            {filteredCategories.map((category, categoryIndex) => (
-              <motion.section
+            {filteredCategories.map((category) => (
+              <section
                 key={category.id}
                 id={`category-${category.id}`}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.35, delay: Math.min(categoryIndex * 0.05, 0.2) }}
                 className="scroll-mt-32"
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '600px' }}
               >
                 {/* Category Header */}
                 <div className="mb-6">
@@ -625,7 +616,7 @@ export function MenuPage() {
                     })}
                   </div>
                 )}
-              </motion.section>
+              </section>
             ))}
           </div>
         )}
@@ -648,21 +639,16 @@ export function MenuPage() {
       </footer>
 
       {/* Back to Top Floating Action Button */}
-      <AnimatePresence>
-        {showBackToTop && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            type="button"
-            onClick={scrollToTop}
-            className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-xl hover:bg-primary/90 transition-transform active:scale-95 cursor-pointer"
-            aria-label="Back to top"
-          >
-            <ArrowUp className="h-5 w-5" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {showBackToTop ? (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed right-6 bottom-6 z-50 flex h-12 w-12 animate-[toast-in_200ms_ease-out] items-center justify-center rounded-2xl bg-primary text-white shadow-xl transition-transform hover:bg-primary/90 active:scale-95 cursor-pointer"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </button>
+      ) : null}
 
       {/* Opening Hours Modal */}
       <DialogPrimitive.Root open={showHoursModal} onOpenChange={setShowHoursModal}>
