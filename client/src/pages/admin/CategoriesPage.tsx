@@ -45,10 +45,11 @@ export function CategoriesPage() {
   })
 
   const invalidateRelated = () => {
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] })
-    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'] })
+    // Soft-invalidate only — never block CRUD on dashboard/activity/public refetches.
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'], refetchType: 'none' })
   }
 
   const createMutation = useMutation({
@@ -69,13 +70,16 @@ export function CategoriesPage() {
         ...(current ?? []),
         optimistic,
       ])
+      setFormOpen(false)
+      setEditing(null)
       return { previous }
     },
-    onError: (_error, _vars, context) => {
+    onError: (error, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['admin', 'categories'], context.previous)
       }
-      // Dialog form surfaces field errors via handleFormMutationError.
+      setFormOpen(true)
+      pushToast(getApiErrorMessage(error, 'Could not create category'), 'error')
     },
     onSuccess: (category) => {
       queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) => {
@@ -86,11 +90,7 @@ export function CategoriesPage() {
         }
         return [...withoutTemp, category]
       })
-      setFormOpen(false)
       pushToast('Category created successfully')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
       invalidateRelated()
     },
   })
@@ -113,23 +113,33 @@ export function CategoriesPage() {
             : item,
         ),
       )
-      return { previous }
+      setFormOpen(false)
+      setEditing(null)
+      return { previous, id, values }
     },
-    onError: (_error, _vars, context) => {
+    onError: (error, variables, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['admin', 'categories'], context.previous)
       }
+      setEditing(
+        context?.previous?.find((item) => item.id === variables.id) ?? {
+          id: variables.id,
+          name: variables.values.name,
+          isActive: variables.values.isActive,
+          displayOrder: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          _count: { menuItems: 0 },
+        },
+      )
+      setFormOpen(true)
+      pushToast(getApiErrorMessage(error, 'Could not update category'), 'error')
     },
     onSuccess: (category) => {
       queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
         (current ?? []).map((item) => (item.id === category.id ? category : item)),
       )
-      setFormOpen(false)
-      setEditing(null)
       pushToast('Category updated successfully')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
       invalidateRelated()
     },
   })
@@ -153,9 +163,6 @@ export function CategoriesPage() {
     },
     onSuccess: (_, variables) => {
       pushToast(variables.isActive ? 'Category enabled' : 'Category disabled')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
       invalidateRelated()
     },
   })
@@ -179,9 +186,6 @@ export function CategoriesPage() {
     },
     onSuccess: () => {
       pushToast('Category deleted successfully')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
       invalidateRelated()
     },
   })
@@ -212,9 +216,6 @@ export function CategoriesPage() {
     onSuccess: (categories) => {
       queryClient.setQueryData(['admin', 'categories'], categories)
       pushToast('Category order updated')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
       invalidateRelated()
     },
   })
@@ -242,7 +243,7 @@ export function CategoriesPage() {
 
   const handleSubmit = async (values: CategoryFormValues) => {
     if (editing) {
-      await updateMutation.mutateAsync({ id: editing.id, values })
+      updateMutation.mutate({ id: editing.id, values })
       return
     }
 
@@ -251,14 +252,14 @@ export function CategoriesPage() {
         ? 0
         : Math.max(...categories.map((category) => category.displayOrder)) + 1
 
-    await createMutation.mutateAsync({
+    createMutation.mutate({
       name: values.name,
       isActive: values.isActive,
       displayOrder: nextOrder,
     })
   }
 
-  const moveCategory = async (category: Category, direction: 'up' | 'down') => {
+  const moveCategory = (category: Category, direction: 'up' | 'down') => {
     const ordered = [...categories].sort((a, b) => a.displayOrder - b.displayOrder)
     const index = ordered.findIndex((item) => item.id === category.id)
     const targetIndex = direction === 'up' ? index - 1 : index + 1
@@ -273,7 +274,7 @@ export function CategoriesPage() {
     swapped[index] = target
     swapped[targetIndex] = current
 
-    await reorderMutation.mutateAsync(
+    reorderMutation.mutate(
       swapped.map((item, displayOrder) => ({
         id: item.id,
         displayOrder,
@@ -447,7 +448,7 @@ export function CategoriesPage() {
           if (!open) setEditing(null)
         }}
         category={editing}
-        loading={createMutation.isPending || updateMutation.isPending}
+        loading={false}
         onSubmit={handleSubmit}
       />
 

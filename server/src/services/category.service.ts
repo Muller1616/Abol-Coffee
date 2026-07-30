@@ -8,7 +8,7 @@ import type {
   UpdateCategoryInput,
   UpdateCategoryStatusInput,
 } from '../validators/category.validators.js';
-import { logAdminActivity } from './activity.service.js';
+import { queueAdminActivity } from './activity.service.js';
 import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 
 const categoryInclude = {
@@ -40,17 +40,6 @@ export async function getCategoryById(id: string): Promise<CategoryWithCount> {
 }
 
 export async function createCategory(input: CreateCategoryInput): Promise<CategoryWithCount> {
-  const duplicate = await prisma.category.findFirst({
-    where: {
-      name: { equals: input.name, mode: 'insensitive' },
-    },
-    select: { id: true },
-  });
-
-  if (duplicate) {
-    throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
-  }
-
   try {
     const category = await prisma.category.create({
       data: {
@@ -61,7 +50,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
       include: categoryInclude,
     });
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.CREATE,
       entity: AdminEntity.CATEGORY,
       entityId: category.id,
@@ -83,22 +72,6 @@ export async function updateCategory(
   id: string,
   input: UpdateCategoryInput,
 ): Promise<CategoryWithCount> {
-  await getCategoryById(id);
-
-  if (input.name !== undefined) {
-    const duplicate = await prisma.category.findFirst({
-      where: {
-        id: { not: id },
-        name: { equals: input.name, mode: 'insensitive' },
-      },
-      select: { id: true },
-    });
-
-    if (duplicate) {
-      throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
-    }
-  }
-
   try {
     const category = await prisma.category.update({
       where: { id },
@@ -110,7 +83,7 @@ export async function updateCategory(
       include: categoryInclude,
     });
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.CATEGORY,
       entityId: category.id,
@@ -132,27 +105,40 @@ export async function updateCategoryStatus(
   id: string,
   input: UpdateCategoryStatusInput,
 ): Promise<CategoryWithCount> {
-  await getCategoryById(id);
+  try {
+    const category = await prisma.category.update({
+      where: { id },
+      data: { isActive: input.isActive },
+      include: categoryInclude,
+    });
 
-  const category = await prisma.category.update({
-    where: { id },
-    data: { isActive: input.isActive },
-    include: categoryInclude,
-  });
+    queueAdminActivity({
+      action: AdminAction.TOGGLE,
+      entity: AdminEntity.CATEGORY,
+      entityId: category.id,
+      summary: `Category "${category.name}" ${input.isActive ? 'enabled' : 'disabled'}`,
+    });
 
-  await logAdminActivity({
-    action: AdminAction.TOGGLE,
-    entity: AdminEntity.CATEGORY,
-    entityId: category.id,
-    summary: `Category "${category.name}" ${input.isActive ? 'enabled' : 'disabled'}`,
-  });
-
-  invalidatePublicMenuCache();
-  return category;
+    invalidatePublicMenuCache();
+    return category;
+  } catch (error) {
+    handlePrismaError(error, 'Failed to update category status');
+  }
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const category = await getCategoryById(id);
+  const category = await prisma.category.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { menuItems: true } },
+    },
+  });
+
+  if (!category) {
+    throw new AppError('Category not found', 404);
+  }
 
   if (category._count.menuItems > 0) {
     throw new AppError(
@@ -165,7 +151,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
   await prisma.category.delete({ where: { id } });
 
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.DELETE,
     entity: AdminEntity.CATEGORY,
     entityId: id,
@@ -185,24 +171,20 @@ export async function reorderCategories(
     throw new AppError('Duplicate category ids are not allowed in reorder payload', 400);
   }
 
-  const existingCount = await prisma.category.count({
-    where: { id: { in: ids } },
-  });
-
-  if (existingCount !== ids.length) {
-    throw new AppError('One or more categories were not found', 404);
+  try {
+    await prisma.$transaction(
+      input.items.map((item) =>
+        prisma.category.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        }),
+      ),
+    );
+  } catch (error) {
+    handlePrismaError(error, 'Failed to reorder categories');
   }
 
-  await prisma.$transaction(
-    input.items.map((item) =>
-      prisma.category.update({
-        where: { id: item.id },
-        data: { displayOrder: item.displayOrder },
-      }),
-    ),
-  );
-
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.CATEGORY,
     summary: `Reordered ${input.items.length} categories`,
