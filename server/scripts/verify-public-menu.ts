@@ -170,9 +170,20 @@ async function main(): Promise<void> {
     const menu = await api(port, null, '/api/public/menu');
     assert(menu.status === 200, `Public menu failed (${menu.status})`);
     assert(menu.body.data?.status === 'ACTIVE', 'Expected ACTIVE menu');
-    assert(menu.cacheControl?.includes('no-store') ?? false, 'Missing no-store cache header');
+    assert(
+      menu.cacheControl?.includes('max-age') ?? false,
+      'Missing max-age cache header',
+    );
 
-    const itemNames = (menu.body.data?.items ?? []).map((item) => item.name);
+    const flattenItems = (payload: {
+      categories?: Array<{ items: Array<{ name: string }> }>;
+      items?: Array<{ name: string }>;
+    }) =>
+      payload.items ??
+      payload.categories?.flatMap((category) => category.items) ??
+      [];
+
+    const itemNames = flattenItems(menu.body.data ?? {}).map((item) => item.name);
     assert(itemNames.includes(`Cappuccino ${suffix}`), 'Visible item missing from public menu');
     assert(!itemNames.includes(`Secret Brew ${suffix}`), 'Hidden item leaked to public menu');
     assert(!itemNames.includes(`Ghost Latte ${suffix}`), 'Inactive category item leaked');
@@ -180,7 +191,9 @@ async function main(): Promise<void> {
     const searched = await api(port, null, `/api/public/menu?search=cappuccino`);
     assert(searched.status === 200, `Search failed (${searched.status})`);
     assert(
-      (searched.body.data?.items ?? []).some((item) => item.name.includes(`Cappuccino ${suffix}`)),
+      flattenItems(searched.body.data ?? {}).some((item) =>
+        item.name.includes(`Cappuccino ${suffix}`),
+      ),
       'Search did not find cappuccino',
     );
 
@@ -191,7 +204,9 @@ async function main(): Promise<void> {
     );
     assert(filtered.status === 200, `Filter+search failed (${filtered.status})`);
     assert(
-      (filtered.body.data?.items ?? []).some((item) => item.name.includes(`Cappuccino ${suffix}`)),
+      flattenItems(filtered.body.data ?? {}).some((item) =>
+        item.name.includes(`Cappuccino ${suffix}`),
+      ),
       'AND filter/search missed matching item',
     );
 
@@ -200,7 +215,7 @@ async function main(): Promise<void> {
       null,
       `/api/public/menu?categoryId=${activeCategoryId}&search=pizza`,
     );
-    assert((noMatch.body.data?.items ?? []).length === 0, 'Expected empty AND filter result');
+    assert(flattenItems(noMatch.body.data ?? {}).length === 0, 'Expected empty AND filter result');
 
     const priceUpdate = await api(port, jar, `/api/admin/menu-items/${visibleItemId}`, {
       method: 'PATCH',
@@ -213,7 +228,7 @@ async function main(): Promise<void> {
     assert(priceUpdate.status === 200, 'Price update failed');
 
     const fresh = await api(port, null, '/api/public/menu');
-    const updated = (fresh.body.data?.items ?? []).find((item) =>
+    const updated = flattenItems(fresh.body.data ?? {}).find((item) =>
       item.name.includes(`Cappuccino ${suffix}`),
     ) as { name: string; price?: number } | undefined;
     assert(updated !== undefined, 'Updated item missing after price change');

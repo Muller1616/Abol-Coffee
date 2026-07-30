@@ -18,6 +18,14 @@ async function main(): Promise<void> {
 
   await ensureUploadDirectories();
 
+  // Warm public menu cache so the first guest request avoids a cold Neon round-trip.
+  try {
+    const { getPublicMenu } = await import('./services/publicMenu.service.js');
+    await getPublicMenu({});
+  } catch (error) {
+    logger.warn('Public menu warm-up skipped', { error });
+  }
+
   const app = createApp();
   const server = app.listen(env.PORT, () => {
     const address = server.address();
