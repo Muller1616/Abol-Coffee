@@ -17,22 +17,52 @@ export async function downloadQrFile(format: 'png' | 'svg') {
   URL.revokeObjectURL(objectUrl)
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+}
+
+/**
+ * Print via a hidden iframe so browsers never treat this as a pop-up.
+ * Must be called directly from a user click (not after an await).
+ */
 export function printQrSheet(options: {
   pngDataUrl: string
   menuUrl: string
   restaurantName: string
 }) {
   const { pngDataUrl, menuUrl, restaurantName } = options
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=720,height=900')
+  const safeName = escapeHtml(restaurantName)
+  const safeUrl = escapeHtml(menuUrl)
 
-  if (!printWindow) {
-    throw new Error('Pop-up blocked. Allow pop-ups to print the QR code.')
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.setAttribute('title', 'Print QR code')
+  Object.assign(iframe.style, {
+    position: 'fixed',
+    right: '0',
+    bottom: '0',
+    width: '0',
+    height: '0',
+    border: '0',
+    opacity: '0',
+    pointerEvents: 'none',
+  })
+  document.body.appendChild(iframe)
+
+  const frameWindow = iframe.contentWindow
+  const frameDocument = iframe.contentDocument ?? frameWindow?.document
+
+  if (!frameWindow || !frameDocument) {
+    iframe.remove()
+    throw new Error('Could not prepare the print dialog. Please try again.')
   }
 
-  const safeName = restaurantName.replace(/[<>&"]/g, '')
-  const safeUrl = menuUrl.replace(/[<>&"]/g, '')
-
-  printWindow.document.write(`<!doctype html>
+  frameDocument.open()
+  frameDocument.write(`<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -91,17 +121,28 @@ export function printQrSheet(options: {
     </div>
   </body>
 </html>`)
+  frameDocument.close()
 
-  printWindow.document.close()
+  const cleanup = () => {
+    iframe.remove()
+  }
 
   const triggerPrint = () => {
-    printWindow.focus()
-    printWindow.print()
+    try {
+      frameWindow.focus()
+      frameWindow.print()
+    } finally {
+      // Give the print dialog a moment to attach before removing the frame.
+      window.setTimeout(cleanup, 1000)
+    }
   }
 
-  if (printWindow.document.readyState === 'complete') {
-    window.setTimeout(triggerPrint, 150)
-  } else {
-    printWindow.onload = () => window.setTimeout(triggerPrint, 150)
+  const image = frameDocument.querySelector('img')
+  if (image && !image.complete) {
+    image.onload = triggerPrint
+    image.onerror = triggerPrint
+    return
   }
+
+  window.setTimeout(triggerPrint, 50)
 }
