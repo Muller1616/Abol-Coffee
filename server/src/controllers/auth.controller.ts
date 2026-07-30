@@ -7,6 +7,8 @@ import {
   resetOwnerPasswordWithOtp,
   sendOwnerOtp,
 } from '../services/auth.service.js';
+import { logAdminActivity } from '../services/activity.service.js';
+import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
 import {
   clearAccessTokenCookie,
@@ -15,7 +17,7 @@ import {
   setCsrfCookie,
 } from '../utils/cookies.js';
 import { generateCsrfToken } from '../utils/csrf.js';
-import { signAccessToken } from '../utils/jwt.js';
+import { signAccessToken, verifyAccessToken } from '../utils/jwt.js';
 import type {
   ChangePasswordInput,
   LoginInput,
@@ -69,7 +71,22 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-export async function logout(_req: Request, res: Response): Promise<void> {
+export async function logout(req: Request, res: Response): Promise<void> {
+  const token = req.cookies?.[authConfig.accessTokenCookieName];
+  if (typeof token === 'string' && token.length > 0) {
+    try {
+      const payload = verifyAccessToken(token);
+      await logAdminActivity({
+        action: AdminAction.LOGOUT,
+        entity: AdminEntity.OWNER,
+        entityId: payload.sub,
+        summary: `Owner signed out (${payload.email})`,
+      });
+    } catch {
+      // Token may already be expired — still clear cookies.
+    }
+  }
+
   clearAccessTokenCookie(res);
   clearCsrfCookie(res);
 

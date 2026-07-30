@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { qrConfig } from '../config/qr.js';
+import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
+import { logAdminActivity } from '../services/activity.service.js';
 import {
   generateQrPngBuffer,
   generateQrSvg,
@@ -38,6 +40,14 @@ export async function downloadQrPngHandler(
   try {
     const png = await generateQrPngBuffer();
 
+    await logAdminActivity({
+      action: AdminAction.DOWNLOAD,
+      entity: AdminEntity.QR,
+      summary: 'Downloaded QR code (PNG)',
+      type: 'QR_DOWNLOADED',
+      title: 'QR code downloaded',
+    });
+
     res.setHeader('Content-Type', 'image/png');
     res.setHeader(
       'Content-Disposition',
@@ -57,6 +67,14 @@ export async function downloadQrSvgHandler(
 ): Promise<void> {
   try {
     const svg = await generateQrSvg();
+
+    await logAdminActivity({
+      action: AdminAction.DOWNLOAD,
+      entity: AdminEntity.QR,
+      summary: 'Downloaded QR code (SVG)',
+      type: 'QR_DOWNLOADED',
+      title: 'QR code downloaded',
+    });
 
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader(

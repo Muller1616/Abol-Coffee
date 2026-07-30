@@ -8,7 +8,7 @@ export async function getDashboardHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const query = (req.validatedQuery as DashboardQuery | undefined) ?? { recentLimit: 10 };
+    const query = (req.validatedQuery as DashboardQuery | undefined) ?? { recentLimit: 5 };
     const dashboard = await getDashboard(query.recentLimit);
 
     res.status(200).json({
