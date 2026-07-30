@@ -1,9 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
 import { authConfig } from '../config/auth.js';
+import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { verifyAccessToken } from '../utils/jwt.js';
 
-export function authenticate(req: Request, _res: Response, next: NextFunction): void {
+export async function authenticate(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
   const token = req.cookies?.[authConfig.accessTokenCookieName];
 
   if (typeof token !== 'string' || token.length === 0) {
@@ -12,7 +17,18 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   }
 
   try {
-    req.owner = verifyAccessToken(token);
+    const payload = verifyAccessToken(token);
+    const owner = await prisma.owner.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, tokenVersion: true },
+    });
+
+    if (!owner || owner.tokenVersion !== payload.tv) {
+      next(new AppError('Your session has expired. Please sign in again.', 401));
+      return;
+    }
+
+    req.owner = { sub: owner.id, email: owner.email, tv: owner.tokenVersion };
     next();
   } catch (error) {
     next(error);

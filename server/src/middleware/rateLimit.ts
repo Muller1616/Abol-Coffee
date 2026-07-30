@@ -22,3 +22,25 @@ export const changePasswordRateLimiter = rateLimit({
     message: 'Too many password change attempts. Please try again later.',
   },
 });
+
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: authConfig.otp.rateLimit.windowMs,
+  max: authConfig.otp.rateLimit.max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many password reset requests. Please try again later.',
+  },
+});
+
+export const verifyOtpRateLimiter = rateLimit({
+  windowMs: authConfig.otp.verifyRateLimit.windowMs,
+  max: authConfig.otp.verifyRateLimit.max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many verification attempts. Please try again later.',
+  },
+});

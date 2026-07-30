@@ -4,9 +4,12 @@ import {
   changeOwnerPassword,
   getOwnerById,
   loginOwner,
-  resetOwnerPasswordWithOtp,
-  sendOwnerOtp,
 } from '../services/auth.service.js';
+import {
+  requestPasswordResetOtp,
+  resetPasswordWithSession,
+  verifyPasswordResetOtp,
+} from '../services/password-reset.service.js';
 import { logAdminActivity } from '../services/activity.service.js';
 import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
 import { AppError } from '../utils/AppError.js';
@@ -20,9 +23,10 @@ import { generateCsrfToken } from '../utils/csrf.js';
 import { signAccessToken, verifyAccessToken } from '../utils/jwt.js';
 import type {
   ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
-  ResetWithOtpInput,
-  SendOtpInput,
+  ResetPasswordInput,
+  VerifyOtpInput,
 } from '../validators/auth.validators.js';
 
 function sessionMaxAge(rememberMe: boolean): number {
@@ -49,8 +53,11 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   try {
     const body = req.body as LoginInput;
     const owner = await loginOwner(body);
-    const maxAge = sessionMaxAge(body.rememberMe);
-    const accessToken = signAccessToken({ sub: owner.id, email: owner.email }, maxAge);
+    const maxAge = sessionMaxAge(Boolean(body.rememberMe));
+    const accessToken = signAccessToken(
+      { sub: owner.id, email: owner.email, tv: owner.tokenVersion },
+      maxAge,
+    );
 
     setAccessTokenCookie(res, accessToken, maxAge);
     const csrfToken = issueCsrf(res, maxAge);
@@ -107,7 +114,12 @@ export async function me(req: Request, res: Response, next: NextFunction): Promi
     res.status(200).json({
       success: true,
       message: 'Authenticated owner',
-      data: { owner },
+      data: {
+        owner: {
+          id: owner.id,
+          email: owner.email,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -125,32 +137,43 @@ export async function changePassword(
     }
 
     const body = req.body as ChangePasswordInput;
-    await changeOwnerPassword(req.owner.sub, body);
+    const owner = await changeOwnerPassword(req.owner.sub, body);
+
+    // Re-issue cookie so the current browser stays signed in after tokenVersion bump.
+    const maxAge = authConfig.sessionTtlMs.default;
+    const accessToken = signAccessToken(
+      { sub: owner.id, email: owner.email, tv: owner.tokenVersion },
+      maxAge,
+    );
+    setAccessTokenCookie(res, accessToken, maxAge);
+    const csrfToken = issueCsrf(res, maxAge);
 
     res.status(200).json({
       success: true,
       message: 'Password updated successfully',
+      data: { csrfToken },
     });
   } catch (error) {
     next(error);
   }
 }
 
-export async function sendOtp(
+export async function forgotPassword(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const body = req.body as SendOtpInput;
-    const result = await sendOwnerOtp(body);
+    const body = req.body as ForgotPasswordInput;
+    const result = await requestPasswordResetOtp(body);
 
     res.status(200).json({
       success: true,
-      message: 'A 6-digit OTP code has been generated and sent to your email.',
+      message: result.message,
       data: {
         email: result.email,
-        otpCode: result.otpCode,
+        expiresAt: result.expiresAt,
+        resendAvailableAt: result.resendAvailableAt,
       },
     });
   } catch (error) {
@@ -158,18 +181,46 @@ export async function sendOtp(
   }
 }
 
-export async function resetPasswordWithOtp(
+/** Alias kept for older clients — same as forgotPassword. */
+export const sendOtp = forgotPassword;
+
+export async function verifyOtp(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const body = req.body as ResetWithOtpInput;
-    await resetOwnerPasswordWithOtp(body);
+    const body = req.body as VerifyOtpInput;
+    const result = await verifyPasswordResetOtp(body);
 
     res.status(200).json({
       success: true,
-      message: 'Password reset successfully. You can now log in with your new password.',
+      message: 'Verification successful.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const body = req.body as ResetPasswordInput;
+    await resetPasswordWithSession(body);
+
+    // Invalidate any cookie that might still be present for this browser.
+    clearAccessTokenCookie(res);
+    clearCsrfCookie(res);
+    const csrfToken = issueCsrf(res, authConfig.sessionTtlMs.rememberMe);
+
+    res.status(200).json({
+      success: true,
+      message: 'Your password has been reset successfully.',
+      data: { csrfToken },
     });
   } catch (error) {
     next(error);
