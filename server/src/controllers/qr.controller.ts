@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { qrConfig } from '../config/qr.js';
 import { AdminAction, AdminEntity } from '../generated/prisma/client.js';
-import { logAdminActivity } from '../services/activity.service.js';
+import { queueAdminActivity } from '../services/activity.service.js';
 import {
   generateQrPngBuffer,
   generateQrSvg,
@@ -16,6 +16,9 @@ export async function getQrPreviewHandler(
 ): Promise<void> {
   try {
     const preview = await getQrPreview();
+    const isLocal =
+      /localhost|127\.0\.0\.1|::1/i.test(preview.menuUrl) ||
+      preview.menuUrl.startsWith('http://');
 
     res.status(200).json({
       success: true,
@@ -23,7 +26,10 @@ export async function getQrPreviewHandler(
       data: {
         menuUrl: preview.menuUrl,
         pngDataUrl: preview.pngDataUrl,
-        note: 'This QR code always points to the permanent public menu URL. Menu content changes do not require a new QR code.',
+        isLocalhostUrl: isLocal,
+        note: isLocal
+          ? 'WARNING: This QR currently points at a local/dev URL. Do not print it for restaurant tables. Set PUBLIC_MENU_URL to your permanent production HTTPS menu URL first.'
+          : 'This QR code always points to the permanent public menu URL. Menu content changes do not require a new QR code.',
       },
     });
   } catch (error) {
@@ -39,7 +45,7 @@ export async function downloadQrPngHandler(
   try {
     const png = await generateQrPngBuffer();
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.DOWNLOAD,
       entity: AdminEntity.QR,
       summary: 'Downloaded QR code (PNG)',
@@ -67,7 +73,7 @@ export async function downloadQrSvgHandler(
   try {
     const svg = await generateQrSvg();
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.DOWNLOAD,
       entity: AdminEntity.QR,
       summary: 'Downloaded QR code (SVG)',

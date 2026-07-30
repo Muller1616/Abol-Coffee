@@ -23,7 +23,9 @@ export async function getPublicMenuHandler(
         setCachedPublicMenu(menu, query.search, query.categoryId);
     }
 
-    res.setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    // Always revalidate so guests see owner edits immediately; ETag still allows cheap 304s.
+    res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     res.setHeader('Vary', 'Accept-Encoding');
     res.setHeader('ETag', entry.etag);
 

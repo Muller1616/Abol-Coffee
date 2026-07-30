@@ -1,6 +1,29 @@
 import rateLimit from 'express-rate-limit';
 import { authConfig } from '../config/auth.js';
 
+/** Soft global API guard — auth routes use stricter dedicated limiters. */
+export const apiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests. Please try again shortly.',
+  },
+});
+
+export const publicMenuRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many menu requests. Please try again shortly.',
+  },
+});
+
 export const loginRateLimiter = rateLimit({
   windowMs: authConfig.loginRateLimit.windowMs,
   max: authConfig.loginRateLimit.max,
