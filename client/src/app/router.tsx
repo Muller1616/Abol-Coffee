@@ -5,9 +5,17 @@ import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RouteFallback } from '@/components/RouteFallback'
 import { SessionTimeoutProvider } from '@/features/auth/session/SessionTimeoutProvider'
 import { AdminLayout } from '@/layouts/AdminLayout'
-import { LoginPage } from '@/pages/admin/LoginPage'
-import { HomePage } from '@/pages/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+
+const HomePage = lazy(async () => {
+  const mod = await import('@/pages/HomePage')
+  return { default: mod.HomePage }
+})
+
+const LoginPage = lazy(async () => {
+  const mod = await import('@/pages/admin/LoginPage')
+  return { default: mod.LoginPage }
+})
 
 const DashboardPage = lazy(async () => {
   const mod = await import('@/pages/admin/DashboardPage')
@@ -54,7 +62,14 @@ function LazyPage({ children }: { children: ReactNode }) {
 }
 
 const router = createBrowserRouter([
-  { path: '/', element: <HomePage /> },
+  {
+    path: '/',
+    element: (
+      <LazyPage>
+        <HomePage />
+      </LazyPage>
+    ),
+  },
   {
     path: '/menu',
     element: (
@@ -67,9 +82,11 @@ const router = createBrowserRouter([
   {
     path: '/admin/login',
     element: (
-      <RedirectIfAuthenticated>
-        <LoginPage />
-      </RedirectIfAuthenticated>
+      <LazyPage>
+        <RedirectIfAuthenticated>
+          <LoginPage />
+        </RedirectIfAuthenticated>
+      </LazyPage>
     ),
   },
   {
