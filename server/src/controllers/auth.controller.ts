@@ -5,6 +5,8 @@ import {
   getOwnerById,
   loginOwner,
 } from '../services/auth.service.js';
+import { getRestaurantByOwnerId } from '../services/restaurantIdentity.service.js';
+import { buildPublicMenuUrl } from '../services/restaurantIdentity.service.js';
 import {
   requestPasswordResetOtp,
   resetPasswordWithSession,
@@ -53,6 +55,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   try {
     const body = req.body as LoginInput;
     const owner = await loginOwner(body);
+    const restaurant = await getRestaurantByOwnerId(owner.id);
     const maxAge = sessionMaxAge(Boolean(body.rememberMe));
     const accessToken = signAccessToken(
       { sub: owner.id, email: owner.email, tv: owner.tokenVersion },
@@ -69,6 +72,9 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
         owner: {
           id: owner.id,
           email: owner.email,
+          restaurantSlug: restaurant.slug,
+          publicMenuToken: restaurant.publicMenuToken,
+          publicMenuUrl: buildPublicMenuUrl(restaurant.publicMenuToken),
         },
         csrfToken,
       },
@@ -110,6 +116,7 @@ export async function me(req: Request, res: Response, next: NextFunction): Promi
     }
 
     const owner = await getOwnerById(req.owner.sub);
+    const restaurant = await getRestaurantByOwnerId(owner.id);
 
     res.status(200).json({
       success: true,
@@ -118,6 +125,9 @@ export async function me(req: Request, res: Response, next: NextFunction): Promi
         owner: {
           id: owner.id,
           email: owner.email,
+          restaurantSlug: restaurant.slug,
+          publicMenuToken: restaurant.publicMenuToken,
+          publicMenuUrl: buildPublicMenuUrl(restaurant.publicMenuToken),
         },
       },
     });

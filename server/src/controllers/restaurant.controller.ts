@@ -1,21 +1,29 @@
 import type { NextFunction, Request, Response } from 'express';
 import {
-  getRestaurant,
-  updateRestaurant,
-  updateRestaurantStatus,
+  getRestaurantForOwner,
+  updateRestaurantForOwner,
+  updateRestaurantStatusForOwner,
 } from '../services/restaurant.service.js';
+import { AppError } from '../utils/AppError.js';
 import type {
   UpdateRestaurantInput,
   UpdateRestaurantStatusInput,
 } from '../validators/restaurant.validators.js';
 
+function requireOwnerId(req: Request): string {
+  if (!req.owner?.sub) {
+    throw new AppError('Authentication required', 401);
+  }
+  return req.owner.sub;
+}
+
 export async function getRestaurantHandler(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const restaurant = await getRestaurant();
+    const restaurant = await getRestaurantForOwner(requireOwnerId(req));
 
     res.status(200).json({
       success: true,
@@ -34,7 +42,7 @@ export async function updateRestaurantHandler(
 ): Promise<void> {
   try {
     const body = req.body as UpdateRestaurantInput;
-    const restaurant = await updateRestaurant(body);
+    const restaurant = await updateRestaurantForOwner(requireOwnerId(req), body);
 
     res.status(200).json({
       success: true,
@@ -53,7 +61,7 @@ export async function updateRestaurantStatusHandler(
 ): Promise<void> {
   try {
     const body = req.body as UpdateRestaurantStatusInput;
-    const restaurant = await updateRestaurantStatus(body);
+    const restaurant = await updateRestaurantStatusForOwner(requireOwnerId(req), body);
 
     res.status(200).json({
       success: true,

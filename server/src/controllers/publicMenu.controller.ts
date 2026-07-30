@@ -12,15 +12,16 @@ export async function getPublicMenuHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
+    const tokenParam = req.params.publicMenuToken;
+    const token = typeof tokenParam === 'string' ? tokenParam.trim() : '';
     const query = (req.validatedQuery as PublicMenuQuery) ?? {};
 
-    let entry = getCachedPublicMenuEntry(query.search, query.categoryId);
+    let entry = getCachedPublicMenuEntry(token, query.search, query.categoryId);
     if (!entry) {
-      const menu = await getPublicMenu(query);
-      // getPublicMenu already writes cache; read back for etag, or set if race.
+      const menu = await getPublicMenu(token, query);
       entry =
-        getCachedPublicMenuEntry(query.search, query.categoryId) ??
-        setCachedPublicMenu(menu, query.search, query.categoryId);
+        getCachedPublicMenuEntry(token, query.search, query.categoryId) ??
+        setCachedPublicMenu(token, menu, query.search, query.categoryId);
     }
 
     // Always revalidate so guests see owner edits immediately; ETag still allows cheap 304s.
