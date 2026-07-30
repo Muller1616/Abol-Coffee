@@ -17,6 +17,7 @@ import type {
 } from '../validators/auth.validators.js';
 import { logAdminActivity } from './activity.service.js';
 import { sendPasswordResetOtpEmail } from './email.service.js';
+import { invalidateOwnerAuthCache } from './ownerAuth.cache.js';
 
 const ANTI_ENUMERATION_MESSAGE =
   'If an account exists with this email, a verification code has been sent.';
@@ -320,4 +321,6 @@ export async function resetPasswordWithSession(input: ResetPasswordInput): Promi
     entityId: session.ownerId,
     summary: 'Owner password reset via email OTP verification',
   });
+
+  invalidateOwnerAuthCache(session.ownerId);
 }
