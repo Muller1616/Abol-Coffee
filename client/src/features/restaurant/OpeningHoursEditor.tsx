@@ -32,14 +32,14 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
               return (
                 <div
                   className={cn(
-                    'rounded-2xl border px-4 py-3 transition',
+                    'rounded-2xl border px-3 py-3 transition sm:px-4',
                     isClosed ? 'border-border/70 bg-[#f8fafc]' : 'border-primary/15 bg-white',
                     message && 'border-danger/60',
                   )}
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center justify-between gap-3 sm:justify-start">
-                      <p className="min-w-28 text-sm font-semibold">{WEEKDAY_LABELS[day as Weekday]}</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{WEEKDAY_LABELS[day as Weekday]}</p>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
                           {isClosed ? 'Closed' : 'Open'}
@@ -62,10 +62,11 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                     </div>
 
                     {!isClosed ? (
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                         <input
                           type="time"
                           value={value.open ?? ''}
+                          aria-label={`${WEEKDAY_LABELS[day as Weekday]} opens`}
                           aria-invalid={message ? true : undefined}
                           onChange={(event) =>
                             field.onChange({
@@ -74,16 +75,17 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                             })
                           }
                           className={cn(
-                            'h-11 cursor-pointer rounded-xl border bg-[#f8fafc] px-3 text-sm outline-none transition-all duration-200 focus:ring-4',
+                            'h-11 w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
                             message
                               ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
-                              : 'border-border/80 focus:border-primary focus:ring-primary/10 hover:border-primary/40',
+                              : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
                           )}
                         />
                         <span className="text-xs text-muted-foreground">to</span>
                         <input
                           type="time"
                           value={value.close ?? ''}
+                          aria-label={`${WEEKDAY_LABELS[day as Weekday]} closes`}
                           aria-invalid={message ? true : undefined}
                           onChange={(event) =>
                             field.onChange({
@@ -92,10 +94,10 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                             })
                           }
                           className={cn(
-                            'h-11 cursor-pointer rounded-xl border bg-[#f8fafc] px-3 text-sm outline-none transition-all duration-200 focus:ring-4',
+                            'h-11 w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
                             message
                               ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
-                              : 'border-border/80 focus:border-primary focus:ring-primary/10 hover:border-primary/40',
+                              : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
                           )}
                         />
                       </div>
