@@ -42,19 +42,24 @@ export function QrPage() {
       pushToast(getApiErrorMessage(error, 'Could not download QR code'), 'error'),
   })
 
-  const printMutation = useMutation({
-    mutationFn: async () => {
-      if (!qrQuery.data) throw new Error('QR preview is not ready')
+  const handlePrint = () => {
+    if (!qrQuery.data) {
+      pushToast('QR preview is not ready', 'error')
+      return
+    }
+
+    try {
+      // Call print synchronously from the click handler (no popup / no mutation delay).
       printQrSheet({
         pngDataUrl: qrQuery.data.pngDataUrl,
         menuUrl: qrQuery.data.menuUrl,
         restaurantName: restaurantQuery.data?.name ?? 'Abol Coffee',
       })
-    },
-    onSuccess: () => pushToast('Print dialog opened'),
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Could not open print dialog'), 'error'),
-  })
+      pushToast('Print dialog opened')
+    } catch (error) {
+      pushToast(getApiErrorMessage(error, 'Could not open print dialog'), 'error')
+    }
+  }
 
   const copyUrl = async () => {
     if (!qrQuery.data?.menuUrl) return
@@ -172,8 +177,7 @@ export function QrPage() {
             </Button>
             <Button
               className="sm:col-span-2"
-              loading={printMutation.isPending}
-              onClick={() => printMutation.mutate()}
+              onClick={handlePrint}
             >
               <Printer className="h-4 w-4" />
               Print table tent
