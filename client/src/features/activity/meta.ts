@@ -1,15 +1,14 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   CheckCircle2,
+  Clock3,
   DollarSign,
-  Download,
   EyeOff,
   FolderTree,
   ImagePlus,
-  KeyRound,
-  LogIn,
-  LogOut,
+  MapPin,
   Pencil,
+  Phone,
   Plus,
   QrCode,
   Store,
@@ -45,14 +44,15 @@ const BY_TYPE: Record<string, ActivityVisual> = {
   MENU_ITEM_IMAGE_UPDATED: { icon: ImagePlus, tone: 'info' },
   MENU_ITEM_IMAGE_REMOVED: { icon: ImagePlus, tone: 'neutral' },
   RESTAURANT_UPDATED: { icon: Store, tone: 'info' },
+  RESTAURANT_STATUS_UPDATED: { icon: Store, tone: 'warning' },
   RESTAURANT_LOGO_UPDATED: { icon: ImagePlus, tone: 'success' },
   RESTAURANT_LOGO_REMOVED: { icon: ImagePlus, tone: 'neutral' },
   RESTAURANT_COVER_UPDATED: { icon: ImagePlus, tone: 'success' },
   RESTAURANT_COVER_REMOVED: { icon: ImagePlus, tone: 'neutral' },
-  OWNER_PASSWORD_CHANGED: { icon: KeyRound, tone: 'warning' },
-  OWNER_LOGIN: { icon: LogIn, tone: 'success' },
-  OWNER_LOGOUT: { icon: LogOut, tone: 'neutral' },
-  QR_DOWNLOADED: { icon: Download, tone: 'info' },
+  RESTAURANT_LOCATION_UPDATED: { icon: MapPin, tone: 'info' },
+  RESTAURANT_HOURS_UPDATED: { icon: Clock3, tone: 'info' },
+  RESTAURANT_CONTACT_UPDATED: { icon: Phone, tone: 'info' },
+  QR_TOKEN_REGENERATED: { icon: QrCode, tone: 'warning' },
 }
 
 const BY_ACTION: Record<string, ActivityVisual> = {
@@ -60,9 +60,6 @@ const BY_ACTION: Record<string, ActivityVisual> = {
   UPDATE: { icon: Pencil, tone: 'info' },
   DELETE: { icon: Trash2, tone: 'danger' },
   TOGGLE: { icon: EyeOff, tone: 'warning' },
-  LOGIN: { icon: LogIn, tone: 'success' },
-  LOGOUT: { icon: LogOut, tone: 'neutral' },
-  DOWNLOAD: { icon: QrCode, tone: 'info' },
 }
 
 export function getActivityVisual(type: string, action: string): ActivityVisual {
@@ -85,10 +82,7 @@ const FALLBACK_TITLES: Record<string, string> = {
   'DELETE:MENU_ITEM': 'Menu item deleted',
   'TOGGLE:MENU_ITEM': 'Availability updated',
   'UPDATE:RESTAURANT': 'Restaurant information updated',
-  'UPDATE:OWNER': 'Password changed',
-  'LOGIN:OWNER': 'Signed in',
-  'LOGOUT:OWNER': 'Signed out',
-  'DOWNLOAD:QR': 'QR code downloaded',
+  'UPDATE:QR': 'Public menu link regenerated',
 }
 
 /** Prefer stored title; fall back for legacy rows. */
@@ -123,7 +117,6 @@ export const ACTIVITY_ENTITY_FILTERS = [
   { value: 'CATEGORY', label: 'Categories' },
   { value: 'MENU_ITEM', label: 'Menu items' },
   { value: 'RESTAURANT', label: 'Restaurant' },
-  { value: 'OWNER', label: 'Account' },
   { value: 'QR', label: 'QR code' },
 ] as const
 
@@ -133,7 +126,4 @@ export const ACTIVITY_ACTION_FILTERS = [
   { value: 'UPDATE', label: 'Updated' },
   { value: 'DELETE', label: 'Deleted' },
   { value: 'TOGGLE', label: 'Toggled' },
-  { value: 'LOGIN', label: 'Login' },
-  { value: 'LOGOUT', label: 'Logout' },
-  { value: 'DOWNLOAD', label: 'Download' },
 ] as const

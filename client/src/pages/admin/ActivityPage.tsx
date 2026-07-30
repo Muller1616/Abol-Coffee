@@ -226,7 +226,7 @@ export function ActivityPage() {
           Activity history
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-          Search, filter, and clean up administrative history. Deleting a log never undoes the
+          Search, filter, and clean up your restaurant change history. Deleting a log never undoes the
           original business action.
         </p>
       </div>

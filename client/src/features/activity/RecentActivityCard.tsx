@@ -22,7 +22,7 @@ export function RecentActivityCard({ activities }: RecentActivityCardProps) {
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-5 py-4 sm:px-6">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Recent activity</h2>
-          <p className="text-sm text-muted-foreground">Latest changes across your menu.</p>
+          <p className="text-sm text-muted-foreground">Latest menu and restaurant changes.</p>
         </div>
         <Activity className="h-4 w-4 text-primary" aria-hidden />
       </div>
