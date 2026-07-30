@@ -91,7 +91,8 @@ export function CategoriesPage() {
       setDeleting(null)
       pushToast('Category deleted successfully')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not delete category'), 'error'),
+    onError: (error) =>
+      pushToast(getApiErrorMessage(error, 'Unable to delete category.'), 'error'),
   })
 
   const reorderMutation = useMutation({
@@ -333,25 +334,40 @@ export function CategoriesPage() {
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => {
-          if (!open) setDeleting(null)
+          if (!open && !deleteMutation.isPending) setDeleting(null)
         }}
-        title="Delete category?"
+        title="Delete category"
         description={
           deleting
-            ? deleting._count.menuItems > 0
-              ? `"${deleting.name}" still contains ${deleting._count.menuItems} menu item(s). Remove or reassign those items before deleting.`
-              : `This will permanently remove "${deleting.name}" from your menu structure.`
-            : ''
+            ? `You are about to permanently delete "${deleting.name}".`
+            : 'You are about to permanently delete this category.'
         }
-        confirmLabel={deleting && deleting._count.menuItems > 0 ? 'Understood' : 'Delete category'}
-        tone={deleting && deleting._count.menuItems > 0 ? 'default' : 'danger'}
+        warning={
+          deleting && deleting._count.menuItems > 0 ? (
+            <>
+              <p className="font-semibold">This category cannot be deleted yet.</p>
+              <p className="mt-1">
+                It still contains {deleting._count.menuItems} menu item
+                {deleting._count.menuItems === 1 ? '' : 's'}. Move or delete those items first,
+                then try again.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold">This action cannot be undone.</p>
+              <p className="mt-1">
+                The category will be removed from your menu structure and admin catalog.
+              </p>
+            </>
+          )
+        }
+        confirmLabel="Delete category"
+        cancelLabel={deleting && deleting._count.menuItems > 0 ? 'Close' : 'Cancel'}
+        tone="danger"
+        showConfirm={!deleting || deleting._count.menuItems === 0}
         loading={deleteMutation.isPending}
         onConfirm={() => {
-          if (!deleting) return
-          if (deleting._count.menuItems > 0) {
-            setDeleting(null)
-            return
-          }
+          if (!deleting || deleting._count.menuItems > 0) return
           deleteMutation.mutate(deleting.id)
         }}
       />

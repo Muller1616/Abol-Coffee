@@ -12,7 +12,7 @@ import { FloatingTextarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import type { Category } from '@/features/categories/api'
 import type { MenuItem } from '@/features/menu-items/api'
-import { menuItemFormSchema, type MenuItemFormValues } from '@/features/menu-items/schema'
+import { menuItemFormSchema, type MenuItemFormInput, type MenuItemFormValues } from '@/features/menu-items/schema'
 import { resolveMediaUrl } from '@/lib/format'
 import { getApiFieldErrors } from '@/lib/api'
 import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
@@ -54,7 +54,7 @@ export function MenuItemFormDialog({
     setError,
     watch,
     formState: { errors, submitCount },
-  } = useForm<MenuItemFormValues>({
+  } = useForm<MenuItemFormInput, unknown, MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -63,7 +63,7 @@ export function MenuItemFormDialog({
       categoryId: '',
       name: '',
       description: '',
-      price: undefined as unknown as number,
+      price: undefined,
       isAvailable: true,
     },
   })
@@ -77,7 +77,7 @@ export function MenuItemFormDialog({
       categoryId: item?.categoryId ?? categories[0]?.id ?? '',
       name: item?.name ?? '',
       description: item?.description ?? '',
-      price: item?.price ?? (undefined as unknown as number),
+      price: item?.price ?? undefined,
       isAvailable: item?.isAvailable ?? true,
     })
     setImageFile(null)

@@ -12,11 +12,14 @@ export function DialogContent({
   children,
   title,
   description,
+  hideHeader = false,
 }: {
   className?: string
   children: ReactNode
   title: string
   description?: string
+  /** When true, title/description are only exposed to assistive tech (custom header in children). */
+  hideHeader?: boolean
 }) {
   return (
     <DialogPrimitive.Portal>
@@ -27,18 +30,27 @@ export function DialogContent({
           className,
         )}
       >
-        <div className="mb-6 pr-8">
-          <DialogPrimitive.Title className="text-xl font-semibold tracking-tight">
-            {title}
-          </DialogPrimitive.Title>
-          {description ? (
-            <DialogPrimitive.Description className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {description}
+        {hideHeader ? (
+          <>
+            <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+            <DialogPrimitive.Description className="sr-only">
+              {description ?? title}
             </DialogPrimitive.Description>
-          ) : (
-            <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
-          )}
-        </div>
+          </>
+        ) : (
+          <div className="mb-6 pr-8">
+            <DialogPrimitive.Title className="text-xl font-semibold tracking-tight">
+              {title}
+            </DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {description}
+              </DialogPrimitive.Description>
+            ) : (
+              <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
+            )}
+          </div>
+        )}
         {children}
         <DialogPrimitive.Close className="absolute top-5 right-5 cursor-pointer rounded-xl p-2 text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring">
           <X className="h-4 w-4" />

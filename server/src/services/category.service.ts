@@ -39,6 +39,17 @@ export async function getCategoryById(id: string): Promise<CategoryWithCount> {
 }
 
 export async function createCategory(input: CreateCategoryInput): Promise<CategoryWithCount> {
+  const duplicate = await prisma.category.findFirst({
+    where: {
+      name: { equals: input.name, mode: 'insensitive' },
+    },
+    select: { id: true },
+  });
+
+  if (duplicate) {
+    throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
+  }
+
   try {
     const category = await prisma.category.create({
       data: {
@@ -59,7 +70,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw AppError.field('name', 'Category name already exists. Please choose a different name.', 409);
+      throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
     }
 
     handlePrismaError(error, 'Failed to create category');
@@ -71,6 +82,20 @@ export async function updateCategory(
   input: UpdateCategoryInput,
 ): Promise<CategoryWithCount> {
   await getCategoryById(id);
+
+  if (input.name !== undefined) {
+    const duplicate = await prisma.category.findFirst({
+      where: {
+        id: { not: id },
+        name: { equals: input.name, mode: 'insensitive' },
+      },
+      select: { id: true },
+    });
+
+    if (duplicate) {
+      throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
+    }
+  }
 
   try {
     const category = await prisma.category.update({
@@ -93,7 +118,7 @@ export async function updateCategory(
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw AppError.field('name', 'Category name already exists. Please choose a different name.', 409);
+      throw AppError.field('name', 'Category already exists. Please choose a different name.', 409);
     }
 
     handlePrismaError(error, 'Failed to update category');
@@ -126,7 +151,12 @@ export async function deleteCategory(id: string): Promise<void> {
   const category = await getCategoryById(id);
 
   if (category._count.menuItems > 0) {
-    throw new AppError('Category cannot be deleted while it contains menu items', 400);
+    throw new AppError(
+      `Category cannot be deleted while it contains ${category._count.menuItems} menu item${
+        category._count.menuItems === 1 ? '' : 's'
+      }. Move or delete those items first.`,
+      400,
+    );
   }
 
   await prisma.category.delete({ where: { id } });
