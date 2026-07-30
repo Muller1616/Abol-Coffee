@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   Coffee,
@@ -13,35 +13,44 @@ import {
   UtensilsCrossed,
   X,
 } from 'lucide-react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { prefetchAdminRoutes } from '@/app/prefetch'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
-const navItems = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, prefetch: () => import('@/pages/admin/DashboardPage') },
-  { to: '/admin/categories', label: 'Categories', icon: FolderTree, prefetch: () => import('@/pages/admin/CategoriesPage') },
-  { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed, prefetch: () => import('@/pages/admin/MenuItemsPage') },
-  { to: '/admin/restaurant', label: 'Restaurant', icon: Store, prefetch: () => import('@/pages/admin/RestaurantPage') },
-  { to: '/admin/qr', label: 'QR code', icon: QrCode, prefetch: () => import('@/pages/admin/QrPage') },
-  { to: '/admin/activity', label: 'Activity', icon: Activity, prefetch: () => import('@/pages/admin/ActivityPage') },
-  { to: '/admin/account', label: 'Settings', icon: KeyRound, prefetch: () => import('@/pages/admin/AccountPage') },
+type NavItem = {
+  segment: string
+  label: string
+  icon: typeof LayoutDashboard
+  prefetch: () => Promise<unknown>
+}
+
+const navDefinitions: NavItem[] = [
+  { segment: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, prefetch: () => import('@/pages/admin/DashboardPage') },
+  { segment: 'categories', label: 'Categories', icon: FolderTree, prefetch: () => import('@/pages/admin/CategoriesPage') },
+  { segment: 'menu', label: 'Menu items', icon: UtensilsCrossed, prefetch: () => import('@/pages/admin/MenuItemsPage') },
+  { segment: 'restaurant', label: 'Restaurant', icon: Store, prefetch: () => import('@/pages/admin/RestaurantPage') },
+  { segment: 'qr', label: 'QR code', icon: QrCode, prefetch: () => import('@/pages/admin/QrPage') },
+  { segment: 'activity', label: 'Activity', icon: Activity, prefetch: () => import('@/pages/admin/ActivityPage') },
+  { segment: 'settings', label: 'Settings', icon: KeyRound, prefetch: () => import('@/pages/admin/AccountPage') },
 ]
 
 function NavItems({
+  slug,
   onNavigate,
   className,
 }: {
+  slug: string
   onNavigate?: () => void
   className?: string
 }) {
   return (
     <nav className={cn('flex flex-col gap-1.5', className)}>
-      {navItems.map((item) => (
+      {navDefinitions.map((item) => (
         <NavLink
-          key={item.to}
-          to={item.to}
+          key={item.segment}
+          to={`/${slug}/${item.segment}`}
           onClick={onNavigate}
           onMouseEnter={() => {
             void item.prefetch()
@@ -69,8 +78,15 @@ function NavItems({
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { restaurantSlug } = useParams()
   const { owner, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const slug = restaurantSlug ?? owner?.restaurantSlug ?? ''
+  const liveMenuPath = owner?.publicMenuUrl
+    ? new URL(owner.publicMenuUrl).pathname
+    : owner?.publicMenuToken
+      ? `/menu/${owner.publicMenuToken}`
+      : '/menu'
 
   useEffect(() => {
     setMobileOpen(false)
@@ -100,11 +116,17 @@ export function AdminLayout() {
   const handleLogout = async () => {
     setMobileOpen(false)
     await logout()
-    navigate('/admin/login', { replace: true })
+    navigate('/login', { replace: true })
   }
 
-  const activeLabel =
-    navItems.find((item) => location.pathname.startsWith(item.to))?.label ?? 'Console'
+  const activeLabel = useMemo(() => {
+    const match = navDefinitions.find((item) =>
+      location.pathname.startsWith(`/${slug}/${item.segment}`),
+    )
+    return match?.label ?? 'Console'
+  }, [location.pathname, slug])
+
+  if (!slug) return null
 
   return (
     <div className="min-h-dvh overflow-x-clip bg-[linear-gradient(180deg,#f4f4f5_0%,#fafafa_45%,#f4f4f5_100%)]">
@@ -121,11 +143,11 @@ export function AdminLayout() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
-              <p className="text-xs text-muted-foreground">Owner console</p>
+              <p className="text-xs text-muted-foreground">/{slug}</p>
             </div>
           </div>
 
-          <NavItems className="flex-1" />
+          <NavItems slug={slug} className="flex-1" />
 
           <div className="mt-6 rounded-2xl border border-border/80 bg-white/80 p-4">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -169,7 +191,7 @@ export function AdminLayout() {
 
               <div className="flex shrink-0 items-center gap-2">
                 <Link
-                  to="/menu"
+                  to={liveMenuPath}
                   className={cn(
                     buttonVariants({ variant: 'ghost', size: 'sm' }),
                     'hidden text-muted-foreground sm:inline-flex',
@@ -230,11 +252,11 @@ export function AdminLayout() {
                 </Button>
               </div>
 
-              <NavItems onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
+              <NavItems slug={slug} onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
 
               <div className="mt-6 space-y-2 border-t border-border/70 pt-4">
                 <Link
-                  to="/menu"
+                  to={liveMenuPath}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     buttonVariants({ variant: 'outline' }),

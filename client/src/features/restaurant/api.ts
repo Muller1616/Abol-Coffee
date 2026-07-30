@@ -4,6 +4,9 @@ import { api, type ApiSuccess } from '@/lib/api'
 
 export type Restaurant = {
   id: string
+  slug: string
+  publicMenuToken: string
+  ownerId: string
   name: string
   logo: string | null
   coverImage: string | null
