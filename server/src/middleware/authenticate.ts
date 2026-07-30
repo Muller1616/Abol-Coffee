@@ -3,6 +3,9 @@ import { authConfig } from '../config/auth.js';
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { verifyAccessToken } from '../utils/jwt.js';
+import { ownerAuthCache } from '../services/ownerAuth.cache.js';
+
+export { invalidateOwnerAuthCache } from '../services/ownerAuth.cache.js';
 
 export async function authenticate(
   req: Request,
@@ -18,12 +21,21 @@ export async function authenticate(
 
   try {
     const payload = verifyAccessToken(token);
-    const owner = await prisma.owner.findUnique({
-      where: { id: payload.sub },
-      select: { id: true, email: true, tokenVersion: true },
-    });
+    let owner = ownerAuthCache.get(payload.sub);
+
+    if (!owner) {
+      const row = await prisma.owner.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, email: true, tokenVersion: true },
+      });
+      if (row) {
+        owner = row;
+        ownerAuthCache.set(row.id, row);
+      }
+    }
 
     if (!owner || owner.tokenVersion !== payload.tv) {
+      if (owner) ownerAuthCache.delete(owner.id);
       next(new AppError('Your session has expired. Please sign in again.', 401));
       return;
     }
