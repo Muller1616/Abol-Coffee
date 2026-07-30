@@ -59,7 +59,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new AppError('Category name already exists', 409);
+      throw AppError.field('name', 'Category name already exists. Please choose a different name.', 409);
     }
 
     handlePrismaError(error, 'Failed to create category');
@@ -93,7 +93,7 @@ export async function updateCategory(
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new AppError('Category name already exists', 409);
+      throw AppError.field('name', 'Category name already exists. Please choose a different name.', 409);
     }
 
     handlePrismaError(error, 'Failed to update category');

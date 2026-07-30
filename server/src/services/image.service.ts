@@ -161,7 +161,10 @@ export async function removeRestaurantCover(): Promise<RestaurantResponse> {
 
 export function requireUploadedFile(file: Express.Multer.File | undefined): Express.Multer.File {
   if (!file) {
-    throw new AppError('Image file is required', 400);
+    throw AppError.field(
+      'image',
+      'Image file is required. Please select an image to upload.',
+    );
   }
 
   return file;

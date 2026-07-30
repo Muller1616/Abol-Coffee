@@ -28,13 +28,13 @@ export async function loginOwner(input: LoginInput): Promise<AuthenticatedOwner>
   });
 
   if (!owner) {
-    throw new AppError('No owner account found with this email.', 401, undefined, true, 'email');
+    throw AppError.field('email', 'No owner account found with this email.', 401);
   }
 
   const isValid = await verifyPassword(input.password, owner.password);
 
   if (!isValid) {
-    throw new AppError('Incorrect password.', 401, undefined, true, 'password');
+    throw AppError.field('password', 'Incorrect password.', 401);
   }
 
   return {
@@ -71,11 +71,14 @@ export async function changeOwnerPassword(
   const isCurrentValid = await verifyPassword(input.currentPassword, owner.password);
 
   if (!isCurrentValid) {
-    throw new AppError('Current password is incorrect', 400);
+    throw AppError.field('currentPassword', 'Current password is incorrect.');
   }
 
   if (input.currentPassword === input.newPassword) {
-    throw new AppError('New password must be different from the current password', 400);
+    throw AppError.field(
+      'newPassword',
+      'New password must be different from the current password.',
+    );
   }
 
   const passwordHash = await hashPassword(input.newPassword);
@@ -100,7 +103,7 @@ export async function sendOwnerOtp(input: SendOtpInput): Promise<{ email: string
   });
 
   if (!owner) {
-    throw new AppError('No owner account found with this email.', 404, undefined, true, 'email');
+    throw AppError.field('email', 'No owner account found with this email.', 404);
   }
 
   // Generate 6-digit numeric OTP code
@@ -109,7 +112,10 @@ export async function sendOwnerOtp(input: SendOtpInput): Promise<{ email: string
 
   otpStore.set(normalizedEmail, { code: otpCode, expiresAt });
 
-  console.log(`[OTP SENT] Sent OTP verification code ${otpCode} to ${normalizedEmail}`);
+  // Development aid only — never log OTP codes in production.
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[OTP SENT] Sent OTP verification code ${otpCode} to ${normalizedEmail}`);
+  }
 
   return { email: normalizedEmail, otpCode };
 }
@@ -121,17 +127,23 @@ export async function resetOwnerPasswordWithOtp(input: ResetWithOtpInput): Promi
   });
 
   if (!owner) {
-    throw new AppError('No owner account found with this email.', 404, undefined, true, 'email');
+    throw AppError.field('email', 'No owner account found with this email.', 404);
   }
 
   const record = otpStore.get(normalizedEmail);
 
   if (!record || record.expiresAt < Date.now()) {
-    throw new AppError('OTP code has expired or is invalid. Please request a new code.', 400, undefined, true, 'otpCode');
+    throw AppError.field(
+      'otpCode',
+      'OTP code has expired or is invalid. Please request a new code.',
+    );
   }
 
   if (record.code !== input.otpCode.trim()) {
-    throw new AppError('Incorrect OTP verification code. Please check and try again.', 400, undefined, true, 'otpCode');
+    throw AppError.field(
+      'otpCode',
+      'Incorrect OTP verification code. Please check and try again.',
+    );
   }
 
   const passwordHash = await hashPassword(input.newPassword);
