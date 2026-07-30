@@ -27,24 +27,27 @@ export function HeroSection() {
               Digital menu platform
             </p>
 
-            <h1 className="font-display text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-[4.75rem] lg:leading-[0.92]">
+            <h1 className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-[4.75rem] lg:leading-[0.92]">
               Abol Coffee
             </h1>
 
-            <p className="mt-5 font-display text-2xl font-semibold tracking-tight text-balance text-white/90 sm:text-3xl">
+            <p className="mt-4 font-display text-xl font-semibold tracking-tight text-balance text-white/90 sm:mt-5 sm:text-3xl">
               Your menu.{' '}
               <span className="text-primary">Always live.</span>
             </p>
 
-            <p className="mt-5 max-w-md text-base leading-relaxed text-white/55 sm:text-lg">
+            <p className="mt-4 max-w-md text-base leading-relaxed text-white/55 sm:mt-5 sm:text-lg">
               The modern QR menu for restaurants and cafés. Update prices once—every table stays
               current.
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+            <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 to="/admin/login"
-                className={cn(buttonVariants({ size: 'lg' }), 'h-14 gap-2 px-8 text-base font-bold')}
+                className={cn(
+                  buttonVariants({ size: 'lg' }),
+                  'h-14 w-full gap-2 px-8 text-base font-bold sm:w-auto',
+                )}
               >
                 Owner login
                 <ArrowUpRight className="h-5 w-5" />
@@ -53,7 +56,7 @@ export function HeroSection() {
                 to="/menu"
                 className={cn(
                   buttonVariants({ variant: 'outline', size: 'lg' }),
-                  'h-14 border-white/15 bg-transparent px-7 text-white hover:border-white/30 hover:bg-white/5 hover:text-white',
+                  'h-14 w-full border-white/15 bg-transparent px-7 text-white hover:border-white/30 hover:bg-white/5 hover:text-white sm:w-auto',
                 )}
               >
                 <QrCode className="h-5 w-5" />

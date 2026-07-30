@@ -180,12 +180,13 @@ export function CategoryFormDialog({
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full sm:w-auto"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" loading={loading} disabled={loading}>
+            <Button type="submit" loading={loading} disabled={loading} className="h-11 w-full sm:w-auto">
               {isEditing ? 'Save changes' : 'Create category'}
             </Button>
           </div>
