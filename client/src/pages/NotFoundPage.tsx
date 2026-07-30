@@ -14,11 +14,14 @@ export function NotFoundPage() {
       <p className="text-sm font-medium text-primary">404</p>
       <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">Page not found</h1>
       <p className="mt-3 text-muted-foreground">The page you requested does not exist.</p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link to="/" className={cn(buttonVariants())}>
+      <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <Link to="/" className={cn(buttonVariants(), 'h-11 w-full justify-center sm:w-auto')}>
           Back home
         </Link>
-        <Link to="/menu" className={cn(buttonVariants({ variant: 'outline' }))}>
+        <Link
+          to="/menu"
+          className={cn(buttonVariants({ variant: 'outline' }), 'h-11 w-full justify-center sm:w-auto')}
+        >
           Public menu
         </Link>
       </div>
