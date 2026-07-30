@@ -2,8 +2,11 @@ import { createHash } from 'node:crypto';
 import { MemoryCache } from '../utils/memoryCache.js';
 import type { PublicMenuResponse } from './publicMenu.service.js';
 
-/** Guest menu TTL — client filters locally; slightly longer TTL cuts Neon cold hits. */
-const PUBLIC_MENU_TTL_MS = 45_000;
+/**
+ * Short in-process safety TTL. Mutations call invalidatePublicMenuCache() immediately;
+ * this only covers multi-instance drift / missed invalidation.
+ */
+const PUBLIC_MENU_TTL_MS = 10_000;
 const CACHE_PREFIX = 'public-menu:';
 
 export type PublicMenuCacheEntry = {

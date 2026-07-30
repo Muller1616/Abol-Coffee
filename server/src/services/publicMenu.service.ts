@@ -222,12 +222,7 @@ export async function getPublicMenu(query: PublicMenuQuery): Promise<PublicMenuR
         items,
       };
     })
-    .filter((category) => {
-      if (query.search || query.categoryId) {
-        return category.items.length > 0;
-      }
-      return true;
-    });
+    .filter((category) => category.items.length > 0);
 
   const response: PublicMenuActiveResponse = {
     status: 'ACTIVE',
