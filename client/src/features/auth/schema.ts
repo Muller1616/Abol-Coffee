@@ -11,14 +11,23 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 
+const passwordField = z
+  .string({ error: 'New password is required.' })
+  .min(1, 'New password is required.')
+  .min(8, 'New password must contain at least 8 characters.')
+  .max(128, 'Password must be at most 128 characters.')
+
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required.').max(128),
-    newPassword: z
-      .string()
-      .min(8, 'New password must contain at least 8 characters.')
+    currentPassword: z
+      .string({ error: 'Current password is required.' })
+      .min(1, 'Current password is required.')
       .max(128, 'Password must be at most 128 characters.'),
-    confirmPassword: z.string().min(1, 'Please confirm your password.').max(128),
+    newPassword: passwordField,
+    confirmPassword: z
+      .string({ error: 'Please confirm your password.' })
+      .min(1, 'Please confirm your password.')
+      .max(128, 'Password must be at most 128 characters.'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match.',
@@ -50,11 +59,11 @@ export const resetWithOtpSchema = z
       .string()
       .min(1, 'OTP code is required.')
       .regex(/^\d{6}$/, 'OTP code must be 6 digits.'),
-    newPassword: z
-      .string()
-      .min(8, 'New password must contain at least 8 characters.')
+    newPassword: passwordField,
+    confirmPassword: z
+      .string({ error: 'Please confirm your password.' })
+      .min(1, 'Please confirm your password.')
       .max(128, 'Password must be at most 128 characters.'),
-    confirmPassword: z.string().min(1, 'Please confirm your password.').max(128),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match.',

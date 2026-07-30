@@ -13,12 +13,19 @@ export const loginSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required.').max(128),
+    currentPassword: z
+      .string({ message: 'Current password is required.' })
+      .min(1, 'Current password is required.')
+      .max(128, 'Password must be at most 128 characters.'),
     newPassword: z
-      .string()
+      .string({ message: 'New password is required.' })
+      .min(1, 'New password is required.')
       .min(8, 'New password must contain at least 8 characters.')
       .max(128, 'Password must be at most 128 characters.'),
-    confirmPassword: z.string().min(1, 'Please confirm your password.').max(128),
+    confirmPassword: z
+      .string({ message: 'Please confirm your password.' })
+      .min(1, 'Please confirm your password.')
+      .max(128, 'Password must be at most 128 characters.'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match.',

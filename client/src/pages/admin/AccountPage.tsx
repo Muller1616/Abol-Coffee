@@ -4,9 +4,10 @@ import { motion } from 'framer-motion'
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { DocumentTitle } from '@/components/DocumentTitle'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { FloatingInput } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
@@ -17,9 +18,50 @@ import {
   changePasswordSchema,
   type ChangePasswordFormValues,
 } from '@/features/auth/schema'
-import { DocumentTitle } from '@/components/DocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
-import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
+import {
+  VALIDATION_TOAST,
+  focusFirstInvalidField,
+  handleFormMutationError,
+} from '@/lib/form'
+
+type ManualErrors = Partial<
+  Record<'currentPassword' | 'newPassword' | 'confirmPassword', string>
+>
+
+function validateChangePasswordFields(values: ChangePasswordFormValues): ManualErrors {
+  const next: ManualErrors = {}
+
+  if (!values.currentPassword || values.currentPassword.length === 0) {
+    next.currentPassword = 'Current password is required.'
+  }
+
+  if (!values.newPassword || values.newPassword.length === 0) {
+    next.newPassword = 'New password is required.'
+  } else if (values.newPassword.length < 8) {
+    next.newPassword = 'New password must contain at least 8 characters.'
+  } else if (values.newPassword.length > 128) {
+    next.newPassword = 'Password must be at most 128 characters.'
+  } else if (
+    values.currentPassword &&
+    values.currentPassword.length > 0 &&
+    values.currentPassword === values.newPassword
+  ) {
+    next.newPassword = 'New password must be different from the current password.'
+  }
+
+  if (!values.confirmPassword || values.confirmPassword.length === 0) {
+    next.confirmPassword = 'Please confirm your password.'
+  } else if (
+    values.newPassword &&
+    values.newPassword.length > 0 &&
+    values.newPassword !== values.confirmPassword
+  ) {
+    next.confirmPassword = 'Passwords do not match.'
+  }
+
+  return next
+}
 
 export function AccountPage() {
   const { owner } = useAuth()
@@ -28,6 +70,7 @@ export function AccountPage() {
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
 
   const {
     register,
@@ -35,12 +78,15 @@ export function AccountPage() {
     control,
     reset,
     setError,
+    clearErrors,
+    getValues,
     formState: { errors, isDirty, submitCount },
   } = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
+    criteriaMode: 'all',
     defaultValues: {
       currentPassword: '',
       newPassword: '',
@@ -56,6 +102,7 @@ export function AccountPage() {
     onSuccess: () => {
       reset()
       setFormError(null)
+      setAttemptedSubmit(false)
       setShowCurrent(false)
       setShowNew(false)
       setShowConfirm(false)
@@ -64,6 +111,45 @@ export function AccountPage() {
   })
 
   const pending = mutation.isPending
+
+  const fieldMessage = (key: keyof ManualErrors) => {
+    const message = errors[key]?.message
+    return typeof message === 'string' ? message : undefined
+  }
+
+  const showInvalidFeedback = () => {
+    pushToast(VALIDATION_TOAST, 'warning')
+    focusFirstInvalidField()
+  }
+
+  const applyManualErrors = (manual: ManualErrors) => {
+    ;(Object.entries(manual) as Array<[keyof ManualErrors, string | undefined]>).forEach(
+      ([field, message], index) => {
+        if (!message) return
+        setError(field, { type: 'manual', message }, { shouldFocus: index === 0 })
+      },
+    )
+  }
+
+  const submitForm = handleSubmit(
+    async (values) => {
+      setFormError(null)
+      try {
+        await mutation.mutateAsync(values)
+      } catch (error) {
+        handleFormMutationError({
+          setError,
+          error,
+          pushToast,
+          onFormError: setFormError,
+          fallbackMessage: 'Unable to update password. Please try again.',
+        })
+      }
+    },
+    () => {
+      showInvalidFeedback()
+    },
+  )
 
   return (
     <div className="space-y-6">
@@ -127,25 +213,29 @@ export function AccountPage() {
         <form
           className="space-y-4"
           noValidate
-          onSubmit={handleSubmit(
-            async (values) => {
-              setFormError(null)
-              try {
-                await mutation.mutateAsync(values)
-              } catch (error) {
-                handleFormMutationError({
-                  setError,
-                  error,
-                  pushToast,
-                  onFormError: setFormError,
-                  fallbackMessage: 'Unable to update password. Please try again.',
-                })
-              }
-            },
-            createFormInvalidHandler(pushToast),
-          )}
+          onSubmit={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            setAttemptedSubmit(true)
+            setFormError(null)
+
+            const values = getValues()
+            const manual = validateChangePasswordFields(values)
+            if (Object.keys(manual).length > 0) {
+              applyManualErrors(manual)
+              showInvalidFeedback()
+              return
+            }
+
+            clearErrors(['currentPassword', 'newPassword', 'confirmPassword'])
+            void submitForm(event)
+          }}
         >
-          <FormErrorSummary errors={errors} submitCount={submitCount} />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={attemptedSubmit ? Math.max(submitCount, 1) : 0}
+            message="Please correct the highlighted fields before continuing."
+          />
           {formError ? <Alert>{formError}</Alert> : null}
 
           <FloatingInput
@@ -153,7 +243,7 @@ export function AccountPage() {
             type={showCurrent ? 'text' : 'password'}
             autoComplete="current-password"
             disabled={pending}
-            error={errors.currentPassword?.message}
+            error={fieldMessage('currentPassword')}
             trailing={
               <button
                 type="button"
@@ -165,7 +255,11 @@ export function AccountPage() {
                 {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             }
-            {...register('currentPassword')}
+            {...register('currentPassword', {
+              onChange: () => {
+                if (errors.currentPassword) clearErrors('currentPassword')
+              },
+            })}
           />
 
           <div className="space-y-2">
@@ -175,7 +269,7 @@ export function AccountPage() {
               autoComplete="new-password"
               disabled={pending}
               hint="Use at least 8 characters. Must differ from your current password."
-              error={errors.newPassword?.message}
+              error={fieldMessage('newPassword')}
               trailing={
                 <button
                   type="button"
@@ -187,7 +281,11 @@ export function AccountPage() {
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               }
-              {...register('newPassword')}
+              {...register('newPassword', {
+                onChange: () => {
+                  if (errors.newPassword) clearErrors('newPassword')
+                },
+              })}
             />
             <PasswordStrength password={newPassword} />
           </div>
@@ -197,7 +295,7 @@ export function AccountPage() {
             type={showConfirm ? 'text' : 'password'}
             autoComplete="new-password"
             disabled={pending}
-            error={errors.confirmPassword?.message}
+            error={fieldMessage('confirmPassword')}
             trailing={
               <button
                 type="button"
@@ -209,13 +307,18 @@ export function AccountPage() {
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             }
-            {...register('confirmPassword')}
+            {...register('confirmPassword', {
+              onChange: () => {
+                if (errors.confirmPassword) clearErrors('confirmPassword')
+              },
+            })}
           />
 
           <div className="flex items-start gap-3 rounded-2xl bg-background px-4 py-3 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
             <p>
-              Your session remains active after updating your password. Choose a strong password containing a mix of letters, numbers, and symbols.
+              Your session remains active after updating your password. Choose a strong password
+              containing a mix of letters, numbers, and symbols.
             </p>
           </div>
 
@@ -231,6 +334,7 @@ export function AccountPage() {
                 onClick={() => {
                   reset()
                   setFormError(null)
+                  setAttemptedSubmit(false)
                 }}
               >
                 Discard changes
@@ -245,9 +349,16 @@ export function AccountPage() {
         onOpenChange={(open) => {
           if (!open) unsaved.cancelLeave()
         }}
-        title="You have unsaved changes"
-        description="Are you sure you want to leave? Your password changes will be lost."
+        title="Leave without saving?"
+        description="You have unsaved password changes on this page."
+        warning={
+          <>
+            <p className="font-semibold">Your password changes will be lost.</p>
+            <p className="mt-1">Leave only if you do not want to update your password.</p>
+          </>
+        }
         confirmLabel="Leave page"
+        cancelLabel="Stay on page"
         tone="danger"
         onConfirm={unsaved.confirmLeave}
       />
