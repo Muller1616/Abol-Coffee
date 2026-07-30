@@ -17,6 +17,9 @@ enum AdminAction {
   UPDATE
   DELETE
   TOGGLE
+  LOGIN
+  LOGOUT
+  DOWNLOAD
 }
 
 enum AdminEntity {
@@ -24,6 +27,8 @@ enum AdminEntity {
   MENU_ITEM
   RESTAURANT
   OWNER
+  QR
+  SYSTEM
 }
 
 model Owner {
@@ -95,10 +100,17 @@ model AdminActivity {
   id        String      @id @default(cuid())
   action    AdminAction
   entity    AdminEntity
+  /** Fine-grained activity key for UI icons/filters (e.g. MENU_ITEM_PRICE_UPDATED). */
+  type      String      @default("SYSTEM")
+  /** Short feed headline (e.g. "Price updated"). */
+  title     String      @default("Activity")
   entityId  String?
   summary   String
   createdAt DateTime    @default(now())
 
   @@index([createdAt])
+  @@index([action])
+  @@index([entity])
+  @@index([type])
   @@map("admin_activities")
 }
