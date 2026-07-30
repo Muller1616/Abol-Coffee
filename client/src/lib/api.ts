@@ -78,10 +78,13 @@ function readErrorBody(error: unknown): ApiErrorBody | null {
   return error.response?.data ?? null
 }
 
-export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.') {
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again later.',
+) {
   if (axios.isAxiosError<ApiErrorBody>(error)) {
     if (!error.response) {
-      return 'Unable to connect to the server. Please check your internet connection.'
+      return 'Unable to connect to the server.'
     }
 
     const status = error.response.status
@@ -90,7 +93,7 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
       if (status === 503 && error.response.data?.message) {
         return error.response.data.message
       }
-      return 'Something went wrong on our side. Please try again later.'
+      return 'Something went wrong. Please try again later.'
     }
     if (status === 429) {
       return error.response.data?.message || 'Too many attempts. Please try again later.'
@@ -99,7 +102,7 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
       return error.response.data?.message || 'Your session has expired. Please sign in again.'
     }
     if (status === 403) {
-      return error.response.data?.message || 'You do not have permission to perform this action.'
+      return error.response.data?.message || 'You are not authorized to access this account.'
     }
 
     return error.response.data?.message ?? fallback

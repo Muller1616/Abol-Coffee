@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { BackLink } from '@/components/BackLink'
@@ -34,13 +34,23 @@ import {
   loginSchema,
   resetWithOtpSchema,
   sendOtpSchema,
+  validateLoginFields,
   type LoginFormValues,
   type ResetWithOtpFormValues,
   type SendOtpFormValues,
 } from '@/features/auth/schema'
 import { consumeSessionMessage } from '@/features/auth/session/session-message'
-import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
+import {
+  VALIDATION_TOAST,
+  createFormInvalidHandler,
+  focusFirstInvalidField,
+  handleFormMutationError,
+} from '@/lib/form'
 import { cn } from '@/lib/utils'
+
+/** Matches seeded owner from server OWNER_EMAIL (see server/.env). */
+const OWNER_SEED_EMAIL = 'Habeshadreamer12@gmail.com'
+const OWNER_SEED_PASSWORD = 'ChangeMe123!'
 
 const highlights = [
   {
@@ -80,34 +90,53 @@ export function LoginPage() {
     }
   }, [pushToast])
 
-  // 1. Login Form
+  // 1. Login Form — subscribe to formState so validation errors re-render
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
+    criteriaMode: 'all',
     defaultValues: {
       email: '',
       password: '',
       rememberMe: false,
     },
   })
+  const {
+    register: registerLogin,
+    handleSubmit: handleLoginSubmit,
+    setError: setLoginError,
+    clearErrors: clearLoginErrors,
+    getValues: getLoginValues,
+    setValue: setLoginValue,
+    formState: { errors: loginErrors, submitCount: loginSubmitCount },
+  } = loginForm
+  const [loginAttempted, setLoginAttempted] = useState(false)
 
   // 2. Request OTP Form
   const sendOtpForm = useForm<SendOtpFormValues>({
     resolver: zodResolver(sendOtpSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
     defaultValues: {
-      email: 'owner@abolcoffee.com',
+      email: OWNER_SEED_EMAIL,
     },
   })
+  const {
+    register: registerSendOtp,
+    handleSubmit: handleSendOtpSubmit,
+    setError: setSendOtpError,
+    clearErrors: clearSendOtpErrors,
+    setValue: setSendOtpValue,
+    formState: { errors: sendOtpErrors, submitCount: sendOtpSubmitCount },
+  } = sendOtpForm
 
   // 3. Verify OTP & Reset Password Form
   const resetOtpForm = useForm<ResetWithOtpFormValues>({
     resolver: zodResolver(resetWithOtpSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: true,
     defaultValues: {
@@ -117,30 +146,74 @@ export function LoginPage() {
       confirmPassword: '',
     },
   })
+  const {
+    register: registerResetOtp,
+    handleSubmit: handleResetOtpSubmit,
+    setError: setResetOtpError,
+    clearErrors: clearResetOtpErrors,
+    setValue: setResetOtpValue,
+    control: resetOtpControl,
+    formState: { errors: resetOtpErrors, submitCount: resetOtpSubmitCount },
+  } = resetOtpForm
 
-  const resetNewPassword = useWatch({ control: resetOtpForm.control, name: 'newPassword' }) ?? ''
+  const resetNewPassword = useWatch({ control: resetOtpControl, name: 'newPassword' }) ?? ''
+
+  const emailError =
+    typeof loginErrors.email?.message === 'string' ? loginErrors.email.message : undefined
+  const passwordError =
+    typeof loginErrors.password?.message === 'string' ? loginErrors.password.message : undefined
+  const showLoginBanner = Boolean(loginError) && !emailError && !passwordError
+
+  const showLoginInvalidFeedback = () => {
+    pushToast(VALIDATION_TOAST, 'warning')
+    focusFirstInvalidField()
+  }
 
   // Handlers
-  const onLoginSubmit = loginForm.handleSubmit(
+  const submitLogin = handleLoginSubmit(
     async (values) => {
       clearLoginError()
       try {
         await login(values)
-        pushToast('Login successful. Redirecting...', 'success')
+        pushToast('Login successful. Redirecting to your dashboard...', 'success')
         navigate('/admin/dashboard', { replace: true })
       } catch (error) {
         handleFormMutationError({
-          setError: loginForm.setError,
+          setError: setLoginError,
           error,
           pushToast,
-          fallbackMessage: 'Unable to sign in. Please try again.',
+          fallbackMessage: 'Unable to sign in. Please try again later.',
         })
       }
     },
-    createFormInvalidHandler(pushToast),
+    () => {
+      showLoginInvalidFeedback()
+    },
   )
 
-  const onSendOtpSubmit = sendOtpForm.handleSubmit(
+  const onLoginSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setLoginAttempted(true)
+    clearLoginError()
+
+    const manual = validateLoginFields(getLoginValues())
+    const keys = Object.keys(manual) as Array<'email' | 'password'>
+    if (keys.length > 0) {
+      keys.forEach((field, index) => {
+        const message = manual[field]
+        if (!message) return
+        setLoginError(field, { type: 'manual', message }, { shouldFocus: index === 0 })
+      })
+      showLoginInvalidFeedback()
+      return
+    }
+
+    clearLoginErrors(['email', 'password'])
+    void submitLogin(event)
+  }
+
+  const onSendOtpSubmit = handleSendOtpSubmit(
     async (values) => {
       setOtpError(null)
       setIsSendingOtp(true)
@@ -149,14 +222,14 @@ export function LoginPage() {
         const generatedCode = res.data.otpCode
         setActiveOtpCode(generatedCode)
 
-        resetOtpForm.setValue('email', values.email)
-        resetOtpForm.setValue('otpCode', generatedCode)
+        setResetOtpValue('email', values.email)
+        setResetOtpValue('otpCode', generatedCode)
         setOtpStep('verify')
 
         pushToast('OTP code sent successfully.', 'success')
       } catch (error) {
         handleFormMutationError({
-          setError: sendOtpForm.setError,
+          setError: setSendOtpError,
           error,
           pushToast,
           onFormError: setOtpError,
@@ -169,7 +242,7 @@ export function LoginPage() {
     createFormInvalidHandler(pushToast),
   )
 
-  const onResetWithOtpSubmit = resetOtpForm.handleSubmit(
+  const onResetWithOtpSubmit = handleResetOtpSubmit(
     async (values) => {
       setOtpError(null)
       setIsResetting(true)
@@ -177,8 +250,8 @@ export function LoginPage() {
         await resetWithOtpRequest(values)
         pushToast('Password reset successfully. Please sign in with your new password.', 'success')
 
-        loginForm.setValue('email', values.email)
-        loginForm.setValue('password', '')
+        setLoginValue('email', values.email)
+        setLoginValue('password', '')
         clearLoginError()
 
         setIsFlipped(false)
@@ -186,7 +259,7 @@ export function LoginPage() {
         setActiveOtpCode(null)
       } catch (error) {
         handleFormMutationError({
-          setError: resetOtpForm.setError,
+          setError: setResetOtpError,
           error,
           pushToast,
           onFormError: setOtpError,
@@ -326,12 +399,13 @@ export function LoginPage() {
 
                   <form className="space-y-5" onSubmit={onLoginSubmit} noValidate>
                     <FormErrorSummary
-                      errors={loginForm.formState.errors}
-                      submitCount={loginForm.formState.submitCount}
+                      errors={loginErrors}
+                      submitCount={loginAttempted ? Math.max(loginSubmitCount, 1) : 0}
+                      message="Please complete the required fields before continuing."
                     />
-                    {/* General / System Level Error Banner ONLY */}
+                    {/* General / System Level Error Banner ONLY (when not mapped to a field) */}
                     <AnimatePresence mode="wait">
-                      {loginError ? (
+                      {showLoginBanner ? (
                         <motion.div
                           key={loginError}
                           initial={{ opacity: 0, y: -8 }}
@@ -349,10 +423,10 @@ export function LoginPage() {
                       label="Email address"
                       type="email"
                       autoComplete="email"
-                      error={loginForm.formState.errors.email?.message}
-                      {...loginForm.register('email', {
+                      error={emailError}
+                      {...registerLogin('email', {
                         onChange: () => {
-                          if (loginForm.formState.errors.email) loginForm.clearErrors('email')
+                          if (loginErrors.email) clearLoginErrors('email')
                           if (loginError) clearLoginError()
                         },
                       })}
@@ -362,7 +436,7 @@ export function LoginPage() {
                       label="Password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
-                      error={loginForm.formState.errors.password?.message}
+                      error={passwordError}
                       trailing={
                         <button
                           type="button"
@@ -373,16 +447,16 @@ export function LoginPage() {
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       }
-                      {...loginForm.register('password', {
+                      {...registerLogin('password', {
                         onChange: () => {
-                          if (loginForm.formState.errors.password) loginForm.clearErrors('password')
+                          if (loginErrors.password) clearLoginErrors('password')
                           if (loginError) clearLoginError()
                         },
                       })}
                     />
 
                     <div className="flex items-center justify-between gap-3 pt-1">
-                      <Checkbox label="Remember me" {...loginForm.register('rememberMe')} />
+                      <Checkbox label="Remember me" {...registerLogin('rememberMe')} />
                       <button
                         type="button"
                         onClick={() => {
@@ -478,17 +552,21 @@ export function LoginPage() {
                   {otpStep === 'request' ? (
                     <form onSubmit={onSendOtpSubmit} className="space-y-4" noValidate>
                       <FormErrorSummary
-                        errors={sendOtpForm.formState.errors}
-                        submitCount={sendOtpForm.formState.submitCount}
+                        errors={sendOtpErrors}
+                        submitCount={sendOtpSubmitCount}
                       />
                       <FloatingInput
                         label="Owner Email Address"
                         type="email"
                         autoComplete="email"
-                        error={sendOtpForm.formState.errors.email?.message}
-                        {...sendOtpForm.register('email', {
+                        error={
+                          typeof sendOtpErrors.email?.message === 'string'
+                            ? sendOtpErrors.email.message
+                            : undefined
+                        }
+                        {...registerSendOtp('email', {
                           onChange: () => {
-                            if (sendOtpForm.formState.errors.email) sendOtpForm.clearErrors('email')
+                            if (sendOtpErrors.email) clearSendOtpErrors('email')
                             if (otpError) setOtpError(null)
                           },
                         })}
@@ -508,8 +586,8 @@ export function LoginPage() {
                     /* STEP 2: Verify OTP & Reset Password Form */
                     <form onSubmit={onResetWithOtpSubmit} className="space-y-4" noValidate>
                       <FormErrorSummary
-                        errors={resetOtpForm.formState.errors}
-                        submitCount={resetOtpForm.formState.submitCount}
+                        errors={resetOtpErrors}
+                        submitCount={resetOtpSubmitCount}
                       />
                       {activeOtpCode ? (
                         <div className="rounded-xl border border-emerald-400/40 bg-emerald-50/80 p-3 text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-xs">
@@ -526,10 +604,14 @@ export function LoginPage() {
                       <FloatingInput
                         label="Owner Email Address"
                         type="email"
-                        error={resetOtpForm.formState.errors.email?.message}
-                        {...resetOtpForm.register('email', {
+                        error={
+                          typeof resetOtpErrors.email?.message === 'string'
+                            ? resetOtpErrors.email.message
+                            : undefined
+                        }
+                        {...registerResetOtp('email', {
                           onChange: () => {
-                            if (resetOtpForm.formState.errors.email) resetOtpForm.clearErrors('email')
+                            if (resetOtpErrors.email) clearResetOtpErrors('email')
                             if (otpError) setOtpError(null)
                           },
                         })}
@@ -539,10 +621,14 @@ export function LoginPage() {
                         label="6-Digit OTP Code"
                         type="text"
                         maxLength={6}
-                        error={resetOtpForm.formState.errors.otpCode?.message}
-                        {...resetOtpForm.register('otpCode', {
+                        error={
+                          typeof resetOtpErrors.otpCode?.message === 'string'
+                            ? resetOtpErrors.otpCode.message
+                            : undefined
+                        }
+                        {...registerResetOtp('otpCode', {
                           onChange: () => {
-                            if (resetOtpForm.formState.errors.otpCode) resetOtpForm.clearErrors('otpCode')
+                            if (resetOtpErrors.otpCode) clearResetOtpErrors('otpCode')
                             if (otpError) setOtpError(null)
                           },
                         })}
@@ -552,7 +638,11 @@ export function LoginPage() {
                         <FloatingInput
                           label="New Password"
                           type={showNewPassword ? 'text' : 'password'}
-                          error={resetOtpForm.formState.errors.newPassword?.message}
+                          error={
+                            typeof resetOtpErrors.newPassword?.message === 'string'
+                              ? resetOtpErrors.newPassword.message
+                              : undefined
+                          }
                           trailing={
                             <button
                               type="button"
@@ -563,10 +653,9 @@ export function LoginPage() {
                               {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           }
-                          {...resetOtpForm.register('newPassword', {
+                          {...registerResetOtp('newPassword', {
                             onChange: () => {
-                              if (resetOtpForm.formState.errors.newPassword)
-                                resetOtpForm.clearErrors('newPassword')
+                              if (resetOtpErrors.newPassword) clearResetOtpErrors('newPassword')
                               if (otpError) setOtpError(null)
                             },
                           })}
@@ -577,11 +666,15 @@ export function LoginPage() {
                       <FloatingInput
                         label="Confirm New Password"
                         type={showNewPassword ? 'text' : 'password'}
-                        error={resetOtpForm.formState.errors.confirmPassword?.message}
-                        {...resetOtpForm.register('confirmPassword', {
+                        error={
+                          typeof resetOtpErrors.confirmPassword?.message === 'string'
+                            ? resetOtpErrors.confirmPassword.message
+                            : undefined
+                        }
+                        {...registerResetOtp('confirmPassword', {
                           onChange: () => {
-                            if (resetOtpForm.formState.errors.confirmPassword)
-                              resetOtpForm.clearErrors('confirmPassword')
+                            if (resetOtpErrors.confirmPassword)
+                              clearResetOtpErrors('confirmPassword')
                             if (otpError) setOtpError(null)
                           },
                         })}
@@ -615,17 +708,20 @@ export function LoginPage() {
                       Default Owner Seed Credentials
                     </p>
                     <p className="text-[11px] leading-relaxed text-slate-600">
-                      Default Email: <code className="rounded bg-amber-100 px-1 py-0.5 font-mono font-bold text-slate-900">owner@abolcoffee.com</code>
+                      Default Email:{' '}
+                      <code className="rounded bg-amber-100 px-1 py-0.5 font-mono font-bold text-slate-900">
+                        {OWNER_SEED_EMAIL}
+                      </code>
                     </p>
                     <button
                       type="button"
                       onClick={() => {
-                        sendOtpForm.setValue('email', 'owner@abolcoffee.com')
-                        resetOtpForm.setValue('email', 'owner@abolcoffee.com')
-                        resetOtpForm.setValue('newPassword', 'ChangeMe123!')
-                        resetOtpForm.setValue('confirmPassword', 'ChangeMe123!')
-                        loginForm.setValue('email', 'owner@abolcoffee.com')
-                        loginForm.setValue('password', 'ChangeMe123!')
+                        setSendOtpValue('email', OWNER_SEED_EMAIL)
+                        setResetOtpValue('email', OWNER_SEED_EMAIL)
+                        setResetOtpValue('newPassword', OWNER_SEED_PASSWORD)
+                        setResetOtpValue('confirmPassword', OWNER_SEED_PASSWORD)
+                        setLoginValue('email', OWNER_SEED_EMAIL)
+                        setLoginValue('password', OWNER_SEED_PASSWORD)
                         setOtpError(null)
                         clearLoginError()
                         pushToast('Default seed credentials filled into form', 'success')

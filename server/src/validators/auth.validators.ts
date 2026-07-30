@@ -1,13 +1,26 @@
 import { z } from 'zod';
 
+const requiredEmail = z
+  .string({ message: 'Email is required.' })
+  .trim()
+  .min(1, 'Email is required.')
+  .email('Please enter a valid email address.');
+
+const requiredPassword = z
+  .string({ message: 'Password is required.' })
+  .superRefine((value, ctx) => {
+    if (value.length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Password is required.' });
+      return;
+    }
+    if (value.trim().length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Password cannot be empty.' });
+    }
+  });
+
 export const loginSchema = z.object({
-  email: z
-    .string({ message: 'Email is required.' })
-    .min(1, 'Email is required.')
-    .email('Please enter a valid email address.'),
-  password: z
-    .string({ message: 'Password is required.' })
-    .min(1, 'Password is required.'),
+  email: requiredEmail,
+  password: requiredPassword,
   rememberMe: z.boolean().optional().default(false),
 });
 
@@ -40,20 +53,14 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 export const sendOtpSchema = z.object({
-  email: z
-    .string({ message: 'Email is required.' })
-    .min(1, 'Email is required.')
-    .email('Please enter a valid email address.'),
+  email: requiredEmail,
 });
 
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;
 
 export const resetWithOtpSchema = z
   .object({
-    email: z
-      .string({ message: 'Email is required.' })
-      .min(1, 'Email is required.')
-      .email('Please enter a valid email address.'),
+    email: requiredEmail,
     otpCode: z
       .string({ message: 'OTP code is required.' })
       .min(1, 'OTP code is required.')

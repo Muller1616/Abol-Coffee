@@ -18,17 +18,36 @@ const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash(ownerPassword, 12);
-
   const normalizedEmail = ownerEmail.trim().toLowerCase();
 
-  await prisma.owner.upsert({
+  const existingByEmail = await prisma.owner.findUnique({
     where: { email: normalizedEmail },
-    update: {},
-    create: {
-      email: normalizedEmail,
-      password: passwordHash,
-    },
   });
+  const anyOwner = await prisma.owner.findFirst({
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (existingByEmail) {
+    await prisma.owner.update({
+      where: { id: existingByEmail.id },
+      data: { password: passwordHash },
+    });
+  } else if (anyOwner) {
+    await prisma.owner.update({
+      where: { id: anyOwner.id },
+      data: {
+        email: normalizedEmail,
+        password: passwordHash,
+      },
+    });
+  } else {
+    await prisma.owner.create({
+      data: {
+        email: normalizedEmail,
+        password: passwordHash,
+      },
+    });
+  }
 
   const restaurantCount = await prisma.restaurant.count();
 

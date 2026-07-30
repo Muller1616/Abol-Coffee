@@ -41,10 +41,14 @@ export function errorHandler(
       })
     }
 
+    const fieldKeys = err.errors ? Object.keys(err.errors) : []
+    const singleField = fieldKeys.length === 1 ? fieldKeys[0] : undefined
+
     res.status(err.statusCode).json({
       success: false,
       message: err.message,
-      ...(err.errors && Object.keys(err.errors).length > 0 ? { errors: err.errors } : {}),
+      ...(err.errors && fieldKeys.length > 0 ? { errors: err.errors } : {}),
+      ...(singleField ? { field: singleField } : {}),
     })
     return
   }
