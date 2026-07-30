@@ -108,7 +108,11 @@ export async function deleteMenuItem(id: string) {
   await api.delete<ApiSuccess<undefined>>(`/api/admin/menu-items/${id}`)
 }
 
-export async function uploadMenuItemImage(id: string, file: File) {
+export async function uploadMenuItemImage(
+  id: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+) {
   await ensureCsrfToken()
   const formData = new FormData()
   formData.append('image', file)
@@ -116,6 +120,12 @@ export async function uploadMenuItemImage(id: string, file: File) {
   const { data } = await api.post<ApiSuccess<{ item: MenuItem }>>(
     `/api/admin/menu-items/${id}/image`,
     formData,
+    {
+      onUploadProgress: (event) => {
+        if (!onProgress || !event.total) return
+        onProgress(Math.round((event.loaded / event.total) * 100))
+      },
+    },
   )
 
   return data.data.item

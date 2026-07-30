@@ -56,13 +56,22 @@ export async function updateRestaurantStatus(status: 'ACTIVE' | 'MAINTENANCE') {
   return data.data.restaurant
 }
 
-export async function uploadRestaurantLogo(file: File) {
+export async function uploadRestaurantLogo(
+  file: File,
+  onProgress?: (percent: number) => void,
+) {
   await ensureCsrfToken()
   const formData = new FormData()
   formData.append('image', file)
   const { data } = await api.post<ApiSuccess<{ restaurant: Restaurant }>>(
     '/api/admin/restaurant/logo',
     formData,
+    {
+      onUploadProgress: (event) => {
+        if (!onProgress || !event.total) return
+        onProgress(Math.round((event.loaded / event.total) * 100))
+      },
+    },
   )
   return data.data.restaurant
 }
@@ -75,13 +84,22 @@ export async function removeRestaurantLogo() {
   return data.data.restaurant
 }
 
-export async function uploadRestaurantCover(file: File) {
+export async function uploadRestaurantCover(
+  file: File,
+  onProgress?: (percent: number) => void,
+) {
   await ensureCsrfToken()
   const formData = new FormData()
   formData.append('image', file)
   const { data } = await api.post<ApiSuccess<{ restaurant: Restaurant }>>(
     '/api/admin/restaurant/cover',
     formData,
+    {
+      onUploadProgress: (event) => {
+        if (!onProgress || !event.total) return
+        onProgress(Math.round((event.loaded / event.total) * 100))
+      },
+    },
   )
   return data.data.restaurant
 }

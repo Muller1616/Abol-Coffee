@@ -37,6 +37,7 @@ type MenuItemFormDialogProps = {
   item?: MenuItem | null
   categories: Category[]
   loading?: boolean
+  uploadProgress?: number | null
   onSubmit: (payload: MenuItemFormSubmitPayload) => Promise<void>
 }
 
@@ -91,6 +92,7 @@ export function MenuItemFormDialog({
   item,
   categories,
   loading = false,
+  uploadProgress = null,
   onSubmit,
 }: MenuItemFormDialogProps) {
   const isEditing = Boolean(item)
@@ -296,6 +298,8 @@ export function MenuItemFormDialog({
             file={imageFile}
             disabled={loading}
             error={imageError}
+            compressVariant="menuItem"
+            uploadProgress={uploadProgress}
             removeConfirmTitle="Remove menu item image?"
             removeConfirmDescription="This food image will be permanently deleted when you save the menu item. Guests will no longer see it on the public menu."
             onFileChange={(file) => {

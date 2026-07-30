@@ -64,13 +64,7 @@ export type PublicMenu = PublicMenuActive | PublicMenuMaintenance
 
 export async function fetchPublicMenu(): Promise<PublicMenu> {
   try {
-    const { data } = await api.get<ApiSuccess<PublicMenuActive>>('/api/public/menu', {
-      params: { _: Date.now() },
-      headers: {
-        'Cache-Control': 'no-cache',
-        Pragma: 'no-cache',
-      },
-    })
+    const { data } = await api.get<ApiSuccess<PublicMenuActive>>('/api/public/menu')
     return data.data
   } catch (error) {
     if (axios.isAxiosError<ApiErrorBody & { data?: PublicMenuMaintenance }>(error)) {
