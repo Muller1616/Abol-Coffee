@@ -1,4 +1,5 @@
 import { forwardRef, useId, type TextareaHTMLAttributes } from 'react'
+import { FieldError } from '@/components/ui/field-error'
 import { cn } from '@/lib/utils'
 
 type FloatingTextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'placeholder'> & {
@@ -17,6 +18,7 @@ export const FloatingTextarea = forwardRef<HTMLTextAreaElement, FloatingTextarea
     const generatedId = useId()
     const textareaId = id ?? generatedId
     const errorId = `${textareaId}-error`
+    const hintId = `${textareaId}-hint`
     const currentLength = String(value ?? defaultValue ?? '').length
 
     return (
@@ -30,7 +32,7 @@ export const FloatingTextarea = forwardRef<HTMLTextAreaElement, FloatingTextarea
             value={value}
             defaultValue={defaultValue}
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
+            aria-describedby={error ? errorId : hint ? hintId : undefined}
             className={cn(
               'peer min-h-28 w-full cursor-text resize-y rounded-2xl border bg-white/70 px-4 pt-6 pb-3 text-sm text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.65)] outline-none transition-all duration-200 backdrop-blur disabled:cursor-not-allowed disabled:opacity-60',
               'border-border/80 hover:border-primary/40',
@@ -54,12 +56,12 @@ export const FloatingTextarea = forwardRef<HTMLTextAreaElement, FloatingTextarea
         </div>
         <div className="flex items-start justify-between gap-3 px-1">
           <div className="min-w-0">
-            {error ? (
-              <p id={errorId} className="text-xs font-medium text-danger">
-                ❌ {error}
+            <FieldError id={errorId} message={error} className="px-0" />
+            {!error && hint ? (
+              <p id={hintId} className="text-xs text-muted-foreground">
+                {hint}
               </p>
             ) : null}
-            {!error && hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
           </div>
           {showCount && maxLength ? (
             <p className="shrink-0 text-xs tabular-nums text-muted-foreground">

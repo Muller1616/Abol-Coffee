@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await logoutMutation.mutateAsync()
       },
       loginError: loginMutation.error
-        ? getApiErrorMessage(loginMutation.error, 'Invalid email or password')
+        ? getApiErrorMessage(loginMutation.error, 'Unable to sign in. Please check your credentials.')
         : null,
       isLoggingIn: loginMutation.isPending,
       clearLoginError: () => loginMutation.reset(),

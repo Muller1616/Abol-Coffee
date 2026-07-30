@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 import type { Category } from '@/features/categories/api'
 import { categoryFormSchema, type CategoryFormValues } from '@/features/categories/schema'
-import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
+import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 
 type CategoryFormDialogProps = {
   open: boolean
@@ -76,9 +76,12 @@ export function CategoryFormDialog({
               try {
                 await onSubmit(values)
               } catch (error) {
-                if (applyServerFieldErrors(setError, error)) {
-                  pushToast('Please complete all required fields.', 'error')
-                }
+                handleFormMutationError({
+                  setError,
+                  error,
+                  pushToast,
+                  fallbackMessage: 'Unable to save category. Please try again.',
+                })
               }
             },
             createFormInvalidHandler(pushToast),

@@ -1,5 +1,6 @@
 import { forwardRef, useId, type SelectHTMLAttributes } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { FieldError } from '@/components/ui/field-error'
 import { cn } from '@/lib/utils'
 
 type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
@@ -51,11 +52,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         </label>
         <ChevronDown className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       </div>
-      {error ? (
-        <p id={errorId} className="px-1 text-xs font-medium text-danger">
-          ❌ {error}
-        </p>
-      ) : null}
+      <FieldError id={errorId} message={error} />
     </div>
   )
 })
