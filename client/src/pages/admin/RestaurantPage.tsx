@@ -107,6 +107,7 @@ export function RestaurantPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['admin', 'restaurant'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
     ])
   }
 

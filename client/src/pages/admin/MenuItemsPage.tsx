@@ -85,6 +85,7 @@ export function MenuItemsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] }),
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
     ])
   }
 
