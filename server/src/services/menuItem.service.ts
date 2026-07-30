@@ -10,7 +10,7 @@ import type {
   UpdateMenuItemAvailabilityInput,
   UpdateMenuItemInput,
 } from '../validators/menuItem.validators.js';
-import { logAdminActivity } from './activity.service.js';
+import { queueAdminActivity } from './activity.service.js';
 import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 import { deleteStoredImage } from './storage.service.js';
 
@@ -42,7 +42,7 @@ export type PaginatedMenuItems = {
   };
 };
 
-function toMenuItemResponse(item: MenuItemRecord): MenuItemResponse {
+export function toMenuItemResponse(item: MenuItemRecord): MenuItemResponse {
   return {
     ...item,
     price: toMoneyNumber(item.price),
@@ -50,6 +50,8 @@ function toMenuItemResponse(item: MenuItemRecord): MenuItemResponse {
     currency: 'ETB',
   };
 }
+
+export { menuItemInclude };
 
 async function assertCategoryExists(categoryId: string): Promise<void> {
   const category = await prisma.category.findUnique({
@@ -114,12 +116,14 @@ export async function getMenuItemById(id: string): Promise<MenuItemResponse> {
 }
 
 export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuItemResponse> {
-  await assertCategoryExists(input.categoryId);
+  const [, maxOrder] = await Promise.all([
+    assertCategoryExists(input.categoryId),
+    prisma.menuItem.aggregate({
+      where: { categoryId: input.categoryId },
+      _max: { displayOrder: true },
+    }),
+  ]);
 
-  const maxOrder = await prisma.menuItem.aggregate({
-    where: { categoryId: input.categoryId },
-    _max: { displayOrder: true },
-  });
   const displayOrder = input.displayOrder ?? (maxOrder._max.displayOrder ?? -1) + 1;
 
   try {
@@ -137,7 +141,7 @@ export async function createMenuItem(input: CreateMenuItemInput): Promise<MenuIt
       include: menuItemInclude,
     });
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.CREATE,
       entity: AdminEntity.MENU_ITEM,
       entityId: item.id,
@@ -163,8 +167,6 @@ export async function updateMenuItem(
   id: string,
   input: UpdateMenuItemInput,
 ): Promise<MenuItemResponse> {
-  await getMenuItemById(id);
-
   if (input.categoryId) {
     await assertCategoryExists(input.categoryId);
   }
@@ -190,14 +192,12 @@ export async function updateMenuItem(
       ? `Updated price for "${item.name}" to ${formatMoney(item.price)} ETB`
       : `Updated menu item "${item.name}"`;
 
-    await logAdminActivity({
+    queueAdminActivity({
       action: AdminAction.UPDATE,
       entity: AdminEntity.MENU_ITEM,
       entityId: item.id,
       summary,
-      ...(priceOnly
-        ? { type: 'MENU_ITEM_PRICE_UPDATED', title: 'Price updated' }
-        : {}),
+      ...(priceOnly ? { type: 'MENU_ITEM_PRICE_UPDATED', title: 'Price updated' } : {}),
     });
 
     invalidatePublicMenuCache();
@@ -219,32 +219,43 @@ export async function updateMenuItemAvailability(
   id: string,
   input: UpdateMenuItemAvailabilityInput,
 ): Promise<MenuItemResponse> {
-  await getMenuItemById(id);
+  try {
+    const item = await prisma.menuItem.update({
+      where: { id },
+      data: { isAvailable: input.isAvailable },
+      include: menuItemInclude,
+    });
 
-  const item = await prisma.menuItem.update({
-    where: { id },
-    data: { isAvailable: input.isAvailable },
-    include: menuItemInclude,
-  });
+    queueAdminActivity({
+      action: AdminAction.TOGGLE,
+      entity: AdminEntity.MENU_ITEM,
+      entityId: item.id,
+      summary: `Menu item "${item.name}" marked as ${input.isAvailable ? 'available' : 'hidden'}`,
+    });
 
-  await logAdminActivity({
-    action: AdminAction.TOGGLE,
-    entity: AdminEntity.MENU_ITEM,
-    entityId: item.id,
-    summary: `Menu item "${item.name}" marked as ${input.isAvailable ? 'available' : 'hidden'}`,
-  });
-
-  invalidatePublicMenuCache();
-  return toMenuItemResponse(item);
+    invalidatePublicMenuCache();
+    return toMenuItemResponse(item);
+  } catch (error) {
+    handlePrismaError(error, 'Failed to update menu item availability');
+  }
 }
 
 export async function deleteMenuItem(id: string): Promise<void> {
-  const item = await getMenuItemById(id);
+  const item = await prisma.menuItem.findUnique({
+    where: { id },
+    select: { id: true, name: true, image: true },
+  });
+
+  if (!item) {
+    throw new AppError('Menu item not found', 404);
+  }
 
   await prisma.menuItem.delete({ where: { id } });
-  await deleteStoredImage(item.image);
 
-  await logAdminActivity({
+  // Disk cleanup must not block the API response.
+  void deleteStoredImage(item.image);
+
+  queueAdminActivity({
     action: AdminAction.DELETE,
     entity: AdminEntity.MENU_ITEM,
     entityId: id,
@@ -262,24 +273,20 @@ export async function reorderMenuItems(input: ReorderMenuItemsInput): Promise<Me
     throw new AppError('Duplicate menu item ids are not allowed in reorder payload', 400);
   }
 
-  const existingCount = await prisma.menuItem.count({
-    where: { id: { in: ids } },
-  });
-
-  if (existingCount !== ids.length) {
-    throw new AppError('One or more menu items were not found', 404);
+  try {
+    await prisma.$transaction(
+      input.items.map((item) =>
+        prisma.menuItem.update({
+          where: { id: item.id },
+          data: { displayOrder: item.displayOrder },
+        }),
+      ),
+    );
+  } catch (error) {
+    handlePrismaError(error, 'Failed to reorder menu items');
   }
 
-  await prisma.$transaction(
-    input.items.map((item) =>
-      prisma.menuItem.update({
-        where: { id: item.id },
-        data: { displayOrder: item.displayOrder },
-      }),
-    ),
-  );
-
-  await logAdminActivity({
+  queueAdminActivity({
     action: AdminAction.UPDATE,
     entity: AdminEntity.MENU_ITEM,
     summary: `Reordered ${input.items.length} menu items`,

@@ -23,7 +23,6 @@ import { fetchCategories } from '@/features/categories/api'
 import {
   createMenuItem,
   deleteMenuItem,
-  fetchAllMenuItemsInCategory,
   fetchMenuItems,
   removeMenuItemImage,
   reorderMenuItems,
@@ -53,7 +52,6 @@ export function MenuItemsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [deleting, setDeleting] = useState<MenuItem | null>(null)
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
@@ -84,10 +82,16 @@ export function MenuItemsPage() {
   })
 
   const invalidateRelated = () => {
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
-    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] })
-    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'], refetchType: 'none' })
+    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'], refetchType: 'none' })
+  }
+
+  const patchMenuItemCaches = (updater: (data: MenuItemsPageData) => MenuItemsPageData) => {
+    queryClient.setQueriesData<MenuItemsPageData>({ queryKey: ['admin', 'menu-items'] }, (data) =>
+      data ? updater(data) : data,
+    )
   }
 
   const saveMutation = useMutation({
@@ -111,30 +115,57 @@ export function MenuItemsPage() {
       if (item) {
         saved = await updateMenuItem(item.id, body)
 
+        // Return immediately for the dialog; finish image work in the background.
         if (payload.removeImage && item.image) {
-          saved = await removeMenuItemImage(item.id)
+          void removeMenuItemImage(item.id)
+            .then((next) => {
+              patchMenuItemCaches((data) => ({
+                ...data,
+                items: data.items.map((entry) => (entry.id === next.id ? next : entry)),
+              }))
+            })
+            .catch((error: unknown) => {
+              pushToast(getApiErrorMessage(error, 'Saved, but could not remove image'), 'error')
+            })
         }
         if (payload.imageFile) {
-          setUploadProgress(0)
-          saved = await uploadMenuItemImage(item.id, payload.imageFile, setUploadProgress)
+          void uploadMenuItemImage(item.id, payload.imageFile)
+            .then((next) => {
+              patchMenuItemCaches((data) => ({
+                ...data,
+                items: data.items.map((entry) => (entry.id === next.id ? next : entry)),
+              }))
+            })
+            .catch((error: unknown) => {
+              pushToast(getApiErrorMessage(error, 'Saved, but image upload failed'), 'error')
+            })
         }
       } else {
         saved = await createMenuItem(body)
 
         if (payload.imageFile) {
-          setUploadProgress(0)
-          saved = await uploadMenuItemImage(saved.id, payload.imageFile, setUploadProgress)
+          void uploadMenuItemImage(saved.id, payload.imageFile)
+            .then((next) => {
+              patchMenuItemCaches((data) => ({
+                ...data,
+                items: data.items.map((entry) => (entry.id === next.id ? next : entry)),
+              }))
+            })
+            .catch((error: unknown) => {
+              pushToast(getApiErrorMessage(error, 'Item created, but image upload failed'), 'error')
+            })
         }
       }
 
       return saved
     },
     onMutate: async ({ item, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
+      const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
+        queryKey: ['admin', 'menu-items'],
+      })
+
       if (item) {
-        await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
-        const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
-          queryKey: ['admin', 'menu-items'],
-        })
         for (const [key, data] of snapshots) {
           if (!data) continue
           queryClient.setQueryData<MenuItemsPageData>(key, {
@@ -146,6 +177,7 @@ export function MenuItemsPage() {
                     name: payload.values.name,
                     description: payload.values.description ?? '',
                     price: payload.values.price,
+                    priceFormatted: String(payload.values.price),
                     isAvailable: payload.values.isAvailable,
                     categoryId: payload.values.categoryId,
                   }
@@ -153,43 +185,71 @@ export function MenuItemsPage() {
             ),
           })
         }
-        return { snapshots }
+      } else {
+        const category = categoriesQuery.data?.find((c) => c.id === payload.values.categoryId)
+        const optimistic: MenuItem = {
+          id: `temp-${Date.now()}`,
+          categoryId: payload.values.categoryId,
+          name: payload.values.name,
+          description: payload.values.description ?? '',
+          price: payload.values.price,
+          priceFormatted: String(payload.values.price),
+          currency: 'ETB',
+          image: null,
+          isAvailable: payload.values.isAvailable,
+          displayOrder: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          category: category
+            ? { id: category.id, name: category.name, isActive: category.isActive }
+            : { id: payload.values.categoryId, name: 'Category', isActive: true },
+        }
+        for (const [key, data] of snapshots) {
+          if (!data) continue
+          queryClient.setQueryData<MenuItemsPageData>(key, {
+            ...data,
+            items: [optimistic, ...data.items],
+            pagination: {
+              ...data.pagination,
+              total: data.pagination.total + 1,
+            },
+          })
+        }
       }
-      return { snapshots: [] as Array<[unknown, MenuItemsPageData | undefined]> }
+
+      setFormOpen(false)
+      setEditing(null)
+      return { snapshots, item }
     },
-    onError: (_error, _vars, context) => {
+    onError: (error, variables, context) => {
       for (const [key, data] of context?.snapshots ?? []) {
         queryClient.setQueryData(key as readonly unknown[], data)
       }
-      setUploadProgress(null)
-      // Dialog form surfaces field errors via handleFormMutationError.
+      setEditing(variables.item)
+      setFormOpen(true)
+      pushToast(getApiErrorMessage(error, 'Could not save menu item'), 'error')
     },
     onSuccess: (saved, variables) => {
-      setFormOpen(false)
-      setEditing(null)
       queryClient.setQueriesData<MenuItemsPageData>({ queryKey: ['admin', 'menu-items'] }, (data) => {
         if (!data) return data
-        const exists = data.items.some((entry) => entry.id === saved.id)
+        const withoutTemp = data.items.filter((entry) => !entry.id.startsWith('temp-'))
+        const exists = withoutTemp.some((entry) => entry.id === saved.id)
         return {
           ...data,
           items: exists
-            ? data.items.map((entry) => (entry.id === saved.id ? saved : entry))
-            : [saved, ...data.items],
+            ? withoutTemp.map((entry) => (entry.id === saved.id ? saved : entry))
+            : [saved, ...withoutTemp],
           pagination: exists
             ? data.pagination
             : {
                 ...data.pagination,
-                total: data.pagination.total + 1,
+                total: withoutTemp.length + 1,
               },
         }
       })
       pushToast(
         variables.item ? 'Menu item updated successfully' : 'Menu item created successfully',
       )
-    },
-    onSettled: () => {
-      setUploadProgress(null)
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
       invalidateRelated()
     },
   })
@@ -221,9 +281,6 @@ export function MenuItemsPage() {
     },
     onSuccess: (_, variables) => {
       pushToast(variables.isAvailable ? 'Item marked available' : 'Item hidden from menu')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
       invalidateRelated()
     },
   })
@@ -257,21 +314,43 @@ export function MenuItemsPage() {
     },
     onSuccess: () => {
       pushToast('Menu item deleted successfully')
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
       invalidateRelated()
     },
   })
 
   const reorderMutation = useMutation({
     mutationFn: reorderMenuItems,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
-      invalidateRelated()
-      pushToast('Item order updated')
+    onMutate: async (orderItems) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
+      const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
+        queryKey: ['admin', 'menu-items'],
+      })
+      const orderMap = new Map(orderItems.map((entry) => [entry.id, entry.displayOrder]))
+      for (const [key, data] of snapshots) {
+        if (!data) continue
+        queryClient.setQueryData<MenuItemsPageData>(key, {
+          ...data,
+          items: [...data.items]
+            .map((entry) =>
+              orderMap.has(entry.id)
+                ? { ...entry, displayOrder: orderMap.get(entry.id)! }
+                : entry,
+            )
+            .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
+        })
+      }
+      return { snapshots }
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not reorder items'), 'error'),
+    onError: (error, _vars, context) => {
+      for (const [key, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(key as readonly unknown[], data)
+      }
+      pushToast(getApiErrorMessage(error, 'Could not reorder items'), 'error')
+    },
+    onSuccess: () => {
+      pushToast('Item order updated')
+      invalidateRelated()
+    },
   })
 
   const categories = categoriesQuery.data ?? []
@@ -293,10 +372,11 @@ export function MenuItemsPage() {
     setFormOpen(true)
   }
 
-  const moveItem = async (item: MenuItem, direction: 'up' | 'down') => {
-    // Always reorder within the item's category using the full category list so
-    // filters, pagination, and mixed-category views cannot corrupt displayOrder.
-    const siblings = await fetchAllMenuItemsInCategory(item.categoryId)
+  const moveItem = (item: MenuItem, direction: 'up' | 'down') => {
+    // Swap displayOrder with the adjacent sibling on this page — no extra fetch.
+    const siblings = items
+      .filter((entry) => entry.categoryId === item.categoryId)
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
     const index = siblings.findIndex((entry) => entry.id === item.id)
     const targetIndex = direction === 'up' ? index - 1 : index + 1
 
@@ -310,16 +390,14 @@ export function MenuItemsPage() {
       return
     }
 
-    const swapped = [...siblings]
-    const current = swapped[index]
-    const target = swapped[targetIndex]
+    const current = siblings[index]
+    const target = siblings[targetIndex]
     if (!current || !target) return
-    swapped[index] = target
-    swapped[targetIndex] = current
 
-    await reorderMutation.mutateAsync(
-      swapped.map((entry, displayOrder) => ({ id: entry.id, displayOrder })),
-    )
+    reorderMutation.mutate([
+      { id: current.id, displayOrder: target.displayOrder },
+      { id: target.id, displayOrder: current.displayOrder },
+    ])
   }
 
   if (categoriesQuery.isSuccess && categories.length === 0) {
@@ -486,7 +564,7 @@ export function MenuItemsPage() {
                         variant="outline"
                         size="icon"
                         disabled={reorderMutation.isPending}
-                        onClick={() => void moveItem(item, 'up')}
+                        onClick={() => moveItem(item, 'up')}
                         aria-label={`Move ${item.name} up`}
                       >
                         <ArrowUp className="h-4 w-4" />
@@ -495,7 +573,7 @@ export function MenuItemsPage() {
                         variant="outline"
                         size="icon"
                         disabled={reorderMutation.isPending}
-                        onClick={() => void moveItem(item, 'down')}
+                        onClick={() => moveItem(item, 'down')}
                         aria-label={`Move ${item.name} down`}
                       >
                         <ArrowDown className="h-4 w-4" />
@@ -561,10 +639,9 @@ export function MenuItemsPage() {
         }}
         item={editing}
         categories={categories}
-        loading={saveMutation.isPending}
-        uploadProgress={uploadProgress}
+        loading={false}
         onSubmit={async (payload) => {
-          await saveMutation.mutateAsync({ item: editing, payload })
+          saveMutation.mutate({ item: editing, payload })
         }}
       />
 
