@@ -17,17 +17,19 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { BackLink } from '@/components/BackLink'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { FormErrorSummary } from '@/components/ui/form-error-summary'
 import { FloatingInput } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { resetWithOtpRequest, sendOtpRequest } from '@/features/auth/api'
 import { useAuth } from '@/features/auth/auth-context'
+import { PasswordStrength } from '@/features/auth/PasswordStrength'
 import {
   loginSchema,
   resetWithOtpSchema,
@@ -36,8 +38,7 @@ import {
   type ResetWithOtpFormValues,
   type SendOtpFormValues,
 } from '@/features/auth/schema'
-import { getApiErrorMessage } from '@/lib/api'
-import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
+import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 
 const highlights = [
   {
@@ -108,6 +109,8 @@ export function LoginPage() {
     },
   })
 
+  const resetNewPassword = useWatch({ control: resetOtpForm.control, name: 'newPassword' }) ?? ''
+
   // Handlers
   const onLoginSubmit = loginForm.handleSubmit(
     async (values) => {
@@ -117,7 +120,12 @@ export function LoginPage() {
         pushToast('Login successful. Redirecting...', 'success')
         navigate('/admin/dashboard', { replace: true })
       } catch (error) {
-        applyServerFieldErrors(loginForm.setError, error)
+        handleFormMutationError({
+          setError: loginForm.setError,
+          error,
+          pushToast,
+          fallbackMessage: 'Unable to sign in. Please try again.',
+        })
       }
     },
     createFormInvalidHandler(pushToast),
@@ -136,11 +144,15 @@ export function LoginPage() {
         resetOtpForm.setValue('otpCode', generatedCode)
         setOtpStep('verify')
 
-        pushToast('OTP code sent to email!', 'success')
+        pushToast('OTP code sent successfully.', 'success')
       } catch (error) {
-        if (!applyServerFieldErrors(sendOtpForm.setError, error)) {
-          setOtpError(getApiErrorMessage(error, 'Could not send verification code.'))
-        }
+        handleFormMutationError({
+          setError: sendOtpForm.setError,
+          error,
+          pushToast,
+          onFormError: setOtpError,
+          fallbackMessage: 'Could not send verification code. Please try again.',
+        })
       } finally {
         setIsSendingOtp(false)
       }
@@ -154,7 +166,7 @@ export function LoginPage() {
       setIsResetting(true)
       try {
         await resetWithOtpRequest(values)
-        pushToast('Password reset successfully! Please log in with your new password.', 'success')
+        pushToast('Password reset successfully. Please sign in with your new password.', 'success')
 
         loginForm.setValue('email', values.email)
         loginForm.setValue('password', '')
@@ -164,9 +176,13 @@ export function LoginPage() {
         setOtpStep('request')
         setActiveOtpCode(null)
       } catch (error) {
-        if (!applyServerFieldErrors(resetOtpForm.setError, error)) {
-          setOtpError(getApiErrorMessage(error, 'Failed to reset password. Check OTP and try again.'))
-        }
+        handleFormMutationError({
+          setError: resetOtpForm.setError,
+          error,
+          pushToast,
+          onFormError: setOtpError,
+          fallbackMessage: 'Failed to reset password. Check the OTP and try again.',
+        })
       } finally {
         setIsResetting(false)
       }
@@ -295,6 +311,10 @@ export function LoginPage() {
                   </div>
 
                   <form className="space-y-5" onSubmit={onLoginSubmit} noValidate>
+                    <FormErrorSummary
+                      errors={loginForm.formState.errors}
+                      submitCount={loginForm.formState.submitCount}
+                    />
                     {/* General / System Level Error Banner ONLY */}
                     <AnimatePresence mode="wait">
                       {loginError ? (
@@ -438,6 +458,10 @@ export function LoginPage() {
                   {/* STEP 1: Request OTP Form */}
                   {otpStep === 'request' ? (
                     <form onSubmit={onSendOtpSubmit} className="space-y-4" noValidate>
+                      <FormErrorSummary
+                        errors={sendOtpForm.formState.errors}
+                        submitCount={sendOtpForm.formState.submitCount}
+                      />
                       <FloatingInput
                         label="Owner Email Address"
                         type="email"
@@ -464,6 +488,10 @@ export function LoginPage() {
                   ) : (
                     /* STEP 2: Verify OTP & Reset Password Form */
                     <form onSubmit={onResetWithOtpSubmit} className="space-y-4" noValidate>
+                      <FormErrorSummary
+                        errors={resetOtpForm.formState.errors}
+                        submitCount={resetOtpForm.formState.submitCount}
+                      />
                       {activeOtpCode ? (
                         <div className="rounded-xl border border-emerald-400/40 bg-emerald-50/80 p-3 text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-xs">
                           <div className="flex items-center gap-2">
@@ -501,27 +529,31 @@ export function LoginPage() {
                         })}
                       />
 
-                      <FloatingInput
-                        label="New Password"
-                        type={showNewPassword ? 'text' : 'password'}
-                        error={resetOtpForm.formState.errors.newPassword?.message}
-                        trailing={
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPassword((current) => !current)}
-                            className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                            aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-                          >
-                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        }
-                        {...resetOtpForm.register('newPassword', {
-                          onChange: () => {
-                            if (resetOtpForm.formState.errors.newPassword) resetOtpForm.clearErrors('newPassword')
-                            if (otpError) setOtpError(null)
-                          },
-                        })}
-                      />
+                      <div className="space-y-2">
+                        <FloatingInput
+                          label="New Password"
+                          type={showNewPassword ? 'text' : 'password'}
+                          error={resetOtpForm.formState.errors.newPassword?.message}
+                          trailing={
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword((current) => !current)}
+                              className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                              aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                            >
+                              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          }
+                          {...resetOtpForm.register('newPassword', {
+                            onChange: () => {
+                              if (resetOtpForm.formState.errors.newPassword)
+                                resetOtpForm.clearErrors('newPassword')
+                              if (otpError) setOtpError(null)
+                            },
+                          })}
+                        />
+                        <PasswordStrength password={resetNewPassword} />
+                      </div>
 
                       <FloatingInput
                         label="Confirm New Password"
@@ -529,7 +561,8 @@ export function LoginPage() {
                         error={resetOtpForm.formState.errors.confirmPassword?.message}
                         {...resetOtpForm.register('confirmPassword', {
                           onChange: () => {
-                            if (resetOtpForm.formState.errors.confirmPassword) resetOtpForm.clearErrors('confirmPassword')
+                            if (resetOtpForm.formState.errors.confirmPassword)
+                              resetOtpForm.clearErrors('confirmPassword')
                             if (otpError) setOtpError(null)
                           },
                         })}

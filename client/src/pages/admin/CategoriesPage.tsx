@@ -28,7 +28,7 @@ import {
 } from '@/features/categories/api'
 import { CategoryFormDialog } from '@/features/categories/CategoryFormDialog'
 import type { CategoryFormValues } from '@/features/categories/schema'
-import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
+import { getApiErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 export function CategoriesPage() {
@@ -57,12 +57,9 @@ export function CategoriesPage() {
     onSuccess: async () => {
       await invalidate()
       setFormOpen(false)
-      pushToast('Category created')
+      pushToast('Category created successfully')
     },
-    onError: (error) => {
-      if (getApiValidationDetails(error)) return
-      pushToast(getApiErrorMessage(error, 'Could not create category'), 'error')
-    },
+    // Errors for the dialog form are handled by handleFormMutationError.
   })
 
   const updateMutation = useMutation({
@@ -72,12 +69,9 @@ export function CategoriesPage() {
       await invalidate()
       setFormOpen(false)
       setEditing(null)
-      pushToast('Category updated')
+      pushToast('Category updated successfully')
     },
-    onError: (error) => {
-      if (getApiValidationDetails(error)) return
-      pushToast(getApiErrorMessage(error, 'Could not update category'), 'error')
-    },
+    // Errors for the dialog form are handled by handleFormMutationError.
   })
 
   const statusMutation = useMutation({
@@ -95,7 +89,7 @@ export function CategoriesPage() {
     onSuccess: async () => {
       await invalidate()
       setDeleting(null)
-      pushToast('Category deleted')
+      pushToast('Category deleted successfully')
     },
     onError: (error) => pushToast(getApiErrorMessage(error, 'Could not delete category'), 'error'),
   })

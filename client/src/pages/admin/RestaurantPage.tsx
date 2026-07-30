@@ -28,8 +28,8 @@ import { restaurantFormSchema, type RestaurantFormValues } from '@/features/rest
 import { createDefaultOpeningHours } from '@/features/restaurant/types'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
-import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
-import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
+import { getApiErrorMessage } from '@/lib/api'
+import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -159,10 +159,6 @@ export function RestaurantPage() {
       setRemoveCover(false)
       pushToast('Restaurant information updated successfully')
     },
-    onError: (error) => {
-      if (getApiValidationDetails(error)) return
-      pushToast(getApiErrorMessage(error, 'Could not save restaurant settings'), 'error')
-    },
   })
 
   const statusMutation = useMutation({
@@ -273,9 +269,12 @@ export function RestaurantPage() {
             try {
               await saveMutation.mutateAsync(values)
             } catch (error) {
-              if (applyServerFieldErrors(setError, error)) {
-                pushToast('Please complete all required fields.', 'error')
-              }
+              handleFormMutationError({
+                setError,
+                error,
+                pushToast,
+                fallbackMessage: 'Unable to save restaurant settings. Please try again.',
+              })
             }
           },
           createFormInvalidHandler(pushToast),

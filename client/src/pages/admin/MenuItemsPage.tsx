@@ -36,7 +36,7 @@ import {
   MenuItemFormDialog,
   type MenuItemFormSubmitPayload,
 } from '@/features/menu-items/MenuItemFormDialog'
-import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
+import { getApiErrorMessage } from '@/lib/api'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -138,12 +138,11 @@ export function MenuItemsPage() {
       await invalidate()
       setFormOpen(false)
       setEditing(null)
-      pushToast(variables.item ? 'Menu item updated' : 'Menu item created')
+      pushToast(
+        variables.item ? 'Menu item updated successfully' : 'Menu item created successfully',
+      )
     },
-    onError: (error) => {
-      if (getApiValidationDetails(error)) return
-      pushToast(getApiErrorMessage(error, 'Could not save menu item'), 'error')
-    },
+    // Errors for the dialog form are handled by handleFormMutationError.
   })
 
   const availabilityMutation = useMutation({
@@ -162,7 +161,7 @@ export function MenuItemsPage() {
     onSuccess: async () => {
       await invalidate()
       setDeleting(null)
-      pushToast('Menu item deleted')
+      pushToast('Menu item deleted successfully')
     },
     onError: (error) => pushToast(getApiErrorMessage(error, 'Could not delete item'), 'error'),
   })

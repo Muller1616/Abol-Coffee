@@ -19,8 +19,7 @@ import {
 } from '@/features/auth/schema'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
-import { getApiErrorMessage, getApiValidationDetails } from '@/lib/api'
-import { applyServerFieldErrors, createFormInvalidHandler } from '@/lib/form'
+import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 
 export function AccountPage() {
   const { owner } = useAuth()
@@ -61,12 +60,6 @@ export function AccountPage() {
       setShowNew(false)
       setShowConfirm(false)
       pushToast('Password updated successfully')
-    },
-    onError: (error) => {
-      if (getApiValidationDetails(error)) return
-      const message = getApiErrorMessage(error, 'Could not update password')
-      setFormError(message)
-      pushToast(message, 'error')
     },
   })
 
@@ -140,9 +133,13 @@ export function AccountPage() {
               try {
                 await mutation.mutateAsync(values)
               } catch (error) {
-                if (applyServerFieldErrors(setError, error)) {
-                  pushToast('Please complete all required fields.', 'error')
-                }
+                handleFormMutationError({
+                  setError,
+                  error,
+                  pushToast,
+                  onFormError: setFormError,
+                  fallbackMessage: 'Unable to update password. Please try again.',
+                })
               }
             },
             createFormInvalidHandler(pushToast),
