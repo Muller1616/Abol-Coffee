@@ -31,6 +31,7 @@ import {
   updateMenuItemAvailability,
   uploadMenuItemImage,
   type MenuItem,
+  type MenuItemsPage as MenuItemsPageData,
 } from '@/features/menu-items/api'
 import {
   MenuItemFormDialog,
@@ -52,6 +53,7 @@ export function MenuItemsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [deleting, setDeleting] = useState<MenuItem | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300)
@@ -78,15 +80,14 @@ export function MenuItemsPage() {
         page,
         pageSize: 12,
       }),
+    placeholderData: (previous) => previous,
   })
 
-  const invalidate = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
-    ])
+  const invalidateRelated = () => {
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] })
+    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'] })
   }
 
   const saveMutation = useMutation({
@@ -114,64 +115,160 @@ export function MenuItemsPage() {
           saved = await removeMenuItemImage(item.id)
         }
         if (payload.imageFile) {
-          saved = await uploadMenuItemImage(item.id, payload.imageFile)
+          setUploadProgress(0)
+          saved = await uploadMenuItemImage(item.id, payload.imageFile, setUploadProgress)
         }
       } else {
-        const siblings = await fetchAllMenuItemsInCategory(body.categoryId)
-        const nextOrder =
-          siblings.length === 0
-            ? 0
-            : Math.max(...siblings.map((entry) => entry.displayOrder)) + 1
-
-        saved = await createMenuItem({
-          ...body,
-          displayOrder: nextOrder,
-        })
+        saved = await createMenuItem(body)
 
         if (payload.imageFile) {
-          saved = await uploadMenuItemImage(saved.id, payload.imageFile)
+          setUploadProgress(0)
+          saved = await uploadMenuItemImage(saved.id, payload.imageFile, setUploadProgress)
         }
       }
 
       return saved
     },
-    onSuccess: async (_, variables) => {
-      await invalidate()
+    onMutate: async ({ item, payload }) => {
+      if (item) {
+        await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
+        const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
+          queryKey: ['admin', 'menu-items'],
+        })
+        for (const [key, data] of snapshots) {
+          if (!data) continue
+          queryClient.setQueryData<MenuItemsPageData>(key, {
+            ...data,
+            items: data.items.map((entry) =>
+              entry.id === item.id
+                ? {
+                    ...entry,
+                    name: payload.values.name,
+                    description: payload.values.description ?? '',
+                    price: payload.values.price,
+                    isAvailable: payload.values.isAvailable,
+                    categoryId: payload.values.categoryId,
+                  }
+                : entry,
+            ),
+          })
+        }
+        return { snapshots }
+      }
+      return { snapshots: [] as Array<[unknown, MenuItemsPageData | undefined]> }
+    },
+    onError: (_error, _vars, context) => {
+      for (const [key, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(key as readonly unknown[], data)
+      }
+      setUploadProgress(null)
+      // Dialog form surfaces field errors via handleFormMutationError.
+    },
+    onSuccess: (saved, variables) => {
       setFormOpen(false)
       setEditing(null)
+      queryClient.setQueriesData<MenuItemsPageData>({ queryKey: ['admin', 'menu-items'] }, (data) => {
+        if (!data) return data
+        const exists = data.items.some((entry) => entry.id === saved.id)
+        return {
+          ...data,
+          items: exists
+            ? data.items.map((entry) => (entry.id === saved.id ? saved : entry))
+            : [saved, ...data.items],
+          pagination: exists
+            ? data.pagination
+            : {
+                ...data.pagination,
+                total: data.pagination.total + 1,
+              },
+        }
+      })
       pushToast(
         variables.item ? 'Menu item updated successfully' : 'Menu item created successfully',
       )
     },
-    // Errors for the dialog form are handled by handleFormMutationError.
+    onSettled: () => {
+      setUploadProgress(null)
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
+      invalidateRelated()
+    },
   })
 
   const availabilityMutation = useMutation({
     mutationFn: ({ id, isAvailable }: { id: string; isAvailable: boolean }) =>
       updateMenuItemAvailability(id, isAvailable),
-    onSuccess: async (_, variables) => {
-      await invalidate()
+    onMutate: async ({ id, isAvailable }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
+      const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
+        queryKey: ['admin', 'menu-items'],
+      })
+      for (const [key, data] of snapshots) {
+        if (!data) continue
+        queryClient.setQueryData<MenuItemsPageData>(key, {
+          ...data,
+          items: data.items.map((entry) =>
+            entry.id === id ? { ...entry, isAvailable } : entry,
+          ),
+        })
+      }
+      return { snapshots }
+    },
+    onError: (error, _vars, context) => {
+      for (const [key, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(key as readonly unknown[], data)
+      }
+      pushToast(getApiErrorMessage(error, 'Could not update availability'), 'error')
+    },
+    onSuccess: (_, variables) => {
       pushToast(variables.isAvailable ? 'Item marked available' : 'Item hidden from menu')
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Could not update availability'), 'error'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
+      invalidateRelated()
+    },
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteMenuItem,
-    onSuccess: async () => {
-      await invalidate()
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'menu-items'] })
+      const snapshots = queryClient.getQueriesData<MenuItemsPageData>({
+        queryKey: ['admin', 'menu-items'],
+      })
+      for (const [key, data] of snapshots) {
+        if (!data) continue
+        queryClient.setQueryData<MenuItemsPageData>(key, {
+          ...data,
+          items: data.items.filter((entry) => entry.id !== id),
+          pagination: {
+            ...data.pagination,
+            total: Math.max(0, data.pagination.total - 1),
+          },
+        })
+      }
       setDeleting(null)
+      return { snapshots }
+    },
+    onError: (error, _id, context) => {
+      for (const [key, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(key as readonly unknown[], data)
+      }
+      pushToast(getApiErrorMessage(error, 'Unable to delete menu item.'), 'error')
+    },
+    onSuccess: () => {
       pushToast('Menu item deleted successfully')
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Unable to delete menu item.'), 'error'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
+      invalidateRelated()
+    },
   })
 
   const reorderMutation = useMutation({
     mutationFn: reorderMenuItems,
     onSuccess: async () => {
-      await invalidate()
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
+      invalidateRelated()
       pushToast('Item order updated')
     },
     onError: (error) => pushToast(getApiErrorMessage(error, 'Could not reorder items'), 'error'),
@@ -465,6 +562,7 @@ export function MenuItemsPage() {
         item={editing}
         categories={categories}
         loading={saveMutation.isPending}
+        uploadProgress={uploadProgress}
         onSubmit={async (payload) => {
           await saveMutation.mutateAsync({ item: editing, payload })
         }}

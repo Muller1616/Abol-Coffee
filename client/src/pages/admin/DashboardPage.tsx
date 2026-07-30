@@ -71,11 +71,14 @@ export function DashboardPage() {
   const dashboardQuery = useQuery({
     queryKey: ['admin', 'dashboard'],
     queryFn: () => fetchDashboard(5),
+    staleTime: 30_000,
   })
 
   const qrQuery = useQuery({
     queryKey: ['admin', 'qr'],
     queryFn: fetchQrPreview,
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
   })
 
   if (dashboardQuery.isLoading) {

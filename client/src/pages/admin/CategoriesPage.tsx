@@ -44,65 +44,179 @@ export function CategoriesPage() {
     queryFn: fetchCategories,
   })
 
-  const invalidate = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] }),
-      queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] }),
-    ])
+  const invalidateRelated = () => {
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'menu-items'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
+    void queryClient.invalidateQueries({ queryKey: ['admin', 'activities'] })
+    void queryClient.invalidateQueries({ queryKey: ['public', 'menu'] })
   }
 
   const createMutation = useMutation({
     mutationFn: createCategory,
-    onSuccess: async () => {
-      await invalidate()
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'categories'] })
+      const previous = queryClient.getQueryData<Category[]>(['admin', 'categories'])
+      const optimistic: Category = {
+        id: `temp-${Date.now()}`,
+        name: input.name,
+        displayOrder: input.displayOrder ?? 0,
+        isActive: input.isActive ?? true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        _count: { menuItems: 0 },
+      }
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) => [
+        ...(current ?? []),
+        optimistic,
+      ])
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin', 'categories'], context.previous)
+      }
+      // Dialog form surfaces field errors via handleFormMutationError.
+    },
+    onSuccess: (category) => {
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) => {
+        const list = current ?? []
+        const withoutTemp = list.filter((item) => !item.id.startsWith('temp-'))
+        if (withoutTemp.some((item) => item.id === category.id)) {
+          return withoutTemp.map((item) => (item.id === category.id ? category : item))
+        }
+        return [...withoutTemp, category]
+      })
       setFormOpen(false)
       pushToast('Category created successfully')
     },
-    // Errors for the dialog form are handled by handleFormMutationError.
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+      invalidateRelated()
+    },
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: CategoryFormValues }) =>
       updateCategory(id, values),
-    onSuccess: async () => {
-      await invalidate()
+    onMutate: async ({ id, values }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'categories'] })
+      const previous = queryClient.getQueryData<Category[]>(['admin', 'categories'])
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
+        (current ?? []).map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                name: values.name,
+                isActive: values.isActive,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      )
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin', 'categories'], context.previous)
+      }
+    },
+    onSuccess: (category) => {
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
+        (current ?? []).map((item) => (item.id === category.id ? category : item)),
+      )
       setFormOpen(false)
       setEditing(null)
       pushToast('Category updated successfully')
     },
-    // Errors for the dialog form are handled by handleFormMutationError.
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+      invalidateRelated()
+    },
   })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       updateCategoryStatus(id, isActive),
-    onSuccess: async (_, variables) => {
-      await invalidate()
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'categories'] })
+      const previous = queryClient.getQueryData<Category[]>(['admin', 'categories'])
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
+        (current ?? []).map((item) => (item.id === id ? { ...item, isActive } : item)),
+      )
+      return { previous }
+    },
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin', 'categories'], context.previous)
+      }
+      pushToast(getApiErrorMessage(error, 'Could not update status'), 'error')
+    },
+    onSuccess: (_, variables) => {
       pushToast(variables.isActive ? 'Category enabled' : 'Category disabled')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not update status'), 'error'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+      invalidateRelated()
+    },
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
-    onSuccess: async () => {
-      await invalidate()
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'categories'] })
+      const previous = queryClient.getQueryData<Category[]>(['admin', 'categories'])
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
+        (current ?? []).filter((item) => item.id !== id),
+      )
       setDeleting(null)
+      return { previous }
+    },
+    onError: (error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin', 'categories'], context.previous)
+      }
+      pushToast(getApiErrorMessage(error, 'Unable to delete category.'), 'error')
+    },
+    onSuccess: () => {
       pushToast('Category deleted successfully')
     },
-    onError: (error) =>
-      pushToast(getApiErrorMessage(error, 'Unable to delete category.'), 'error'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+      invalidateRelated()
+    },
   })
 
   const reorderMutation = useMutation({
     mutationFn: reorderCategories,
-    onSuccess: async () => {
-      await invalidate()
+    onMutate: async (items) => {
+      await queryClient.cancelQueries({ queryKey: ['admin', 'categories'] })
+      const previous = queryClient.getQueryData<Category[]>(['admin', 'categories'])
+      const orderMap = new Map(items.map((item) => [item.id, item.displayOrder]))
+      queryClient.setQueryData<Category[]>(['admin', 'categories'], (current) =>
+        [...(current ?? [])]
+          .map((item) =>
+            orderMap.has(item.id)
+              ? { ...item, displayOrder: orderMap.get(item.id)! }
+              : item,
+          )
+          .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
+      )
+      return { previous }
+    },
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin', 'categories'], context.previous)
+      }
+      pushToast(getApiErrorMessage(error, 'Could not reorder categories'), 'error')
+    },
+    onSuccess: (categories) => {
+      queryClient.setQueryData(['admin', 'categories'], categories)
       pushToast('Category order updated')
     },
-    onError: (error) => pushToast(getApiErrorMessage(error, 'Could not reorder categories'), 'error'),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] })
+      invalidateRelated()
+    },
   })
 
   const categories = categoriesQuery.data ?? []

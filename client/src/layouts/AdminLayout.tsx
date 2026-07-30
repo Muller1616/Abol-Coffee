@@ -15,18 +15,19 @@ import {
   X,
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { prefetchAdminRoutes } from '@/app/prefetch'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed },
-  { to: '/admin/restaurant', label: 'Restaurant', icon: Store },
-  { to: '/admin/qr', label: 'QR code', icon: QrCode },
-  { to: '/admin/activity', label: 'Activity', icon: Activity },
-  { to: '/admin/account', label: 'Settings', icon: KeyRound },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, prefetch: () => import('@/pages/admin/DashboardPage') },
+  { to: '/admin/categories', label: 'Categories', icon: FolderTree, prefetch: () => import('@/pages/admin/CategoriesPage') },
+  { to: '/admin/menu-items', label: 'Menu items', icon: UtensilsCrossed, prefetch: () => import('@/pages/admin/MenuItemsPage') },
+  { to: '/admin/restaurant', label: 'Restaurant', icon: Store, prefetch: () => import('@/pages/admin/RestaurantPage') },
+  { to: '/admin/qr', label: 'QR code', icon: QrCode, prefetch: () => import('@/pages/admin/QrPage') },
+  { to: '/admin/activity', label: 'Activity', icon: Activity, prefetch: () => import('@/pages/admin/ActivityPage') },
+  { to: '/admin/account', label: 'Settings', icon: KeyRound, prefetch: () => import('@/pages/admin/AccountPage') },
 ]
 
 function NavItems({
@@ -43,6 +44,12 @@ function NavItems({
           key={item.to}
           to={item.to}
           onClick={onNavigate}
+          onMouseEnter={() => {
+            void item.prefetch()
+          }}
+          onFocus={() => {
+            void item.prefetch()
+          }}
           className={({ isActive }) =>
             cn(
               'group flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition-all duration-200',
@@ -69,6 +76,13 @@ export function AdminLayout() {
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      prefetchAdminRoutes()
+    }, 300)
+    return () => window.clearTimeout(timeoutId)
+  }, [])
 
   useEffect(() => {
     if (!mobileOpen) return
