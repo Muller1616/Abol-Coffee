@@ -1,5 +1,6 @@
 import { Prisma } from '../generated/prisma/client.js'
 import { AppError } from './AppError.js'
+import { logger } from './logger.js'
 
 export function handlePrismaError(error: unknown, fallbackMessage: string): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -16,7 +17,7 @@ export function handlePrismaError(error: unknown, fallbackMessage: string): neve
     throw error
   }
 
-  console.error('Unexpected database error:', error)
+  logger.error('Unexpected database error', { error })
   throw new AppError(fallbackMessage, 500, {
     isOperational: false,
     cause: error,
