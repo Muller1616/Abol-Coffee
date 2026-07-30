@@ -13,12 +13,13 @@ The printed QR encodes a **permanent public URL** (`PUBLIC_MENU_URL`). Menu cont
 | --- | --- |
 | Client | React, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query, RHF + Zod |
 | Server | Express, TypeScript, Prisma 7, PostgreSQL, JWT HttpOnly cookies + CSRF |
-| Media | Multer + Sharp (JPG/PNG/WebP, max 5 MB) |
+| Media | Sharp → Cloudinary (production). Local `/uploads` only as a development fallback |
 
 ## Prerequisites
 
 - Node.js 20+
 - Docker (for local Postgres)
+- Cloudinary account (required for production image persistence)
 
 > Local API defaults to **port 4001** so it does not collide with other apps commonly using 4000. The Vite proxy targets `http://localhost:4001`.
 
@@ -97,9 +98,10 @@ Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free
 - Restaurant status: `ACTIVE` | `MAINTENANCE` (maintenance returns 503 to guests)
 - Owner email is immutable; password recovery uses hashed email OTPs (3 min expiry, one-time use, attempt limits, session invalidation on reset)
 - JWT in HttpOnly cookie; Remember Me = 30 days, otherwise 24 hours
-- Public menu is always fresh (`Cache-Control: no-store` / client refetch)
+- Public menu stays fresh after owner edits (`Cache-Control: private, no-cache, must-revalidate` + client refetch on focus/interval + server-side invalidation)
 - Item names are unique within a category
 - Cover image is the public menu hero
+- Images are stored on **Cloudinary** in production (DB stores durable HTTPS URLs only)
 
 ## Scripts
 
@@ -109,7 +111,7 @@ Landing hero video: Mixkit stock clip “Coffee being poured into a cup” (free
 | --- | --- |
 | `npm run dev` | Start API with watch |
 | `npm run build` | Generate Prisma client + compile |
-| `npm run start` | Run compiled API (`node dist/index.js`) |
+| `npm run start` | Run compiled API (blocked when `NODE_ENV=production`) |
 | `npm run start:prod` | Apply migrations (`prisma migrate deploy`) then start |
 | `npm run prisma:migrate:deploy` | Production migrations only |
 | `npm run db:setup` | Dev migrate + seed |
@@ -135,25 +137,25 @@ Treat local defaults as **unsafe** for real customers.
 | `DATABASE_URL` | Managed Postgres connection string |
 | `JWT_SECRET` | Strong random secret, 32+ chars (not a placeholder) |
 | `CLIENT_URL` | Public SPA origin (CORS + cookies), **not** localhost |
-| `PUBLIC_MENU_URL` | Permanent public menu URL printed on QR codes |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | Required for password-reset OTP email |
-| `SMTP_USER` / `SMTP_PASS` | Usually required by your provider |
+| `PUBLIC_MENU_URL` | Permanent public menu URL printed on QR codes (`https://yourdomain.com/menu`) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | Required for password-reset OTP email |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Required — all restaurant/menu images |
 | `PORT` | Host-assigned port when applicable |
 
 Optional:
 
 | Variable | Notes |
 | --- | --- |
-| `UPLOADS_DIR` | Absolute path to a **persistent volume** for images |
+| `UPLOADS_DIR` | Dev-only local disk fallback when Cloudinary is unset |
 | `COOKIE_SAME_SITE=none` | Needed when SPA and API are on different sites |
-| `COOKIE_DOMAIN` | e.g. `.yourdomain.com` for subdomain cookie sharing |
+| `COOKIE_DOMAIN` | e.g. `.yourdomain.com` for subdomain cookie sharing (required with SameSite=none) |
 | `LOG_LEVEL` | `debug` \| `info` \| `warn` \| `error` |
 
 ### Required environment (client build)
 
 | Variable | Notes |
 | --- | --- |
-| `VITE_API_URL` | Public API origin when SPA ≠ API host (no trailing slash). Leave empty only if a reverse proxy serves `/api` and `/uploads` on the same origin as the SPA. |
+| `VITE_API_URL` | Public API origin when SPA ≠ API host (no trailing slash). Leave empty only if a reverse proxy serves `/api` on the same origin as the SPA. Cloudinary media URLs are absolute and do not need this. |
 
 ### Suggested process
 
@@ -175,14 +177,15 @@ Docker (API):
 ```bash
 cd server
 docker build -t abol-coffee-api .
-docker run --env-file .env.production -p 4001:4001 -v abol_uploads:/app/uploads abol-coffee-api
+docker run --env-file .env.production -p 4001:4001 abol-coffee-api
 ```
 
 ### Hosting checklist
 
 1. Run `prisma migrate deploy` before or during release (`start:prod` does this).
-2. Mount a durable volume at `UPLOADS_DIR` — local disk is wiped on ephemeral hosts.
-3. Prefer same-site reverse proxy (SPA + `/api` + `/uploads`) so cookies stay `SameSite=Lax`.
+2. Configure Cloudinary credentials — images must not rely on local disk in production.
+3. Prefer same-site reverse proxy (SPA + `/api`) so cookies stay `SameSite=Lax`.
 4. Change the seeded owner password immediately (`ChangeMe123!` is for local/dev only).
-5. Set production `PUBLIC_MENU_URL` **before** printing QR codes.
+5. Set production `PUBLIC_MENU_URL` **before** printing QR codes (never print from localhost).
 6. Health probe: `GET /api/health` (checks database connectivity).
+7. Build the client with `VITE_API_URL` when SPA and API are on different origins.

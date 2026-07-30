@@ -107,10 +107,12 @@ export function MenuPage() {
   const menuQuery = useQuery({
     queryKey: ['public', 'menu'],
     queryFn: fetchPublicMenu,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    // Guests scanning a printed QR must see owner edits without reprinting.
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 30_000,
     retry: (failureCount, error) => {
       if (getApiErrorMessage(error).toLowerCase().includes('maintenance')) return false
       return failureCount < 2

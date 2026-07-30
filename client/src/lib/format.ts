@@ -47,14 +47,22 @@ export function formatActivityDayLabel(value: string) {
   }).format(date)
 }
 
+/** Insert Cloudinary delivery transforms for responsive delivery (idempotent). */
+function withCloudinaryOptimization(url: string): string {
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url
+  if (/\/upload\/(?:[^/]+,)+/.test(url) || url.includes('/upload/f_auto')) return url
+  return url.replace('/upload/', '/upload/f_auto,q_auto,c_limit,w_1600/')
+}
+
 /**
  * Resolve stored media paths for the browser.
- * Relative `/uploads/...` paths must hit the API origin when the SPA is hosted separately.
+ * Absolute Cloudinary URLs are preferred. Legacy `/uploads/...` paths must hit the API
+ * origin when the SPA is hosted separately (set VITE_API_URL).
  */
 export function resolveMediaUrl(path: string | null | undefined) {
   if (!path) return null
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
-    return path
+    return path.startsWith('http') ? withCloudinaryOptimization(path) : path
   }
 
   const apiBase = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, '') || ''

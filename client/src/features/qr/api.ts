@@ -4,6 +4,7 @@ export type QrPreview = {
   menuUrl: string
   pngDataUrl: string
   note?: string
+  isLocalhostUrl?: boolean
 }
 
 export async function fetchQrPreview() {
