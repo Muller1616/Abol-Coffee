@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Save, Store } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { AlertTriangle, MapPinned, Save, Store } from 'lucide-react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -22,9 +22,10 @@ import {
   updateRestaurantStatus,
   uploadRestaurantCover,
   uploadRestaurantLogo,
+  type Restaurant,
 } from '@/features/restaurant/api'
 import { OpeningHoursEditor } from '@/features/restaurant/OpeningHoursEditor'
-import { restaurantFormSchema, type RestaurantFormValues } from '@/features/restaurant/schema'
+import { restaurantFormSchema, parseCoord, type RestaurantFormValues } from '@/features/restaurant/schema'
 import { createDefaultOpeningHours } from '@/features/restaurant/types'
 import { DocumentTitle } from '@/components/DocumentTitle'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
@@ -33,9 +34,34 @@ import { createFormInvalidHandler, handleFormMutationError } from '@/lib/form'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
+const LocationMapPicker = lazy(async () => {
+  const mod = await import('@/features/restaurant/map/LocationMapPicker')
+  return { default: mod.LocationMapPicker }
+})
+
 function emptyToNull(value?: string) {
   const trimmed = value?.trim() ?? ''
   return trimmed.length === 0 ? null : trimmed
+}
+
+function toFormValues(restaurant: Restaurant): RestaurantFormValues {
+  return {
+    name: restaurant.name,
+    description: restaurant.description ?? '',
+    address: restaurant.address ?? '',
+    city: restaurant.city ?? '',
+    state: restaurant.state ?? '',
+    country: restaurant.country ?? '',
+    postalCode: restaurant.postalCode ?? '',
+    latitude: restaurant.latitude == null ? '' : String(restaurant.latitude),
+    longitude: restaurant.longitude == null ? '' : String(restaurant.longitude),
+    phone: restaurant.phone ?? '',
+    email: restaurant.email ?? '',
+    facebook: restaurant.facebook ?? '',
+    instagram: restaurant.instagram ?? '',
+    telegram: restaurant.telegram ?? '',
+    openingHours: restaurant.openingHours ?? createDefaultOpeningHours(),
+  }
 }
 
 export function RestaurantPage() {
@@ -48,6 +74,7 @@ export function RestaurantPage() {
   const [pendingStatus, setPendingStatus] = useState<'ACTIVE' | 'MAINTENANCE' | null>(null)
   const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null)
   const [coverUploadProgress, setCoverUploadProgress] = useState<number | null>(null)
+  const [mapPickerOpen, setMapPickerOpen] = useState(false)
 
   const restaurantQuery = useQuery({
     queryKey: ['admin', 'restaurant'],
@@ -59,6 +86,7 @@ export function RestaurantPage() {
     handleSubmit,
     control,
     reset,
+    setValue,
     setError,
     formState: { errors, isDirty, submitCount },
   } = useForm<RestaurantFormValues>({
@@ -70,6 +98,12 @@ export function RestaurantPage() {
       name: '',
       description: '',
       address: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+      latitude: '',
+      longitude: '',
       phone: '',
       email: '',
       facebook: '',
@@ -80,21 +114,19 @@ export function RestaurantPage() {
   })
 
   const descriptionValue = useWatch({ control, name: 'description' }) ?? ''
-
+  const latitudeValue = useWatch({ control, name: 'latitude' }) ?? ''
+  const longitudeValue = useWatch({ control, name: 'longitude' }) ?? ''
+  const addressValue = useWatch({ control, name: 'address' }) ?? ''
+  const cityValue = useWatch({ control, name: 'city' }) ?? ''
+  const stateValue = useWatch({ control, name: 'state' }) ?? ''
+  const countryValue = useWatch({ control, name: 'country' }) ?? ''
+  const postalCodeValue = useWatch({ control, name: 'postalCode' }) ?? ''
+  const parsedLat = parseCoord(latitudeValue)
+  const parsedLng = parseCoord(longitudeValue)
   useEffect(() => {
     if (!restaurantQuery.data) return
 
-    reset({
-      name: restaurantQuery.data.name,
-      description: restaurantQuery.data.description ?? '',
-      address: restaurantQuery.data.address ?? '',
-      phone: restaurantQuery.data.phone ?? '',
-      email: restaurantQuery.data.email ?? '',
-      facebook: restaurantQuery.data.facebook ?? '',
-      instagram: restaurantQuery.data.instagram ?? '',
-      telegram: restaurantQuery.data.telegram ?? '',
-      openingHours: restaurantQuery.data.openingHours ?? createDefaultOpeningHours(),
-    })
+    reset(toFormValues(restaurantQuery.data))
     setLogoFile(null)
     setCoverFile(null)
     setRemoveLogo(false)
@@ -120,6 +152,12 @@ export function RestaurantPage() {
         name: values.name,
         description: values.description.trim(),
         address: values.address.trim(),
+        city: emptyToNull(values.city),
+        state: emptyToNull(values.state),
+        country: emptyToNull(values.country),
+        postalCode: emptyToNull(values.postalCode),
+        latitude: parseCoord(values.latitude),
+        longitude: parseCoord(values.longitude),
         phone: values.phone.trim(),
         email: emptyToNull(values.email),
         facebook: emptyToNull(values.facebook),
@@ -149,22 +187,16 @@ export function RestaurantPage() {
     onSuccess: async (restaurant) => {
       queryClient.setQueryData(['admin', 'restaurant'], restaurant)
       await invalidate()
-      reset({
-        name: restaurant.name,
-        description: restaurant.description ?? '',
-        address: restaurant.address ?? '',
-        phone: restaurant.phone ?? '',
-        email: restaurant.email ?? '',
-        facebook: restaurant.facebook ?? '',
-        instagram: restaurant.instagram ?? '',
-        telegram: restaurant.telegram ?? '',
-        openingHours: restaurant.openingHours ?? createDefaultOpeningHours(),
-      })
+      reset(toFormValues(restaurant))
       setLogoFile(null)
       setCoverFile(null)
       setRemoveLogo(false)
       setRemoveCover(false)
-      pushToast('Restaurant information updated successfully')
+      pushToast(
+        restaurant.latitude != null && restaurant.longitude != null
+          ? 'Restaurant location updated successfully'
+          : 'Restaurant information updated successfully',
+      )
     },
     onSettled: () => {
       setLogoUploadProgress(null)
@@ -229,7 +261,7 @@ export function RestaurantPage() {
             Restaurant profile
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
-            Manage your public restaurant profile, media, opening hours, and menu status.
+            Manage your public restaurant profile, media, location, opening hours, and menu status.
           </p>
         </div>
       </div>
@@ -389,13 +421,112 @@ export function RestaurantPage() {
                 {...register('email')}
               />
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-border/80 bg-white/90 p-5 shadow-[0_10px_40px_rgb(15_23_42/0.04)] sm:p-6">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <MapPinned className="h-4 w-4" aria-hidden />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">Restaurant location</h2>
+                <p className="text-sm text-muted-foreground">
+                  Help guests find you after scanning your QR code. Pick on the map or enter
+                  coordinates manually.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full shrink-0 sm:w-auto"
+              disabled={pending}
+              onClick={() => setMapPickerOpen(true)}
+            >
+              <MapPinned className="h-4 w-4" />
+              Pick on Map
+            </Button>
+          </div>
+
+          <div className="grid gap-4">
             <FloatingInput
-              label="Address"
+              label="Restaurant address"
               disabled={pending}
               aria-invalid={Boolean(errors.address)}
               error={errors.address?.message}
+              hint="Street address guests will see and copy."
               {...register('address')}
             />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FloatingInput
+                label="City"
+                disabled={pending}
+                aria-invalid={Boolean(errors.city)}
+                error={errors.city?.message}
+                {...register('city')}
+              />
+              <FloatingInput
+                label="State / Region"
+                disabled={pending}
+                aria-invalid={Boolean(errors.state)}
+                error={errors.state?.message}
+                {...register('state')}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FloatingInput
+                label="Country"
+                disabled={pending}
+                aria-invalid={Boolean(errors.country)}
+                error={errors.country?.message}
+                {...register('country')}
+              />
+              <FloatingInput
+                label="Postal code"
+                disabled={pending}
+                aria-invalid={Boolean(errors.postalCode)}
+                error={errors.postalCode?.message}
+                hint="Optional"
+                {...register('postalCode')}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FloatingInput
+                label="Latitude"
+                inputMode="decimal"
+                disabled={pending}
+                aria-invalid={Boolean(errors.latitude)}
+                error={errors.latitude?.message}
+                hint="Between -90 and 90"
+                {...register('latitude')}
+              />
+              <FloatingInput
+                label="Longitude"
+                inputMode="decimal"
+                disabled={pending}
+                aria-invalid={Boolean(errors.longitude)}
+                error={errors.longitude?.message}
+                hint="Between -180 and 180"
+                {...register('longitude')}
+              />
+            </div>
+            {parsedLat != null && parsedLng != null ? (
+              <p className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-foreground">
+                Map pin set at{' '}
+                <span className="font-semibold tabular-nums">
+                  {parsedLat.toFixed(5)}, {parsedLng.toFixed(5)}
+                </span>
+                . Guests will see this on the public menu.
+              </p>
+            ) : (
+              <p className="rounded-2xl border border-border/70 bg-slate-50 px-4 py-3 text-sm text-muted-foreground">
+                No coordinates yet. Use{' '}
+                <strong className="font-semibold text-foreground">Pick on Map</strong> (recommended)
+                or enter latitude and longitude manually.
+              </p>
+            )}
           </div>
         </section>
 
@@ -450,17 +581,7 @@ export function RestaurantPage() {
               disabled={pending}
               onClick={() => {
                 if (!restaurantQuery.data) return
-                reset({
-                  name: restaurantQuery.data.name,
-                  description: restaurantQuery.data.description ?? '',
-                  address: restaurantQuery.data.address ?? '',
-                  phone: restaurantQuery.data.phone ?? '',
-                  email: restaurantQuery.data.email ?? '',
-                  facebook: restaurantQuery.data.facebook ?? '',
-                  instagram: restaurantQuery.data.instagram ?? '',
-                  telegram: restaurantQuery.data.telegram ?? '',
-                  openingHours: restaurantQuery.data.openingHours ?? createDefaultOpeningHours(),
-                })
+                reset(toFormValues(restaurantQuery.data))
                 setLogoFile(null)
                 setCoverFile(null)
                 setRemoveLogo(false)
@@ -481,6 +602,44 @@ export function RestaurantPage() {
           </Button>
         </div>
       </form>
+
+      {mapPickerOpen ? (
+        <Suspense fallback={null}>
+          <LocationMapPicker
+            open={mapPickerOpen}
+            onOpenChange={setMapPickerOpen}
+            initial={{
+              latitude: parsedLat ?? undefined,
+              longitude: parsedLng ?? undefined,
+              address: addressValue,
+              city: cityValue,
+              state: stateValue,
+              country: countryValue,
+              postalCode: postalCodeValue,
+            }}
+            onConfirm={(result) => {
+              setValue('latitude', String(result.latitude), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+              setValue('longitude', String(result.longitude), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+              if (result.address) {
+                setValue('address', result.address, { shouldDirty: true, shouldValidate: true })
+              }
+              if (result.city) setValue('city', result.city, { shouldDirty: true })
+              if (result.state) setValue('state', result.state, { shouldDirty: true })
+              if (result.country) setValue('country', result.country, { shouldDirty: true })
+              if (result.postalCode) {
+                setValue('postalCode', result.postalCode, { shouldDirty: true })
+              }
+              pushToast('Restaurant location selected — save changes to publish', 'info')
+            }}
+          />
+        </Suspense>
+      ) : null}
 
       <ConfirmDialog
         open={unsaved.dialogOpen}

@@ -9,7 +9,6 @@ import {
   Info,
   List,
   MapPin,
-  Phone,
   Search,
   Send,
   Sparkles,
@@ -26,6 +25,7 @@ import { fetchPublicMenu, type PublicMenuItem } from '@/features/public-menu/api
 import { filterMenuCategories } from '@/features/public-menu/filter'
 import { MaintenanceView } from '@/features/public-menu/MaintenanceView'
 import { MenuItemModal } from '@/features/public-menu/MenuItemModal'
+import { FindUsSection } from '@/features/public-menu/FindUsSection'
 import { PhoneContactLink } from '@/components/PhoneContactLink'
 import {
   WEEKDAY_LABELS,
@@ -35,6 +35,7 @@ import {
 } from '@/features/restaurant/types'
 import { getApiErrorMessage } from '@/lib/api'
 import { resolveMediaUrl } from '@/lib/format'
+import { formatRestaurantAddress } from '@/lib/location'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
@@ -203,6 +204,13 @@ export function MenuPage() {
   const { restaurant, categories } = menuQuery.data
   const coverUrl = resolveMediaUrl(restaurant.coverImage)
   const logoUrl = resolveMediaUrl(restaurant.logo)
+  const fullAddress = formatRestaurantAddress({
+    address: restaurant.address,
+    city: restaurant.city,
+    state: restaurant.state,
+    country: restaurant.country,
+    postalCode: restaurant.postalCode,
+  })
   const totalVisible = filteredCategories.reduce((sum, category) => sum + category.items.length, 0)
   const totalItemsCount = categories.reduce((sum, c) => sum + c.items.length, 0)
   const statusInfo = getTodayOpeningStatus(restaurant.openingHours)
@@ -313,12 +321,12 @@ export function MenuPage() {
             {/* Badges Bar: Address, Phone, Socials & Quick Stats */}
             <div className="flex flex-col items-center gap-3 text-xs text-white/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5">
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                {restaurant.address && (
+                {fullAddress ? (
                   <div className="flex max-w-full items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md">
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-300" />
-                    <span className="truncate max-w-[220px] sm:max-w-xs">{restaurant.address}</span>
+                    <span className="truncate max-w-[220px] sm:max-w-xs">{fullAddress}</span>
                   </div>
-                )}
+                ) : null}
                 {restaurant.phone && (
                   <PhoneContactLink
                     phone={restaurant.phone}
@@ -623,36 +631,19 @@ export function MenuPage() {
         )}
       </main>
 
-      {/* Footer Section */}
-      <footer className="border-t border-white/10 bg-[#06120f] text-white mt-16">
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="font-display text-2xl font-bold tracking-tight text-white">
-                {restaurant.name}
-              </p>
-              {restaurant.description?.trim() && (
-                <p className="mt-2 max-w-md text-xs leading-relaxed text-slate-400">
-                  {restaurant.description}
-                </p>
-              )}
-              {restaurant.phone && (
-                <div className="mt-3">
-                  <PhoneContactLink
-                    phone={restaurant.phone}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-md transition hover:bg-white/20 cursor-pointer"
-                    icon={<Phone className="h-3.5 w-3.5 text-emerald-400" />}
-                  />
-                </div>
-              )}
-            </div>
+      {/* Find Us — Google Map */}
+      <section className="border-t border-white/10 bg-[#06120f] px-4 py-14 text-white sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-3xl">
+          <FindUsSection restaurant={restaurant} />
+        </div>
+      </section>
 
-            <OpeningHoursBlock hours={restaurant.openingHours} />
-          </div>
-
-          <div className="mt-8 border-t border-white/10 pt-6 text-center text-xs text-slate-500">
+      {/* Footer */}
+      <footer className="border-t border-white/10 bg-[#06120f] text-white">
+        <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+          <p className="text-center text-xs text-slate-500">
             © 2026 {restaurant.name}. Powered by Abol Coffee Digital Menu.
-          </div>
+          </p>
         </div>
       </footer>
 
