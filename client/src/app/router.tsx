@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticated'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RouteFallback } from '@/components/RouteFallback'
+import { SessionTimeoutProvider } from '@/features/auth/session/SessionTimeoutProvider'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { LoginPage } from '@/pages/admin/LoginPage'
 import { HomePage } from '@/pages/HomePage'
@@ -70,7 +71,9 @@ const router = createBrowserRouter([
     path: '/admin',
     element: (
       <RequireAuth>
-        <AdminLayout />
+        <SessionTimeoutProvider>
+          <AdminLayout />
+        </SessionTimeoutProvider>
       </RequireAuth>
     ),
     children: [
