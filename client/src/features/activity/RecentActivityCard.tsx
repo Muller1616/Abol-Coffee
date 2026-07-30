@@ -1,9 +1,10 @@
 import { Activity, ArrowUpRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ActivityFeedItem } from '@/features/activity/ActivityFeedItem'
 import type { AdminActivity } from '@/features/activity/api'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { useAuth } from '@/features/auth/auth-context'
 import { cn } from '@/lib/utils'
 
 type RecentActivityCardProps = {
@@ -11,6 +12,9 @@ type RecentActivityCardProps = {
 }
 
 export function RecentActivityCard({ activities }: RecentActivityCardProps) {
+  const { restaurantSlug } = useParams()
+  const { owner } = useAuth()
+  const slug = restaurantSlug ?? owner?.restaurantSlug ?? ''
   const preview = activities.slice(0, 5)
 
   return (
@@ -42,7 +46,7 @@ export function RecentActivityCard({ activities }: RecentActivityCardProps) {
 
           <div className="shrink-0 border-t border-border/70 px-4 py-3 sm:px-5">
             <Link
-              to="/admin/activity"
+              to={`/${slug}/activity`}
               className={cn(
                 buttonVariants({ variant: 'ghost' }),
                 'h-10 w-full justify-between px-3 text-sm font-semibold text-primary hover:bg-primary/5 hover:text-primary',

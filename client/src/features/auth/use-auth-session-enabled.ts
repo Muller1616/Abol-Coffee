@@ -1,18 +1,19 @@
 import { useSyncExternalStore } from 'react'
 
-const AUTH_ROUTE = /^\/admin(\/|$)/
-
 function readCookie(name: string): boolean {
   if (typeof document === 'undefined') return false
   const prefix = `${name}=`
   return document.cookie.split(';').some((part) => part.trim().startsWith(prefix))
 }
 
-/** Admin routes always need session; public routes only if a CSRF cookie hints a session. */
+/** Owner/login routes always need session; public routes only if a CSRF cookie hints a session. */
 export function shouldFetchAuthSession(): boolean {
   if (typeof window === 'undefined') return false
-  if (AUTH_ROUTE.test(window.location.pathname)) return true
-  return readCookie('csrf_token')
+  const path = window.location.pathname
+  if (path === '/' || path.startsWith('/menu')) {
+    return readCookie('csrf_token')
+  }
+  return true
 }
 
 type Listener = () => void

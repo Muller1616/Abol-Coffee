@@ -8,6 +8,7 @@ import {
   LandingIconTile,
   LandingSection,
 } from '@/features/landing/ui'
+import { PublicMenuLink } from '@/features/public-menu/PublicMenuLink'
 import { cn } from '@/lib/utils'
 
 export function ContactSection() {
@@ -41,14 +42,13 @@ export function ContactSection() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  to="/admin/login"
+                  to="/login"
                   className={cn(buttonVariants({ size: 'lg' }), 'h-14 w-full justify-center px-8 sm:w-auto')}
                 >
                   <LogIn className="h-5 w-5" />
                   Owner login
                 </Link>
-                <Link
-                  to="/menu"
+                <PublicMenuLink
                   className={cn(
                     buttonVariants({ variant: 'outline', size: 'lg' }),
                     'h-14 w-full justify-center border-white/20 bg-white/5 px-8 text-white hover:bg-white/10 hover:text-white sm:w-auto',
@@ -56,7 +56,7 @@ export function ContactSection() {
                 >
                   <QrCode className="h-5 w-5" />
                   View live menu
-                </Link>
+                </PublicMenuLink>
               </div>
             </div>
 

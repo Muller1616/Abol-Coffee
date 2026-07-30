@@ -21,7 +21,7 @@ export function SessionTimeoutProvider({ children }: SessionTimeoutProviderProps
 
   const handleIdleTimeout = useCallback(async () => {
     await logout({ reason: 'inactivity' })
-    navigate('/admin/login', { replace: true })
+    navigate('/login', { replace: true })
   }, [logout, navigate])
 
   const { isWarningOpen, secondsRemaining, stayLoggedIn } = useInactivityTimer({
@@ -44,14 +44,14 @@ export function SessionTimeoutProvider({ children }: SessionTimeoutProviderProps
     return subscribeSessionSync((message) => {
       if (message.type !== 'LOGOUT') return
       void logout({ reason: 'remote', skipServer: true, skipBroadcast: true }).then(() => {
-        navigate('/admin/login', { replace: true })
+        navigate('/login', { replace: true })
       })
     })
   }, [isAuthenticated, logout, navigate])
 
   const handleLogoutNow = async () => {
     await logout({ reason: 'manual' })
-    navigate('/admin/login', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   return (

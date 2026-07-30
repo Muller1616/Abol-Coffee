@@ -4,6 +4,9 @@ import { getCsrfToken, setCsrfToken } from '@/lib/csrf'
 export type Owner = {
   id: string
   email: string
+  restaurantSlug: string
+  publicMenuToken: string
+  publicMenuUrl: string
 }
 
 export type LoginPayload = {
