@@ -56,14 +56,6 @@ export async function downloadQrPngHandler(
   try {
     const png = await generateQrPngBuffer(requireOwnerId(req));
 
-    queueAdminActivity({
-      action: AdminAction.DOWNLOAD,
-      entity: AdminEntity.QR,
-      summary: 'Downloaded QR code (PNG)',
-      type: 'QR_DOWNLOADED',
-      title: 'QR code downloaded',
-    });
-
     res.setHeader('Content-Type', 'image/png');
     res.setHeader(
       'Content-Disposition',
@@ -83,14 +75,6 @@ export async function downloadQrSvgHandler(
 ): Promise<void> {
   try {
     const svg = await generateQrSvg(requireOwnerId(req));
-
-    queueAdminActivity({
-      action: AdminAction.DOWNLOAD,
-      entity: AdminEntity.QR,
-      summary: 'Downloaded QR code (SVG)',
-      type: 'QR_DOWNLOADED',
-      title: 'QR code downloaded',
-    });
 
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader(

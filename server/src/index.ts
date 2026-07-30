@@ -20,6 +20,13 @@ async function main(): Promise<void> {
 
   await ensureUploadDirectories();
 
+  try {
+    const { purgeNonBusinessActivities } = await import('./services/activity.service.js');
+    await purgeNonBusinessActivities();
+  } catch (error) {
+    logger.warn('Activity history cleanup skipped', { error });
+  }
+
   // Warm public menu cache so the first guest request avoids a cold Neon round-trip.
   try {
     const { prisma: db } = await import('./config/database.js');
