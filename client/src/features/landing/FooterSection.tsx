@@ -92,21 +92,17 @@ export function FooterSection() {
               Contact
             </h3>
             <p className="mt-4 text-sm leading-relaxed text-white/70">
-              Bole Road, Friendship Building Area
+              Semit, around Ajora
               <br />
               Addis Ababa, Ethiopia
             </p>
-            <p className="mt-3 text-sm text-white/70">+251 911 234 567</p>
-            <p className="mt-1 text-sm text-white/70">support@abolcoffee.com</p>
+            <p className="mt-3 text-sm text-white/70">+251 912 456 789</p>
+            <p className="mt-1 text-sm text-white/70">Habeshadreamer12@gmail.com</p>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-8 text-xs text-white/45 sm:flex-row sm:items-center">
           <p>© 2026 Abol Coffee. All rights reserved.</p>
-          <div className="flex gap-4">
-            <span>Privacy</span>
-            <span>Terms</span>
-          </div>
         </div>
       </LandingContainer>
     </footer>

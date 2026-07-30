@@ -77,7 +77,7 @@ export function ContactSection() {
                   icon: Mail,
                   label: 'Email',
                   body: (
-                    <p className="text-sm font-semibold text-white">support@abolcoffee.com</p>
+                    <p className="text-sm font-semibold text-white">Habeshadreamer12@gmail.com</p>
                   ),
                 },
                 {
@@ -85,7 +85,7 @@ export function ContactSection() {
                   label: 'Visit',
                   body: (
                     <p className="text-sm font-semibold text-white">
-                      Bole Road, Addis Ababa, Ethiopia
+                      Semit, around Ajora, Addis Ababa, Ethiopia
                     </p>
                   ),
                 },

@@ -52,9 +52,6 @@ export function Navbar() {
             <span className="font-display text-lg font-bold tracking-tight text-white">
               Abol Coffee
             </span>
-            <span className="text-[10px] font-medium tracking-[0.16em] text-white/60 uppercase">
-              Digital Menu Platform
-            </span>
           </div>
         </Link>
 
