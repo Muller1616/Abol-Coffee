@@ -8,6 +8,12 @@ export type Restaurant = {
   logo: string | null
   coverImage: string | null
   address: string | null
+  city: string | null
+  state: string | null
+  country: string | null
+  postalCode: string | null
+  latitude: number | null
+  longitude: number | null
   phone: string | null
   email: string | null
   openingHours: OpeningHours
@@ -23,6 +29,12 @@ export type Restaurant = {
 export type UpdateRestaurantInput = {
   name?: string
   address?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  postalCode?: string | null
+  latitude?: number | null
+  longitude?: number | null
   phone?: string | null
   email?: string | null
   description?: string | null
