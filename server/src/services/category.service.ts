@@ -9,6 +9,7 @@ import type {
   UpdateCategoryStatusInput,
 } from '../validators/category.validators.js';
 import { logAdminActivity } from './activity.service.js';
+import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 
 const categoryInclude = {
   _count: {
@@ -67,6 +68,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Catego
       summary: `Created category "${category.name}"`,
     });
 
+    invalidatePublicMenuCache();
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -115,6 +117,7 @@ export async function updateCategory(
       summary: `Updated category "${category.name}"`,
     });
 
+    invalidatePublicMenuCache();
     return category;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -144,6 +147,7 @@ export async function updateCategoryStatus(
     summary: `Category "${category.name}" ${input.isActive ? 'enabled' : 'disabled'}`,
   });
 
+  invalidatePublicMenuCache();
   return category;
 }
 
@@ -167,6 +171,8 @@ export async function deleteCategory(id: string): Promise<void> {
     entityId: id,
     summary: `Deleted category "${category.name}"`,
   });
+
+  invalidatePublicMenuCache();
 }
 
 export async function reorderCategories(
@@ -202,5 +208,6 @@ export async function reorderCategories(
     summary: `Reordered ${input.items.length} categories`,
   });
 
+  invalidatePublicMenuCache();
   return listCategories();
 }

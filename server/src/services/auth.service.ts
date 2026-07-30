@@ -4,6 +4,7 @@ import { AppError } from '../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
 import { logAdminActivity } from './activity.service.js';
+import { invalidateOwnerAuthCache } from './ownerAuth.cache.js';
 
 export type AuthenticatedOwner = {
   id: string;
@@ -97,5 +98,6 @@ export async function changeOwnerPassword(
     summary: 'Owner password updated',
   });
 
+  invalidateOwnerAuthCache(ownerId);
   return updated;
 }
