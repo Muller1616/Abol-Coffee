@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buttonVariants } from '@/components/ui/button'
 import { LandingContainer } from '@/features/landing/ui'
+import { PublicMenuLink } from '@/features/public-menu/PublicMenuLink'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = [
@@ -69,8 +70,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            to="/menu"
+          <PublicMenuLink
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
               'text-white/80 hover:bg-white/10 hover:text-white',
@@ -78,8 +78,8 @@ export function Navbar() {
           >
             <QrCode className="h-3.5 w-3.5" />
             View menu
-          </Link>
-          <Link to="/admin/login" className={cn(buttonVariants({ size: 'sm' }))}>
+          </PublicMenuLink>
+          <Link to="/login" className={cn(buttonVariants({ size: 'sm' }))}>
             <LogIn className="h-3.5 w-3.5" />
             Owner login
           </Link>
@@ -117,16 +117,14 @@ export function Navbar() {
               ))}
               <div className="mt-4 flex flex-col gap-2.5 border-t border-white/10 pt-4">
                 <Link
-                  to="/admin/login"
+                  to="/login"
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(buttonVariants({ size: 'lg' }), 'w-full justify-center')}
                 >
                   <LogIn className="h-4 w-4" />
                   Owner login
                 </Link>
-                <Link
-                  to="/menu"
-                  onClick={() => setMobileMenuOpen(false)}
+                <PublicMenuLink
                   className={cn(
                     buttonVariants({ variant: 'outline', size: 'lg' }),
                     'w-full justify-center border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white',
@@ -134,7 +132,7 @@ export function Navbar() {
                 >
                   <QrCode className="h-4 w-4" />
                   View live menu
-                </Link>
+                </PublicMenuLink>
               </div>
             </div>
           </motion.div>

@@ -67,9 +67,11 @@ export type PublicMenuMaintenance = {
 
 export type PublicMenu = PublicMenuActive | PublicMenuMaintenance
 
-export async function fetchPublicMenu(): Promise<PublicMenu> {
+export async function fetchPublicMenu(publicMenuToken: string): Promise<PublicMenu> {
   try {
-    const { data } = await api.get<ApiSuccess<PublicMenuActive>>('/api/public/menu')
+    const { data } = await api.get<ApiSuccess<PublicMenuActive>>(
+      `/api/public/menu/${encodeURIComponent(publicMenuToken)}`,
+    )
     return data.data
   } catch (error) {
     if (axios.isAxiosError<ApiErrorBody & { data?: PublicMenuMaintenance }>(error)) {

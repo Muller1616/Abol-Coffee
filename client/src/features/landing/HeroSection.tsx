@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Coffee, QrCode, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { buttonVariants } from '@/components/ui/button'
+import { PublicMenuLink } from '@/features/public-menu/PublicMenuLink'
 import { LandingContainer } from '@/features/landing/ui'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +44,7 @@ export function HeroSection() {
 
             <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
-                to="/admin/login"
+                to="/login"
                 className={cn(
                   buttonVariants({ size: 'lg' }),
                   'h-14 w-full gap-2 px-8 text-base font-bold sm:w-auto',
@@ -52,8 +53,7 @@ export function HeroSection() {
                 Owner login
                 <ArrowUpRight className="h-5 w-5" />
               </Link>
-              <Link
-                to="/menu"
+              <PublicMenuLink
                 className={cn(
                   buttonVariants({ variant: 'outline', size: 'lg' }),
                   'h-14 w-full border-white/15 bg-transparent px-7 text-white hover:border-white/30 hover:bg-white/5 hover:text-white sm:w-auto',
@@ -61,7 +61,7 @@ export function HeroSection() {
               >
                 <QrCode className="h-5 w-5" />
                 View live menu
-              </Link>
+              </PublicMenuLink>
             </div>
           </motion.div>
 

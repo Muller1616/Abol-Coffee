@@ -1,6 +1,7 @@
 import { Coffee } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LandingContainer } from '@/features/landing/ui'
+import { PublicMenuLink } from '@/features/public-menu/PublicMenuLink'
 
 export function FooterSection() {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -75,14 +76,14 @@ export function FooterSection() {
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-white/70">
               <li>
-                <Link to="/admin/login" className="transition-colors hover:text-white">
+                <Link to="/login" className="transition-colors hover:text-white">
                   Owner login
                 </Link>
               </li>
               <li>
-                <Link to="/menu" className="transition-colors hover:text-white">
+                <PublicMenuLink className="transition-colors hover:text-white">
                   View live menu
-                </Link>
+                </PublicMenuLink>
               </li>
             </ul>
           </div>
