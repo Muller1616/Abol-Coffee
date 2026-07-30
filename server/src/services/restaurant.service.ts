@@ -7,6 +7,7 @@ import type {
   UpdateRestaurantStatusInput,
 } from '../validators/restaurant.validators.js';
 import { logAdminActivity } from './activity.service.js';
+import { invalidatePublicMenuCache } from './publicMenu.cache.js';
 
 export type RestaurantResponse = Omit<Restaurant, 'openingHours'> & {
   openingHours: ReturnType<typeof parseOpeningHours>;
@@ -67,6 +68,7 @@ export async function updateRestaurant(input: UpdateRestaurantInput): Promise<Re
     summary: buildUpdateSummary(input),
   });
 
+  invalidatePublicMenuCache();
   return toRestaurantResponse(updated);
 }
 
