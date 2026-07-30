@@ -20,8 +20,8 @@ export type PublicMenuCacheEntry = {
 
 const cache = new MemoryCache<PublicMenuCacheEntry>(PUBLIC_MENU_TTL_MS);
 
-function cacheKey(search?: string, categoryId?: string): string {
-  return `${CACHE_PREFIX}${categoryId ?? ''}|${(search ?? '').trim().toLowerCase()}`;
+function cacheKey(token: string, search?: string, categoryId?: string): string {
+  return `${CACHE_PREFIX}${token}|${categoryId ?? ''}|${(search ?? '').trim().toLowerCase()}`;
 }
 
 export function weakEtagFromString(serialized: string): string {
@@ -29,21 +29,23 @@ export function weakEtagFromString(serialized: string): string {
 }
 
 export function getCachedPublicMenuEntry(
+  token: string,
   search?: string,
   categoryId?: string,
 ): PublicMenuCacheEntry | undefined {
-  return cache.get(cacheKey(search, categoryId));
+  return cache.get(cacheKey(token, search, categoryId));
 }
 
-/** @deprecated Prefer getCachedPublicMenuEntry — kept for service-layer cache check. */
 export function getCachedPublicMenu(
+  token: string,
   search?: string,
   categoryId?: string,
 ): PublicMenuResponse | undefined {
-  return cache.get(cacheKey(search, categoryId))?.menu;
+  return cache.get(cacheKey(token, search, categoryId))?.menu;
 }
 
 export function setCachedPublicMenu(
+  token: string,
   value: PublicMenuResponse,
   search?: string,
   categoryId?: string,
@@ -61,7 +63,7 @@ export function setCachedPublicMenu(
     success,
     message,
   };
-  cache.set(cacheKey(search, categoryId), entry);
+  cache.set(cacheKey(token, search, categoryId), entry);
   return entry;
 }
 

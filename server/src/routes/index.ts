@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { apiRateLimiter } from '../middleware/rateLimit.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { requireRestaurantAccess } from '../middleware/requireRestaurantAccess.js';
 import { activityRouter } from './activity.routes.js';
 import { authRouter } from './auth.routes.js';
 import { categoryRouter } from './category.routes.js';
@@ -15,12 +17,18 @@ const apiRouter = Router();
 apiRouter.use(apiRateLimiter);
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRouter);
-apiRouter.use('/admin/dashboard', dashboardRouter);
-apiRouter.use('/admin/activities', activityRouter);
-apiRouter.use('/admin/restaurant', restaurantRouter);
-apiRouter.use('/admin/categories', categoryRouter);
-apiRouter.use('/admin/menu-items', menuItemRouter);
-apiRouter.use('/admin/qr', qrRouter);
 apiRouter.use('/public/menu', publicMenuRouter);
+
+/** Owner workspace APIs — scoped by restaurant slug + ownership check. */
+const ownerWorkspaceRouter = Router({ mergeParams: true });
+ownerWorkspaceRouter.use(authenticate, requireRestaurantAccess);
+ownerWorkspaceRouter.use('/dashboard', dashboardRouter);
+ownerWorkspaceRouter.use('/activities', activityRouter);
+ownerWorkspaceRouter.use('/restaurant', restaurantRouter);
+ownerWorkspaceRouter.use('/categories', categoryRouter);
+ownerWorkspaceRouter.use('/menu-items', menuItemRouter);
+ownerWorkspaceRouter.use('/qr', qrRouter);
+
+apiRouter.use('/r/:restaurantSlug', ownerWorkspaceRouter);
 
 export { apiRouter };
