@@ -168,10 +168,10 @@ export function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Catalog</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             Categories
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -179,7 +179,7 @@ export function CategoriesPage() {
             QR menu.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="h-11 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Add category
         </Button>
@@ -248,9 +248,9 @@ export function CategoriesPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="rounded-2xl border border-border/70 bg-[#f8fafc] px-4 py-4 transition hover:border-primary/20 hover:bg-white"
+                  className="rounded-2xl border border-border/70 bg-[#f8fafc] p-4 transition hover:border-primary/20 hover:bg-white"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-col gap-4">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="truncate text-base font-semibold">{category.name}</h2>
@@ -259,35 +259,37 @@ export function CategoriesPage() {
                         </Badge>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {category._count.menuItems} item{category._count.menuItems === 1 ? '' : 's'} ·
-                        Order {category.displayOrder + 1}
+                        {category._count.menuItems} item
+                        {category._count.menuItems === 1 ? '' : 's'} · Order{' '}
+                        {category.displayOrder + 1}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="mr-1 flex items-center gap-2 rounded-full bg-white px-3 py-1.5 ring-1 ring-border">
-                        <span className="text-xs font-medium text-muted-foreground">Visible</span>
-                        <Switch
-                          checked={category.isActive}
-                          disabled={statusMutation.isPending}
-                          onCheckedChange={(checked) =>
-                            statusMutation.mutate({ id: category.id, isActive: checked })
-                          }
-                        />
-                      </div>
+                    <div className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 ring-1 ring-border">
+                      <span className="text-sm font-medium text-muted-foreground">Visible</span>
+                      <Switch
+                        checked={category.isActive}
+                        disabled={statusMutation.isPending}
+                        onCheckedChange={(checked) =>
+                          statusMutation.mutate({ id: category.id, isActive: checked })
+                        }
+                      />
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
+                        className="sm:order-none"
                         disabled={absoluteIndex <= 0 || reorderMutation.isPending}
                         onClick={() => void moveCategory(category, 'up')}
                         aria-label={`Move ${category.name} up`}
                       >
-                        <ArrowUp className="h-3.5 w-3.5" />
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         disabled={
                           absoluteIndex < 0 ||
                           absoluteIndex >= categories.length - 1 ||
@@ -296,19 +298,22 @@ export function CategoriesPage() {
                         onClick={() => void moveCategory(category, 'down')}
                         aria-label={`Move ${category.name} down`}
                       >
-                        <ArrowDown className="h-3.5 w-3.5" />
+                        <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => openEdit(category)}>
-                        <Pencil className="h-3.5 w-3.5" />
+                      <Button
+                        variant="outline"
+                        className="col-span-2 h-11 sm:col-span-1 sm:min-w-24"
+                        onClick={() => openEdit(category)}
+                      >
+                        <Pencil className="h-4 w-4" />
                         Edit
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="cursor-pointer text-danger border-danger/30 hover:bg-danger/10 hover:border-danger hover:text-danger hover:-translate-y-0.5"
+                        className="col-span-2 h-11 cursor-pointer border-danger/30 text-danger hover:-translate-y-0.5 hover:border-danger hover:bg-danger/10 hover:text-danger sm:col-span-1 sm:min-w-24"
                         onClick={() => setDeleting(category)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                         Delete
                       </Button>
                     </div>

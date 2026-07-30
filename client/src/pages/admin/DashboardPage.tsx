@@ -129,7 +129,7 @@ export function DashboardPage() {
       <motion.div variants={item} className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Dashboard</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             {restaurant.name}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -148,7 +148,7 @@ export function DashboardPage() {
         </div>
       </motion.div>
 
-      <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((card) => (
           <div
             key={card.label}
@@ -169,7 +169,7 @@ export function DashboardPage() {
         ))}
       </motion.div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.35fr_0.85fr]">
         <div className="space-y-6">
           <motion.section
             variants={item}
@@ -186,7 +186,7 @@ export function DashboardPage() {
                 <Link
                   key={action.to}
                   to={action.to}
-                  className="group cursor-pointer rounded-2xl border border-border/70 bg-background p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-[0_12px_30px_rgb(15_118_110/0.12)]"
+                  className="group cursor-pointer rounded-2xl border border-border/70 bg-background p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:bg-white hover:shadow-[0_12px_30px_rgb(16_185_129/0.12)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -354,12 +354,12 @@ function DashboardSkeleton() {
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton key={index} className="h-36" />
         ))}
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.35fr_0.85fr]">
         <div className="space-y-6">
           <Skeleton className="h-72" />
           <Skeleton className="h-80" />
