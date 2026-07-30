@@ -360,14 +360,14 @@ export function MenuPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search dish name, ingredient, or price..."
-                className="h-11 w-full cursor-text rounded-2xl border border-white/15 bg-white/10 pr-9 pl-10 text-xs text-white placeholder-white/50 outline-none transition-all duration-200 focus:border-amber-400 focus:bg-white/15"
+                placeholder="Search menu..."
+                className="h-11 w-full cursor-text rounded-2xl border border-white/15 bg-white/10 pr-10 pl-10 text-sm text-white placeholder-white/50 outline-none transition-all duration-200 focus:border-primary focus:bg-white/15"
               />
               {search ? (
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-white/60 hover:text-white"
+                  className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-white/60 hover:text-white"
                   aria-label="Clear search"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -376,33 +376,35 @@ export function MenuPage() {
             </div>
 
             {/* Layout Toggle Pills */}
-            <div className="flex items-center rounded-xl bg-white/10 p-1 border border-white/10 shrink-0">
+            <div className="flex items-center rounded-xl border border-white/10 bg-white/10 p-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer',
+                  'flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-bold transition cursor-pointer',
                   viewMode === 'list'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
                     : 'text-white/70 hover:text-white',
                 )}
-                title="Printed Leader Line List View"
+                title="List view"
+                aria-label="List view"
               >
-                <List className="h-3.5 w-3.5" />
+                <List className="h-4 w-4" />
                 <span className="hidden sm:inline">List</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer',
+                  'flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-2.5 text-xs font-bold transition cursor-pointer',
                   viewMode === 'grid'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
                     : 'text-white/70 hover:text-white',
                 )}
-                title="Photo Grid Cards View"
+                title="Grid view"
+                aria-label="Grid view"
               >
-                <Grid className="h-3.5 w-3.5" />
+                <Grid className="h-4 w-4" />
                 <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
@@ -430,13 +432,13 @@ export function MenuPage() {
               type="button"
               onClick={() => handleCategorySelect(null)}
               className={cn(
-                'shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                'shrink-0 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer min-h-11',
                 categoryId === null
-                  ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                  ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40'
                   : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white',
               )}
             >
-              ✨ All ({totalItemsCount})
+              All ({totalItemsCount})
             </button>
             {categories.map((category) => {
               const emoji = getCategoryEmoji(category.name)
@@ -447,14 +449,19 @@ export function MenuPage() {
                   type="button"
                   onClick={() => handleCategorySelect(category.id)}
                   className={cn(
-                    'shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                    'shrink-0 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all cursor-pointer min-h-11',
                     isActive
-                      ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                      ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/40'
                       : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white',
                   )}
                 >
                   <span>{emoji}</span> {category.name}{' '}
-                  <span className={cn('text-[10px] opacity-75', isActive ? 'text-slate-900 font-extrabold' : 'text-white/60')}>
+                  <span
+                    className={cn(
+                      'text-[10px] opacity-75',
+                      isActive ? 'font-extrabold text-primary-foreground' : 'text-white/60',
+                    )}
+                  >
                     ({category.items.length})
                   </span>
                 </button>
@@ -522,17 +529,18 @@ export function MenuPage() {
 
                             <div className="min-w-0 flex-1">
                               {/* Line Row: Item Name ... Dotted Leader ... Price */}
-                              <div className="flex items-baseline justify-between">
-                                <span className="font-bold text-foreground text-base sm:text-lg tracking-tight group-hover:text-primary transition-colors">
+                              <div className="flex min-w-0 items-baseline gap-2">
+                                <span className="min-w-0 truncate font-bold tracking-tight text-foreground text-base transition-colors group-hover:text-primary sm:text-lg">
                                   {item.name}
                                 </span>
 
-                                {/* Dotted Leader Line */}
-                                <div className="mx-2 flex-1 border-b-2 border-dotted border-slate-300 self-baseline mb-1" />
+                                <div className="mx-1 hidden min-w-4 flex-1 border-b-2 border-dotted border-slate-300 self-baseline mb-1 sm:block" />
 
-                                {/* Price Badge */}
-                                <span className="shrink-0 font-extrabold text-primary text-base sm:text-lg tabular-nums bg-primary/5 px-2.5 py-0.5 rounded-lg border border-primary/10">
-                                  {item.priceFormatted} <span className="text-xs font-semibold text-primary/80">{item.currency}</span>
+                                <span className="shrink-0 rounded-lg border border-primary/10 bg-primary/5 px-2 py-0.5 font-extrabold tabular-nums text-primary text-sm sm:px-2.5 sm:text-base sm:text-lg">
+                                  {item.priceFormatted}{' '}
+                                  <span className="text-[10px] font-semibold text-primary/80 sm:text-xs">
+                                    {item.currency}
+                                  </span>
                                 </span>
                               </div>
 
@@ -655,16 +663,18 @@ export function MenuPage() {
       <DialogPrimitive.Root open={showHoursModal} onOpenChange={setShowHoursModal}>
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md transition-opacity" />
-          <DialogPrimitive.Content className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/20 bg-slate-900 text-white p-6 shadow-2xl focus:outline-none">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+          <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[min(85dvh,640px)] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-white/20 bg-slate-900 p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white shadow-2xl outline-none sm:inset-auto sm:top-1/2 sm:left-1/2 sm:w-[calc(100%-2rem)] sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:p-6 sm:pb-6">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/25 sm:hidden" aria-hidden />
+            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-400" />
+                <Clock className="h-5 w-5 text-primary" />
                 <DialogPrimitive.Title className="font-display text-lg font-bold text-white">
                   Opening Hours
                 </DialogPrimitive.Title>
               </div>
-              <DialogPrimitive.Close className="rounded-full p-1 text-white/60 hover:text-white transition">
+              <DialogPrimitive.Close className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 transition hover:bg-white/10 hover:text-white">
                 <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
               </DialogPrimitive.Close>
             </div>
 
