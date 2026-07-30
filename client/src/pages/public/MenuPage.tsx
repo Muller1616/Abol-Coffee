@@ -258,37 +258,42 @@ export function MenuPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-4"
+            className="space-y-5"
           >
-            {/* Header Main Card */}
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-2xl ring-2 ring-white/25">
+            {/* Brand header — centered on mobile, side-by-side from sm+ */}
+            <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:gap-5 sm:text-left">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white p-1.5 shadow-2xl ring-2 ring-white/25 sm:h-20 sm:w-20">
                 {logoUrl ? (
-                  <img src={logoUrl} alt={restaurant.name} className="h-full w-full rounded-xl object-cover" />
+                  <img
+                    src={logoUrl}
+                    alt={restaurant.name}
+                    className="h-full w-full rounded-[18px] object-cover"
+                  />
                 ) : (
-                  <Coffee className="h-8 w-8 text-primary" />
+                  <Coffee className="h-9 w-9 text-primary" />
                 )}
               </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
-                    {restaurant.name}
-                  </h1>
+              <div className="mt-4 min-w-0 w-full sm:mt-0 sm:flex-1">
+                <h1 className="font-display text-2xl font-extrabold tracking-tight text-balance text-white sm:text-3xl lg:text-4xl">
+                  {restaurant.name}
+                </h1>
+
+                <div className="mt-2.5 flex justify-center sm:justify-start">
                   <button
                     type="button"
                     onClick={() => setShowHoursModal(true)}
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold border transition hover:brightness-110 cursor-pointer',
+                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition hover:brightness-110 cursor-pointer',
                       statusInfo.isOpen
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                        : 'bg-red-500/20 text-red-300 border-red-400/30',
+                        ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-300'
+                        : 'border-red-400/30 bg-red-500/20 text-red-300',
                     )}
                   >
                     <span
                       className={cn(
                         'h-1.5 w-1.5 rounded-full',
-                        statusInfo.isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-red-400',
+                        statusInfo.isOpen ? 'animate-pulse bg-emerald-400' : 'bg-red-400',
                       )}
                     />
                     {statusInfo.text}
@@ -296,7 +301,7 @@ export function MenuPage() {
                   </button>
                 </div>
 
-                <p className="mt-1.5 text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed">
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/75 sm:mx-0 sm:mt-2 sm:text-sm">
                   {restaurant.description?.trim() ||
                     'Handcrafted beverages and gourmet dining experience.'}
                 </p>
@@ -304,18 +309,18 @@ export function MenuPage() {
             </div>
 
             {/* Badges Bar: Address, Phone, Socials & Quick Stats */}
-            <div className="pt-1 flex flex-wrap items-center justify-between gap-2.5 text-xs text-white/80">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col items-center gap-3 text-xs text-white/80 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 {restaurant.address && (
-                  <div className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 backdrop-blur-md border border-white/10">
-                    <MapPin className="h-3.5 w-3.5 text-amber-300 shrink-0" />
-                    <span className="truncate max-w-50 sm:max-w-xs">{restaurant.address}</span>
+                  <div className="flex max-w-full items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+                    <span className="truncate max-w-[220px] sm:max-w-xs">{restaurant.address}</span>
                   </div>
                 )}
                 {restaurant.phone && (
                   <PhoneContactLink
                     phone={restaurant.phone}
-                    className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-1.5 backdrop-blur-md border border-white/10 transition hover:bg-white/20 cursor-pointer text-white/90 hover:text-white"
+                    className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-md transition hover:bg-white/20 hover:text-white cursor-pointer"
                   />
                 )}
                 <div className="flex items-center gap-1">
@@ -338,10 +343,10 @@ export function MenuPage() {
               </div>
 
               <div className="flex items-center gap-2 text-[11px] font-semibold text-white/60">
-                <span className="rounded-lg bg-white/5 px-2 py-1 border border-white/10">
+                <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1">
                   {categories.length} Categories
                 </span>
-                <span className="rounded-lg bg-white/5 px-2 py-1 border border-white/10">
+                <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1">
                   {totalItemsCount} Total Items
                 </span>
               </div>
@@ -528,13 +533,16 @@ export function MenuPage() {
                             ) : null}
 
                             <div className="min-w-0 flex-1">
-                              {/* Line Row: Item Name ... Dotted Leader ... Price */}
-                              <div className="flex min-w-0 items-baseline gap-2">
-                                <span className="min-w-0 truncate font-bold tracking-tight text-foreground text-base transition-colors group-hover:text-primary sm:text-lg">
+                              {/* Line Row: Item Name ····· Price (dotted leader on all breakpoints) */}
+                              <div className="flex min-w-0 items-baseline gap-1.5 sm:gap-2">
+                                <span className="min-w-0 shrink truncate font-bold tracking-tight text-foreground text-base transition-colors group-hover:text-primary sm:text-lg">
                                   {item.name}
                                 </span>
 
-                                <div className="mx-1 hidden min-w-4 flex-1 border-b-2 border-dotted border-slate-300 self-baseline mb-1 sm:block" />
+                                <div
+                                  className="mb-1 min-w-4 flex-1 self-baseline border-b-2 border-dotted border-slate-300/90"
+                                  aria-hidden
+                                />
 
                                 <span className="shrink-0 rounded-lg border border-primary/10 bg-primary/5 px-2 py-0.5 font-extrabold tabular-nums text-primary text-sm sm:px-2.5 sm:text-base sm:text-lg">
                                   {item.priceFormatted}{' '}
