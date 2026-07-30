@@ -2,10 +2,10 @@
 
 Single-restaurant digital menu platform:
 
-- **Public menu** (`/menu`) — QR guests browse the latest active categories and available items
-- **Owner console** (`/admin`) — manage restaurant profile, categories, menu items, images, status, and permanent QR downloads
+- **Public menu** (`/menu/{publicMenuToken}`) — QR guests browse the latest active categories and available items
+- **Owner console** (`/{restaurantSlug}/…`) — manage restaurant profile, categories, menu items, images, status, and permanent QR downloads
 
-The printed QR encodes a **permanent public URL** (`PUBLIC_MENU_URL`). Menu content changes never require reprinting.
+The printed QR encodes a **permanent public URL** built as `{PUBLIC_MENU_URL origin}/menu/{publicMenuToken}`. Menu content changes never require reprinting.
 
 ## Stack
 

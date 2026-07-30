@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/auth-context'
 
 export function RedirectIfAuthenticated({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, owner } = useAuth()
 
   if (isLoading) {
     return (
@@ -12,8 +12,8 @@ export function RedirectIfAuthenticated({ children }: { children: React.ReactNod
     )
   }
 
-  if (isAuthenticated) {
-    return <Navigate to="/admin/dashboard" replace />
+  if (isAuthenticated && owner?.restaurantSlug) {
+    return <Navigate to={`/${owner.restaurantSlug}/dashboard`} replace />
   }
 
   return children

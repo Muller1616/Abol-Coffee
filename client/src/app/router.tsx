@@ -1,10 +1,13 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom'
 import { RedirectIfAuthenticated } from '@/components/auth/RedirectIfAuthenticated'
 import { RequireAuth } from '@/components/auth/RequireAuth'
+import { RequireRestaurantWorkspace } from '@/components/auth/RequireRestaurantWorkspace'
 import { RouteFallback } from '@/components/RouteFallback'
 import { SessionTimeoutProvider } from '@/features/auth/session/SessionTimeoutProvider'
+import { useAuth } from '@/features/auth/auth-context'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { MenuNotFoundPage } from '@/pages/public/MenuNotFoundPage'
 
 const AdminLayout = lazy(async () => {
   const mod = await import('@/layouts/AdminLayout')
@@ -65,6 +68,33 @@ function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
 }
 
+function LegacyAdminRedirect({ suffix = 'dashboard' }: { suffix?: string }) {
+  const { owner, isLoading } = useAuth()
+  if (isLoading) return <RouteFallback />
+  if (owner?.restaurantSlug) {
+    return <Navigate to={`/${owner.restaurantSlug}/${suffix}`} replace />
+  }
+  return <Navigate to="/login" replace />
+}
+
+function LegacyAdminCatchAll() {
+  const params = useParams()
+  const rest = params['*'] ?? 'dashboard'
+  const first = rest.split('/')[0] || 'dashboard'
+  const map: Record<string, string> = {
+    dashboard: 'dashboard',
+    categories: 'categories',
+    'menu-items': 'menu',
+    menu: 'menu',
+    restaurant: 'restaurant',
+    qr: 'qr',
+    activity: 'activity',
+    account: 'settings',
+    settings: 'settings',
+  }
+  return <LegacyAdminRedirect suffix={map[first] ?? 'dashboard'} />
+}
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -75,16 +105,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/menu',
-    element: (
-      <LazyPage>
-        <MenuPage />
-      </LazyPage>
-    ),
-  },
-  { path: '/admin', element: <Navigate to="/admin/dashboard" replace /> },
-  {
-    path: '/admin/login',
+    path: '/login',
     element: (
       <LazyPage>
         <RedirectIfAuthenticated>
@@ -93,18 +114,38 @@ const router = createBrowserRouter([
       </LazyPage>
     ),
   },
+  // Legacy /admin routes → new slug workspace (or login).
+  { path: '/admin/login', element: <Navigate to="/login" replace /> },
+  { path: '/admin', element: <LegacyAdminRedirect /> },
+  { path: '/admin/*', element: <LegacyAdminCatchAll /> },
   {
-    path: '/admin',
+    path: '/menu',
+    element: <MenuNotFoundPage />,
+  },
+  {
+    path: '/menu/:publicMenuToken',
+    element: (
+      <LazyPage>
+        <MenuPage />
+      </LazyPage>
+    ),
+    errorElement: <MenuNotFoundPage />,
+  },
+  {
+    path: '/:restaurantSlug',
     element: (
       <RequireAuth>
-        <SessionTimeoutProvider>
-          <Suspense fallback={<RouteFallback />}>
-            <AdminLayout />
-          </Suspense>
-        </SessionTimeoutProvider>
+        <RequireRestaurantWorkspace>
+          <SessionTimeoutProvider>
+            <Suspense fallback={<RouteFallback />}>
+              <AdminLayout />
+            </Suspense>
+          </SessionTimeoutProvider>
+        </RequireRestaurantWorkspace>
       </RequireAuth>
     ),
     children: [
+      { index: true, element: <Navigate to="dashboard" replace /> },
       {
         path: 'dashboard',
         element: (
@@ -122,7 +163,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'menu-items',
+        path: 'menu',
         element: (
           <LazyPage>
             <MenuItemsPage />
@@ -146,18 +187,22 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'account',
-        element: (
-          <LazyPage>
-            <AccountPage />
-          </LazyPage>
-        ),
-      },
-      {
         path: 'activity',
         element: (
           <LazyPage>
             <ActivityPage />
+          </LazyPage>
+        ),
+      },
+      {
+        path: 'account',
+        element: <Navigate to="../settings" replace />,
+      },
+      {
+        path: 'settings',
+        element: (
+          <LazyPage>
+            <AccountPage />
           </LazyPage>
         ),
       },
