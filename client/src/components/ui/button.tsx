@@ -10,11 +10,15 @@ export const buttonVariants = cva(
       variant: {
         default:
           'bg-primary text-primary-foreground shadow-[0_12px_30px_rgb(15_118_110/0.28)] hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgb(15_118_110/0.34)] active:translate-y-0',
-        secondary: 'bg-secondary text-secondary-foreground hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0',
+        secondary:
+          'bg-secondary text-secondary-foreground shadow-[0_10px_24px_rgb(92_64_51/0.2)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0',
         outline:
-          'border border-border/80 bg-white/70 text-foreground backdrop-blur hover:border-primary/40 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0',
-        ghost: 'text-foreground hover:bg-muted/80 hover:text-primary active:bg-muted',
-        accent: 'bg-accent text-accent-foreground hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
+          'border border-border bg-card text-foreground hover:border-primary/40 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0',
+        ghost: 'text-foreground hover:bg-muted hover:text-primary active:bg-muted',
+        accent:
+          'bg-accent text-accent-foreground hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
+        danger:
+          'bg-danger text-white shadow-[0_12px_30px_rgb(220_38_38/0.28)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0',
       },
       size: {
         default: 'h-12 px-5',

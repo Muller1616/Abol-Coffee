@@ -1,183 +1,197 @@
 import { motion } from 'framer-motion'
-import { QrCode, LogIn, LayoutDashboard } from 'lucide-react'
+import { Coffee, LogIn, QrCode } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { buttonVariants } from '@/components/ui/button'
+import { LandingContainer } from '@/features/landing/ui'
 import { cn } from '@/lib/utils'
 
 export function HeroSection() {
   return (
-    <section id="hero" className="relative min-h-dvh overflow-hidden bg-[#06120f] pt-28 pb-20 text-white lg:pt-36 lg:pb-32">
-      {/* Ambient background lighting */}
+    <section
+      id="hero"
+      className="relative min-h-dvh overflow-hidden bg-brand-ink text-white"
+    >
+      {/* Full-bleed atmosphere */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 -left-20 h-96 w-96 rounded-full bg-primary/25 blur-[120px]" />
-        <div className="absolute top-1/3 -right-20 h-96 w-96 rounded-full bg-amber-500/15 blur-[120px]" />
-        <div className="absolute bottom-10 left-1/2 h-80 w-150 -translate-x-1/2 rounded-full bg-emerald-600/10 blur-[140px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-white/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,rgb(15_118_110/0.35),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_90%_80%,rgb(92_64_51/0.35),transparent_45%)]" />
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgb(255 255 255 / 0.14) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.14) 1px, transparent 1px)',
+            backgroundSize: '72px 72px',
+            maskImage: 'radial-gradient(ellipse at center, black 20%, transparent 75%)',
+          }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-8">
-          {/* Left Text Content */}
+      <LandingContainer className="relative flex min-h-dvh flex-col justify-center pt-28 pb-16 lg:pt-32 lg:pb-24">
+        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-8">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-7"
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-6"
           >
-            {/* Headline */}
-            <h1 className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl">
-              Manage Your Restaurant Menu with{' '}
-              <span className="bg-linear-to-r from-amber-300 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
-                One Simple Dashboard
-              </span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.05 }}
+              className="mb-8 flex items-center gap-4"
+            >
+              <div className="relative">
+                <div className="absolute -inset-2 rounded-[22px] bg-primary/40 blur-xl" />
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-[0_16px_40px_rgb(15_118_110/0.45)]">
+                  <Coffee className="h-7 w-7" />
+                </div>
+              </div>
+              <div>
+                <p className="font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                  Abol Coffee
+                </p>
+                <p className="mt-0.5 text-[11px] font-medium tracking-[0.22em] text-white/50 uppercase">
+                  Digital menu platform
+                </p>
+              </div>
+            </motion.div>
+
+            <h1 className="font-display max-w-xl text-4xl font-semibold tracking-tight text-balance text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.08]">
+              Print once.
+              <span className="mt-1 block text-primary">Update forever.</span>
             </h1>
 
-            {/* Supporting Text */}
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
-              Easily manage your restaurant menu, categories, prices, images, and restaurant information from a secure dashboard. Customers simply scan one permanent QR code to always view your latest menu.
+            <p className="mt-6 max-w-md text-base leading-relaxed text-white/65 sm:text-lg">
+              Run your restaurant menu from one calm dashboard. Guests scan a permanent QR code and
+              always see what’s live.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 to="/admin/login"
                 className={cn(
                   buttonVariants({ size: 'lg' }),
-                  'h-14 bg-linear-to-r from-amber-400 via-amber-500 to-amber-600 px-8 text-base font-bold text-slate-950 shadow-xl shadow-amber-400/20 transition-all hover:scale-[1.02] hover:brightness-105',
+                  'h-14 px-7 shadow-[0_18px_50px_rgb(15_118_110/0.4)]',
                 )}
               >
                 <LogIn className="h-5 w-5" />
-                Owner Login
+                Owner login
               </Link>
               <Link
                 to="/menu"
                 className={cn(
                   buttonVariants({ variant: 'outline', size: 'lg' }),
-                  'h-14 border-white/20 bg-white/5 px-7 text-base font-semibold text-white backdrop-blur-md transition-all hover:border-white/40 hover:bg-white/10 hover:text-white',
+                  'h-14 border-white/20 bg-white/5 px-7 text-white backdrop-blur-sm hover:border-white/30 hover:bg-white/10 hover:text-white',
                 )}
               >
-                <QrCode className="h-5 w-5 text-emerald-400" />
-                View Live Menu
+                <QrCode className="h-5 w-5" />
+                View live menu
               </Link>
             </div>
           </motion.div>
 
-          {/* Right Composite Mockup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="relative lg:col-span-5"
+            initial={{ opacity: 0, y: 36 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="relative lg:col-span-6"
           >
-            <div className="relative mx-auto max-w-sm sm:max-w-md lg:max-w-none">
-              {/* Owner Dashboard Mockup Window */}
-              <div className="relative z-10 overflow-hidden rounded-3xl border-2 border-white/20 bg-[#0d221e] p-4 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
-                {/* Control Bar */}
-                <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-red-400/80" />
-                    <span className="h-3 w-3 rounded-full bg-amber-400/80" />
-                    <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
-                    <span className="ml-2 text-xs font-bold text-white/80">Owner Console</span>
+            {/* Layered product visual */}
+            <div className="relative mx-auto max-w-md lg:max-w-none">
+              <div className="absolute -inset-6 rounded-[40px] bg-primary/15 blur-3xl" />
+
+              <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-linear-to-b from-brand-ink-soft to-[#071614] shadow-[0_40px_100px_rgb(0_0_0/0.55)]">
+                <div className="flex items-center justify-between border-b border-white/8 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                    </div>
+                    <span className="text-xs font-medium text-white/70">Owner console</span>
                   </div>
-                  <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-400/30">
-                    Live Sync Active
+                  <span className="rounded-full bg-primary/25 px-3 py-1 text-[10px] font-semibold tracking-wide text-primary uppercase ring-1 ring-primary/40">
+                    Live sync
                   </span>
                 </div>
 
-                {/* Dashboard Inner UI Preview */}
-                <div className="space-y-3 rounded-2xl bg-slate-900 p-3.5 text-white">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4 p-6">
+                  <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-xs font-bold text-white">Abol Coffee & Roastery</p>
-                      <p className="text-[10px] text-white/60">Manage items, prices & categories</p>
+                      <p className="text-lg font-semibold text-white">Today’s menu</p>
+                      <p className="text-sm text-white/45">Abol Coffee & Roastery</p>
                     </div>
-                    <span className="rounded-lg bg-amber-400/20 px-2 py-1 text-[10px] font-bold text-amber-300">
-                      32 Active Items
-                    </span>
+                    <div className="text-right">
+                      <p className="font-display text-3xl font-semibold text-primary">32</p>
+                      <p className="text-[10px] tracking-wider text-white/40 uppercase">items</p>
+                    </div>
                   </div>
 
-                  {/* Row 1 */}
-                  <div className="flex items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">☕</span>
-                      <div>
-                        <p className="font-bold text-white">Special Macchiato</p>
-                        <p className="text-[10px] text-amber-300 font-semibold">150 ETB</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['Coffee', 'Pastries', 'Juices'].map((cat) => (
+                      <div
+                        key={cat}
+                        className="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-3 text-center"
+                      >
+                        <p className="text-xs font-semibold text-white/85">{cat}</p>
                       </div>
-                    </div>
-                    <span className="rounded-md bg-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                      In Stock
-                    </span>
+                    ))}
                   </div>
 
-                  {/* Row 2 */}
-                  <div className="flex items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">𫞂</span>
-                      <div>
-                        <p className="font-bold text-white">Jebena Traditional Brew</p>
-                        <p className="text-[10px] text-amber-300 font-semibold">180 ETB</p>
-                      </div>
-                    </div>
-                    <span className="rounded-md bg-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                      In Stock
-                    </span>
-                  </div>
-
-                  {/* Row 3 */}
-                  <div className="flex items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🥐</span>
-                      <div>
-                        <p className="font-bold text-white">Butter Croissant</p>
-                        <p className="text-[10px] text-amber-300 font-semibold">120 ETB</p>
-                      </div>
-                    </div>
-                    <span className="rounded-md bg-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                      In Stock
-                    </span>
+                  <div className="space-y-2.5">
+                    {[
+                      { name: 'Special Macchiato', price: '150 ETB', status: 'Available' },
+                      { name: 'Jebena Brew', price: '180 ETB', status: 'Available' },
+                      { name: 'Butter Croissant', price: '120 ETB', status: 'Available' },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.name}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + i * 0.08 }}
+                        className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.045] px-4 py-3.5"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-white">{item.name}</p>
+                          <p className="text-xs font-medium text-primary">{item.price}</p>
+                        </div>
+                        <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-semibold text-primary">
+                          {item.status}
+                        </span>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* Floating Permanent QR Card */}
+              {/* Phone peek — guest view, complementary not duplicate dashboard */}
               <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -bottom-6 -left-6 z-20 hidden rounded-2xl border border-white/20 bg-[#06120f]/95 p-4 text-white shadow-2xl backdrop-blur-xl sm:block"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45, duration: 0.6 }}
+                className="absolute -right-2 -bottom-6 hidden w-40 sm:block lg:-right-4 lg:w-44"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1 shadow-md">
-                    <QrCode className="h-9 w-9 text-slate-900" />
+                <div className="overflow-hidden rounded-[28px] border border-white/15 bg-card p-3 shadow-[0_24px_60px_rgb(0_0_0/0.45)]">
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <p className="text-[10px] font-semibold text-foreground">Guest menu</p>
+                    <QrCode className="h-3.5 w-3.5 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-amber-300">Permanent Table QR</p>
-                    <p className="text-[10px] text-white/70">Print once • Directs to live menu</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Floating Guest Mobile View Card */}
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                className="absolute -top-6 -right-6 z-20 hidden rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-white shadow-2xl backdrop-blur-xl sm:block"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-300">
-                    <LayoutDashboard className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-amber-300">Guest Mobile View</p>
-                    <p className="text-[10px] text-white/70">Instant 0.1s sync</p>
+                  <div className="space-y-1.5 rounded-2xl bg-background p-2">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Macchiato</span>
+                      <span className="font-semibold text-primary">150</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground">Jebena</span>
+                      <span className="font-semibold text-primary">180</span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             </div>
           </motion.div>
         </div>
-      </div>
+      </LandingContainer>
     </section>
   )
 }
