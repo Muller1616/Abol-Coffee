@@ -1,5 +1,4 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { motion } from 'framer-motion'
 import { X, Coffee, Sparkles, Share2, Check } from 'lucide-react'
 import { useState } from 'react'
 import type { PublicMenuItem } from '@/features/public-menu/api'
@@ -45,13 +44,7 @@ export function MenuItemModal({ item, open, onOpenChange }: MenuItemModalProps) 
         <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[min(92dvh,720px)] w-full overflow-y-auto overscroll-contain rounded-t-3xl border border-white/20 bg-slate-900 text-white shadow-2xl outline-none sm:inset-auto sm:top-1/2 sm:left-1/2 sm:w-[calc(100%-2rem)] sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl">
           <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-white/25 sm:hidden" aria-hidden />
           {item ? (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div key={item.id}>
               <div className="relative aspect-16/10 overflow-hidden bg-linear-to-br from-[#06120f] via-[#0d2823] to-[#06120f]">
                 {imageUrl ? (
                   <img
@@ -119,7 +112,7 @@ export function MenuItemModal({ item, open, onOpenChange }: MenuItemModalProps) 
                   </span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ) : null}
 
           <DialogPrimitive.Close className="absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white shadow-md backdrop-blur-md transition hover:bg-black/90 cursor-pointer">

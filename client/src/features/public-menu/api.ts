@@ -49,7 +49,6 @@ export type PublicMenuActive = {
   status: 'ACTIVE'
   restaurant: PublicRestaurant
   categories: PublicCategory[]
-  items: PublicMenuItem[]
 }
 
 export type PublicMenuMaintenance = {

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Coffee, Mail, MapPin, Phone } from 'lucide-react'
 import { BackLink } from '@/components/BackLink'
 import { PhoneContactLink } from '@/components/PhoneContactLink'
@@ -22,12 +21,7 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
         <BackLink tone="dark" label="Back to home" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="relative w-full max-w-lg text-center text-white"
-      >
+      <div className="relative w-full max-w-lg text-center text-white">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white/10 ring-1 ring-white/20">
           {logoUrl ? (
             <img src={logoUrl} alt="" className="h-full w-full object-cover" />
@@ -51,7 +45,7 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
             {restaurant.phone ? (
               <PhoneContactLink
                 phone={restaurant.phone}
-                className="flex w-full items-center gap-3 rounded-2xl bg-white/8 px-4 py-3 ring-1 ring-white/10 transition hover:bg-white/12 text-white cursor-pointer"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-white/8 px-4 py-3 text-white ring-1 ring-white/10 transition hover:bg-white/12"
                 icon={<Phone className="h-4 w-4 shrink-0 text-amber-300" />}
               />
             ) : null}
@@ -72,7 +66,7 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
             ) : null}
           </div>
         )}
-      </motion.div>
+      </div>
     </main>
   )
 }

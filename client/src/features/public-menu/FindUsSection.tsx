@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PublicRestaurant } from '@/features/public-menu/api'
 import { formatRestaurantAddress, hasCoordinates } from '@/lib/location'
@@ -62,15 +61,7 @@ export function FindUsSection({ restaurant }: FindUsSectionProps) {
   if (!embedUrl) return null
 
   return (
-    <motion.section
-      id="find-us"
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.4 }}
-      className="scroll-mt-28"
-      aria-labelledby="find-us-heading"
-    >
+    <section id="find-us" className="scroll-mt-28" aria-labelledby="find-us-heading">
       <div className="mb-6 text-center">
         <h2
           id="find-us-heading"
@@ -102,6 +93,6 @@ export function FindUsSection({ restaurant }: FindUsSectionProps) {
           </div>
         )}
       </div>
-    </motion.section>
+    </section>
   )
 }
