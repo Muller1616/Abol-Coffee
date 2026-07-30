@@ -12,13 +12,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json tsconfig.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
+# Placeholder only — prisma generate must not require a live database.
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN npm run build && npm prune --omit=dev
 
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4001
-ENV UPLOADS_DIR=/app/uploads
 
 RUN addgroup -S abol && adduser -S abol -G abol \
   && mkdir -p /app/uploads \
@@ -32,6 +33,7 @@ COPY --from=build --chown=abol:abol /app/prisma.config.ts ./prisma.config.ts
 
 USER abol
 EXPOSE 4001
+# Legacy local uploads only — production images are stored on Cloudinary.
 VOLUME ["/app/uploads"]
 
 CMD ["npm", "run", "start:prod"]
