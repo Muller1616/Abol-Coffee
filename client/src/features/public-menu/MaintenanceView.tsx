@@ -2,6 +2,7 @@ import { Coffee, Mail, MapPin, Phone } from 'lucide-react'
 import { BackLink } from '@/components/BackLink'
 import { PhoneContactLink } from '@/components/PhoneContactLink'
 import type { PublicMenuMaintenance } from '@/features/public-menu/api'
+import { SafeImage } from '@/components/ui/safe-image'
 import { resolveMediaUrl } from '@/lib/format'
 
 type MaintenanceViewProps = {
@@ -23,11 +24,12 @@ export function MaintenanceView({ menu }: MaintenanceViewProps) {
 
       <div className="relative w-full max-w-lg text-center text-white">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl bg-white/10 ring-1 ring-white/20">
-          {logoUrl ? (
-            <img src={logoUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Coffee className="h-7 w-7" />
-          )}
+          <SafeImage
+            src={logoUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            fallback={<Coffee className="h-7 w-7" />}
+          />
         </div>
 
         <p className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
