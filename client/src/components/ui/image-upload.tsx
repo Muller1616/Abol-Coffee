@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from 'rea
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FieldError } from '@/components/ui/field-error'
+import { SafeImage } from '@/components/ui/safe-image'
 import {
   compressImageFile,
   compressOptionsForVariant,
@@ -207,10 +208,16 @@ export function ImageUpload({
             onClick={() => !busy && inputRef.current?.click()}
             className="group relative aspect-[16/10] cursor-pointer overflow-hidden"
           >
-            <img
+            <SafeImage
               src={previewUrl}
               alt={`${label} preview`}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fallback={
+                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted/40 text-muted-foreground">
+                  <ImagePlus className="h-8 w-8" />
+                  <p className="text-xs font-medium">Preview unavailable</p>
+                </div>
+              }
             />
             {(isCompressing || showProgress) && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 px-6">
