@@ -9,7 +9,11 @@ import {
   getQrPreview,
   rotatePublicMenuToken,
 } from '../services/qr.service.js';
-import { getPublicAppOrigin } from '../services/restaurantIdentity.service.js';
+import {
+  assertPrintablePublicMenuOrigin,
+  getPublicAppOrigin,
+  isNonPrintablePublicOrigin,
+} from '../services/restaurantIdentity.service.js';
 
 function requireOwnerId(req: Request): string {
   if (!req.owner?.sub) {
@@ -26,8 +30,7 @@ export async function getQrPreviewHandler(
   try {
     const preview = await getQrPreview(requireOwnerId(req));
     const origin = getPublicAppOrigin();
-    const isLocal =
-      /localhost|127\.0\.0\.1|::1/i.test(origin) || origin.startsWith('http://');
+    const isLocal = isNonPrintablePublicOrigin(origin);
 
     res.status(200).json({
       success: true,
@@ -39,7 +42,7 @@ export async function getQrPreviewHandler(
         restaurantSlug: preview.restaurantSlug,
         isLocalhostUrl: isLocal,
         note: isLocal
-          ? 'WARNING: This QR currently points at a local/dev origin. Do not print it for restaurant tables until CLIENT_URL / PUBLIC_MENU_URL use your permanent production HTTPS domain.'
+          ? 'WARNING: This QR currently points at a local/dev origin. Download and print are blocked until PUBLIC_MENU_URL uses your permanent production HTTPS domain.'
           : 'This QR code always points to the permanent public menu URL. Menu content changes do not require a new QR code. Only regenerate the public menu token if you intentionally want to invalidate old prints.',
       },
     });
@@ -54,6 +57,7 @@ export async function downloadQrPngHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
+    assertPrintablePublicMenuOrigin();
     const png = await generateQrPngBuffer(requireOwnerId(req));
 
     res.setHeader('Content-Type', 'image/png');
@@ -74,6 +78,7 @@ export async function downloadQrSvgHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
+    assertPrintablePublicMenuOrigin();
     const svg = await generateQrSvg(requireOwnerId(req));
 
     res.setHeader('Content-Type', 'image/svg+xml');
