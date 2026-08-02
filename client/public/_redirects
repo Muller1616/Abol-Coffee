@@ -1,0 +1,2 @@
+# Netlify / Cloudflare Pages — SPA fallback so /menu/:token and /:slug/* resolve.
+/*    /index.html   200
