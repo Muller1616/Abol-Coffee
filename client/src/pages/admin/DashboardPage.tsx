@@ -21,6 +21,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { fetchDashboard } from '@/features/dashboard/api'
 import { fetchQrPreview } from '@/features/qr/api'
 import { getApiErrorMessage } from '@/lib/api'
+import { SafeImage } from '@/components/ui/safe-image'
 import { formatDateTime, formatRelativeTime, resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -233,11 +234,12 @@ export function DashboardPage() {
             <div className="space-y-4 p-5 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-border">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={`${restaurant.name} logo`} className="h-full w-full object-cover" />
-                  ) : (
-                    <Store className="h-5 w-5 text-primary" />
-                  )}
+                  <SafeImage
+                    src={logoUrl}
+                    alt={`${restaurant.name} logo`}
+                    className="h-full w-full object-cover"
+                    fallback={<Store className="h-5 w-5 text-primary" />}
+                  />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-base font-semibold">{restaurant.name}</p>
