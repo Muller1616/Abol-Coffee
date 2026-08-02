@@ -145,7 +145,9 @@ export async function verifyPasswordResetOtp(input: VerifyOtpInput): Promise<Ver
 
   const owner = await prisma.owner.findUnique({ where: { email } });
   if (!owner) {
-    throw AppError.field('otpCode', 'Invalid verification code.', 404);
+    // Same status/message shape as a wrong OTP — do not reveal whether the email exists.
+    await artificialDelay();
+    throw AppError.field('otpCode', 'Invalid verification code.', 400);
   }
 
   const record = await prisma.passwordResetOtp.findFirst({
@@ -161,7 +163,7 @@ export async function verifyPasswordResetOtp(input: VerifyOtpInput): Promise<Ver
     throw AppError.field(
       'otpCode',
       'Invalid verification code. Please request a new one.',
-      404,
+      400,
     );
   }
 
