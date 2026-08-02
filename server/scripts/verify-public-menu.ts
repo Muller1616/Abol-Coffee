@@ -6,11 +6,12 @@ type JsonBody = {
   message?: string;
   data?: {
     csrfToken?: string;
+    publicMenuToken?: string;
     status?: 'ACTIVE' | 'MAINTENANCE';
     category?: { id: string };
     item?: { id: string };
     items?: Array<{ id: string; name: string; categoryName?: string; price?: number }>;
-    categories?: Array<{ id: string; name: string; items: unknown[] }>;
+    categories?: Array<{ id: string; name: string; items: Array<{ name: string; price?: number }> }>;
     restaurant?: { name: string; status?: string };
     pagination?: { total: number };
   };
@@ -167,17 +168,26 @@ async function main(): Promise<void> {
       }),
     });
 
-    const menu = await api(port, null, '/api/public/menu');
+    const entry = await api(port, null, '/api/public/menu/entry');
+    assert(entry.status === 200, `Public menu entry failed (${entry.status})`);
+    const publicToken = entry.body.data?.publicMenuToken;
+    assert(typeof publicToken === 'string' && publicToken.length > 0, 'publicMenuToken missing');
+
+    const missingToken = await api(port, null, '/api/public/menu/not-a-real-token');
+    assert(missingToken.status === 404, `Expected 404 for invalid token, got ${missingToken.status}`);
+
+    const menuPath = `/api/public/menu/${publicToken}`;
+    const menu = await api(port, null, menuPath);
     assert(menu.status === 200, `Public menu failed (${menu.status})`);
     assert(menu.body.data?.status === 'ACTIVE', 'Expected ACTIVE menu');
     assert(
-      menu.cacheControl?.includes('max-age') ?? false,
-      'Missing max-age cache header',
+      menu.cacheControl?.includes('no-cache') ?? false,
+      'Expected Cache-Control: private, no-cache for fresh guest menus',
     );
 
     const flattenItems = (payload: {
-      categories?: Array<{ items: Array<{ name: string }> }>;
-      items?: Array<{ name: string }>;
+      categories?: Array<{ items: Array<{ name: string; price?: number }> }>;
+      items?: Array<{ name: string; price?: number }>;
     }) =>
       payload.items ??
       payload.categories?.flatMap((category) => category.items) ??
@@ -188,7 +198,7 @@ async function main(): Promise<void> {
     assert(!itemNames.includes(`Secret Brew ${suffix}`), 'Hidden item leaked to public menu');
     assert(!itemNames.includes(`Ghost Latte ${suffix}`), 'Inactive category item leaked');
 
-    const searched = await api(port, null, `/api/public/menu?search=cappuccino`);
+    const searched = await api(port, null, `${menuPath}?search=cappuccino`);
     assert(searched.status === 200, `Search failed (${searched.status})`);
     assert(
       flattenItems(searched.body.data ?? {}).some((item) =>
@@ -200,7 +210,7 @@ async function main(): Promise<void> {
     const filtered = await api(
       port,
       null,
-      `/api/public/menu?categoryId=${activeCategoryId}&search=espresso`,
+      `${menuPath}?categoryId=${activeCategoryId}&search=espresso`,
     );
     assert(filtered.status === 200, `Filter+search failed (${filtered.status})`);
     assert(
@@ -213,7 +223,7 @@ async function main(): Promise<void> {
     const noMatch = await api(
       port,
       null,
-      `/api/public/menu?categoryId=${activeCategoryId}&search=pizza`,
+      `${menuPath}?categoryId=${activeCategoryId}&search=pizza`,
     );
     assert(flattenItems(noMatch.body.data ?? {}).length === 0, 'Expected empty AND filter result');
 
@@ -227,10 +237,10 @@ async function main(): Promise<void> {
     });
     assert(priceUpdate.status === 200, 'Price update failed');
 
-    const fresh = await api(port, null, '/api/public/menu');
+    const fresh = await api(port, null, menuPath);
     const updated = flattenItems(fresh.body.data ?? {}).find((item) =>
       item.name.includes(`Cappuccino ${suffix}`),
-    ) as { name: string; price?: number } | undefined;
+    );
     assert(updated !== undefined, 'Updated item missing after price change');
     assert(updated.price === 135, `Expected fresh price 135, got ${updated.price}`);
 
@@ -244,7 +254,7 @@ async function main(): Promise<void> {
     });
     assert(maintenance.status === 200, 'Failed to set maintenance');
 
-    const maintenanceMenu = await api(port, null, '/api/public/menu');
+    const maintenanceMenu = await api(port, null, menuPath);
     assert(maintenanceMenu.status === 503, `Expected 503 in maintenance, got ${maintenanceMenu.status}`);
     assert(maintenanceMenu.body.data?.status === 'MAINTENANCE', 'Maintenance payload missing');
 
