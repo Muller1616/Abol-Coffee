@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { createApp } from '../src/app.js';
 import { env } from '../src/config/env.js';
+import { isNonPrintablePublicOrigin } from '../src/services/restaurantIdentity.service.js';
 
 type JsonBody = {
   success?: boolean;
@@ -9,7 +10,8 @@ type JsonBody = {
     csrfToken?: string;
     menuUrl?: string;
     pngDataUrl?: string;
-    svg?: string;
+    publicMenuToken?: string;
+    isLocalhostUrl?: boolean;
   };
 };
 
@@ -82,6 +84,8 @@ async function main(): Promise<void> {
 
   const port = address.port;
   const jar = new CookieJar();
+  const publicOrigin = new URL(env.PUBLIC_MENU_URL).origin;
+  const downloadBlocked = isNonPrintablePublicOrigin(publicOrigin);
 
   try {
     const unauthorized = await api(port, jar, '/api/admin/qr');
@@ -104,22 +108,35 @@ async function main(): Promise<void> {
 
     const preview = await api(port, jar, '/api/admin/qr');
     assert(preview.status === 200, `QR preview failed (${preview.status})`);
-    assert(preview.body.data?.menuUrl === env.PUBLIC_MENU_URL, 'QR menu URL mismatch');
+    const menuUrl = preview.body.data?.menuUrl ?? '';
+    assert(
+      menuUrl.startsWith(`${publicOrigin}/menu/`),
+      `QR menu URL must be {origin}/menu/{token}, got ${menuUrl}`,
+    );
+    assert(!menuUrl.includes('localhost') || downloadBlocked, 'Unexpected localhost QR in printable mode');
     assert(preview.body.data?.pngDataUrl?.startsWith('data:image/png') ?? false, 'PNG data URL missing');
-    assert(preview.body.data?.svg?.includes('<svg') ?? false, 'SVG missing');
+    assert(preview.body.data?.isLocalhostUrl === downloadBlocked, 'isLocalhostUrl flag mismatch');
 
     const again = await api(port, jar, '/api/admin/qr/url');
-    assert(again.body.data?.menuUrl === env.PUBLIC_MENU_URL, 'Permanent URL changed unexpectedly');
+    assert(
+      again.body.data?.menuUrl === menuUrl,
+      'Permanent URL changed unexpectedly between preview and /url',
+    );
 
     const png = await api(port, jar, '/api/admin/qr/png');
-    assert(png.status === 200, `PNG download failed (${png.status})`);
-    assert(png.contentType?.includes('image/png') ?? false, 'PNG content-type mismatch');
-    assert((png.bytes?.byteLength ?? 0) > 0, 'PNG payload empty');
-
     const svg = await api(port, jar, '/api/admin/qr/svg');
-    assert(svg.status === 200, `SVG download failed (${svg.status})`);
-    assert(svg.contentType?.includes('image/svg+xml') ?? false, 'SVG content-type mismatch');
-    assert((svg.bytes?.byteLength ?? 0) > 0, 'SVG payload empty');
+
+    if (downloadBlocked) {
+      assert(png.status === 409, `Expected 409 for non-printable QR PNG, got ${png.status}`);
+      assert(svg.status === 409, `Expected 409 for non-printable QR SVG, got ${svg.status}`);
+    } else {
+      assert(png.status === 200, `PNG download failed (${png.status})`);
+      assert(png.contentType?.includes('image/png') ?? false, 'PNG content-type mismatch');
+      assert((png.bytes?.byteLength ?? 0) > 0, 'PNG payload empty');
+      assert(svg.status === 200, `SVG download failed (${svg.status})`);
+      assert(svg.contentType?.includes('image/svg+xml') ?? false, 'SVG content-type mismatch');
+      assert((svg.bytes?.byteLength ?? 0) > 0, 'SVG payload empty');
+    }
 
     console.log('QR_VERIFICATION_PASSED');
   } finally {
