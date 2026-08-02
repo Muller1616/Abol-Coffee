@@ -36,6 +36,7 @@ import {
   MenuItemFormDialog,
   type MenuItemFormSubmitPayload,
 } from '@/features/menu-items/MenuItemFormDialog'
+import { SafeImage } from '@/components/ui/safe-image'
 import { getApiErrorMessage } from '@/lib/api'
 import { resolveMediaUrl } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -515,19 +516,18 @@ export function MenuItemsPage() {
                 >
                   <div className="flex gap-3 p-4 sm:gap-4">
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-border sm:h-24 sm:w-24">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={item.name}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
-                          <ImageOff className="h-4 w-4" />
-                          <span className="text-[10px] font-medium">No image</span>
-                        </div>
-                      )}
+                      <SafeImage
+                        src={imageUrl}
+                        alt={item.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        fallback={
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
+                            <ImageOff className="h-4 w-4" />
+                            <span className="text-[10px] font-medium">No image</span>
+                          </div>
+                        }
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">
