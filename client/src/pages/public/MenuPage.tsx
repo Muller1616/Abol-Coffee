@@ -34,6 +34,7 @@ import {
   type Weekday,
 } from '@/features/restaurant/types'
 import { getApiErrorMessage } from '@/lib/api'
+import { SafeImage } from '@/components/ui/safe-image'
 import { resolveMediaUrl } from '@/lib/format'
 import { formatRestaurantAddress } from '@/lib/location'
 import { cn } from '@/lib/utils'
@@ -235,17 +236,16 @@ export function MenuPage() {
 
       {/* Hero Glassmorphic Header */}
       <section className="relative overflow-hidden bg-linear-to-b from-[#06120f] via-[#091f1a] to-[#06120f] text-white">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt=""
-            fetchPriority="high"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover opacity-25 filter blur-xs scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-linear-to-br from-[#06120f] via-[#0d2823] to-[#040e0c]" />
-        )}
+        <SafeImage
+          src={coverUrl}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover opacity-25 filter blur-xs scale-105"
+          fallback={
+            <div className="absolute inset-0 bg-linear-to-br from-[#06120f] via-[#0d2823] to-[#040e0c]" />
+          }
+        />
         <div className="absolute inset-0 bg-linear-to-t from-[#06120f] via-[#06120f]/85 to-[#06120f]/40" />
 
         <div className="relative mx-auto max-w-3xl px-4 pt-4 pb-6 sm:px-6 sm:pt-6 sm:pb-8">
@@ -282,15 +282,12 @@ export function MenuPage() {
             {/* Brand header — centered on all breakpoints */}
             <div className="flex flex-col items-center text-center">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px] bg-white p-1.5 shadow-2xl ring-2 ring-white/25">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt={restaurant.name}
-                    className="h-full w-full rounded-[18px] object-cover"
-                  />
-                ) : (
-                  <Coffee className="h-9 w-9 text-primary" />
-                )}
+                <SafeImage
+                  src={logoUrl}
+                  alt={restaurant.name}
+                  className="h-full w-full rounded-[18px] object-cover"
+                  fallback={<Coffee className="h-9 w-9 text-primary" />}
+                />
               </div>
 
               <div className="mt-4 min-w-0 w-full">
@@ -540,15 +537,13 @@ export function MenuPage() {
                         >
                           <div className="flex items-start gap-3.5">
                             {/* Thumbnail Image */}
-                            {imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt={item.name}
-                                loading="lazy"
-                                decoding="async"
-                                className="h-16 w-16 shrink-0 rounded-xl object-cover shadow-xs border border-border/80 transition-transform duration-300 group-hover:scale-105"
-                              />
-                            ) : null}
+                            <SafeImage
+                              src={imageUrl}
+                              alt={item.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="h-16 w-16 shrink-0 rounded-xl object-cover shadow-xs border border-border/80 transition-transform duration-300 group-hover:scale-105"
+                            />
 
                             <div className="min-w-0 flex-1">
                               {/* Line Row: Item Name ····· Price (dotted leader on all breakpoints) */}
@@ -594,17 +589,13 @@ export function MenuPage() {
                           className="group cursor-pointer flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-white p-4 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
                         >
                           <div>
-                            {imageUrl ? (
-                              <div className="mb-3 aspect-16/10 overflow-hidden rounded-xl bg-slate-100">
-                                <img
-                                  src={imageUrl}
-                                  alt={item.name}
-                                  loading="lazy"
-                                  decoding="async"
-                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                              </div>
-                            ) : null}
+                            <SafeImage
+                              src={imageUrl}
+                              alt={item.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="mb-3 aspect-16/10 w-full rounded-xl object-cover bg-slate-100 transition-transform duration-500 group-hover:scale-105"
+                            />
 
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
