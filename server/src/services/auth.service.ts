@@ -1,8 +1,11 @@
+import { authConfig } from '../config/auth.js';
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import type { ChangePasswordInput, LoginInput } from '../validators/auth.validators.js';
 import { invalidateOwnerAuthCache } from './ownerAuth.cache.js';
+
+const INVALID_CREDENTIALS = 'Invalid email or password.';
 
 export type AuthenticatedOwner = {
   id: string;
@@ -15,14 +18,14 @@ export async function loginOwner(input: LoginInput): Promise<AuthenticatedOwner>
     where: { email: input.email.toLowerCase() },
   });
 
-  if (!owner) {
-    throw AppError.field('email', 'No owner account found with this email.', 401);
-  }
+  // Always run bcrypt.compare so missing-email and wrong-password take similar time.
+  const isValid = await verifyPassword(
+    input.password,
+    owner?.password ?? authConfig.dummyPasswordHash,
+  );
 
-  const isValid = await verifyPassword(input.password, owner.password);
-
-  if (!isValid) {
-    throw AppError.field('password', 'Incorrect password.', 401);
+  if (!owner || !isValid) {
+    throw new AppError(INVALID_CREDENTIALS, 401);
   }
 
   return {
