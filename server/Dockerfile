@@ -8,6 +8,7 @@ RUN npm ci
 
 FROM node:22-alpine AS build
 WORKDIR /app
+RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json tsconfig.json prisma.config.ts ./
 COPY prisma ./prisma
@@ -21,7 +22,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4001
 
-RUN addgroup -S abol && adduser -S abol -G abol \
+# openssl: Prisma migrate engines; libc6-compat: sharp/native addon compatibility on musl
+RUN apk add --no-cache openssl libc6-compat \
+  && addgroup -S abol && adduser -S abol -G abol \
   && mkdir -p /app/uploads \
   && chown -R abol:abol /app
 
