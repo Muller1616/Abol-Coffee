@@ -73,9 +73,11 @@ async function main(): Promise<void> {
       }
 
       try {
+        const { pgPool } = await import('./config/database.js');
         await prisma.$disconnect();
+        await pgPool.end();
       } catch (error) {
-        logger.error('Error while disconnecting Prisma', { error });
+        logger.error('Error while disconnecting database pool', { error });
       }
 
       process.exit(closeError ? 1 : 0);
@@ -90,6 +92,29 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
+
+process.on('unhandledRejection', (reason) => {
+  process.stderr.write(
+    `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      message: 'Unhandled promise rejection',
+      error: reason instanceof Error ? reason.message : String(reason),
+    })}\n`,
+  );
+});
+
+process.on('uncaughtException', (error) => {
+  process.stderr.write(
+    `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      message: 'Uncaught exception',
+      error: error.message,
+    })}\n`,
+  );
+  process.exit(1);
+});
 
 main().catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
