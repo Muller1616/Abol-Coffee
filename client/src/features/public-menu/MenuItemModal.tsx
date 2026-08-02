@@ -2,6 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X, Coffee, Sparkles, Share2, Check } from 'lucide-react'
 import { useState } from 'react'
 import type { PublicMenuItem } from '@/features/public-menu/api'
+import { SafeImage } from '@/components/ui/safe-image'
 import { resolveMediaUrl } from '@/lib/format'
 import { useToast } from '@/components/ui/toast'
 
@@ -46,22 +47,21 @@ export function MenuItemModal({ item, open, onOpenChange }: MenuItemModalProps) 
           {item ? (
             <div key={item.id}>
               <div className="relative aspect-16/10 overflow-hidden bg-linear-to-br from-[#06120f] via-[#0d2823] to-[#06120f]">
-                {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={item.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30">
-                      <Coffee className="h-7 w-7" />
+                <SafeImage
+                  src={imageUrl}
+                  alt={item.name}
+                  className="h-full w-full object-cover"
+                  fallback={
+                    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/30">
+                        <Coffee className="h-7 w-7" />
+                      </div>
+                      <p className="mt-3 font-display text-2xl font-bold tracking-tight text-white">
+                        {item.name}
+                      </p>
                     </div>
-                    <p className="mt-3 font-display text-2xl font-bold tracking-tight text-white">
-                      {item.name}
-                    </p>
-                  </div>
-                )}
+                  }
+                />
                 <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-80" />
               </div>
 
