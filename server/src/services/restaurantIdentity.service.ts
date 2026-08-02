@@ -11,6 +11,29 @@ export function getPublicAppOrigin(): string {
   return url.origin.replace(/\/$/, '');
 }
 
+/**
+ * True when the configured public origin is unsuitable for printed table QR codes
+ * (localhost, loopback, or plain HTTP).
+ */
+export function isNonPrintablePublicOrigin(origin = getPublicAppOrigin()): boolean {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    const isLoopback =
+      hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    return isLoopback || protocol !== 'https:';
+  } catch {
+    return true;
+  }
+}
+
+export function assertPrintablePublicMenuOrigin(): void {
+  if (!isNonPrintablePublicOrigin()) return;
+  throw new AppError(
+    'QR download/print is blocked until PUBLIC_MENU_URL uses a permanent HTTPS production domain. Local/dev URLs must not be printed for restaurant tables.',
+    409,
+  );
+}
+
 export function buildPublicMenuUrl(publicMenuToken: string): string {
   return `${getPublicAppOrigin()}/menu/${publicMenuToken}`;
 }
