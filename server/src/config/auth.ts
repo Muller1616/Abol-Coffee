@@ -7,6 +7,13 @@ export const authConfig = {
     rememberMe: 30 * 24 * 60 * 60 * 1000,
   },
   bcryptSaltRounds: 12,
+  /**
+   * Precomputed bcrypt hash used only to normalize login timing when the email
+   * does not exist (prevents account enumeration via response latency).
+   * Password material: `__abol_timing_dummy__` — never a real owner password.
+   */
+  dummyPasswordHash:
+    '$2b$12$0EISNKpuVodebQX9gNxJHue67zMkc8oIYFkkh06wef2h5yonPTOD.',
   loginRateLimit: {
     windowMs: 15 * 60 * 1000,
     max: 20,
