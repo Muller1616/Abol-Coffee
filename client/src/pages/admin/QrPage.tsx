@@ -58,6 +58,14 @@ export function QrPage() {
       return
     }
 
+    if (qrQuery.data.isLocalhostUrl) {
+      pushToast(
+        'Printing is blocked until PUBLIC_MENU_URL uses your permanent HTTPS production domain.',
+        'error',
+      )
+      return
+    }
+
     try {
       // Call print synchronously from the click handler (no popup / no mutation delay).
       printQrSheet({
@@ -187,7 +195,7 @@ export function QrPage() {
             <Button
               variant="outline"
               loading={downloadMutation.isPending && downloadMutation.variables === 'png'}
-              disabled={downloadMutation.isPending}
+              disabled={downloadMutation.isPending || isDevUrl}
               onClick={() => downloadMutation.mutate('png')}
             >
               <Download className="h-4 w-4" />
@@ -196,7 +204,7 @@ export function QrPage() {
             <Button
               variant="outline"
               loading={downloadMutation.isPending && downloadMutation.variables === 'svg'}
-              disabled={downloadMutation.isPending}
+              disabled={downloadMutation.isPending || isDevUrl}
               onClick={() => downloadMutation.mutate('svg')}
             >
               <Download className="h-4 w-4" />
@@ -204,6 +212,7 @@ export function QrPage() {
             </Button>
             <Button
               className="sm:col-span-2"
+              disabled={isDevUrl}
               onClick={handlePrint}
             >
               <Printer className="h-4 w-4" />
