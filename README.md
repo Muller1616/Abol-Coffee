@@ -136,8 +136,8 @@ Treat local defaults as **unsafe** for real customers.
 | `NODE_ENV=production` | Enables secure cookies and production checks |
 | `DATABASE_URL` | Managed Postgres connection string |
 | `JWT_SECRET` | Strong random secret, 32+ chars (not a placeholder) |
-| `CLIENT_URL` | Public SPA origin (CORS + cookies), **not** localhost |
-| `PUBLIC_MENU_URL` | Permanent public menu URL printed on QR codes (`https://yourdomain.com/menu`) |
+| `CLIENT_URL` | Public SPA origin (CORS + cookies), **https://** (not localhost) |
+| `PUBLIC_MENU_URL` | Permanent public menu origin for QR codes (`https://yourdomain.com`) — must be HTTPS in production |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | Required for password-reset OTP email |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Required — all restaurant/menu images |
 | `PORT` | Host-assigned port when applicable |
@@ -186,6 +186,7 @@ docker run --env-file .env.production -p 4001:4001 abol-coffee-api
 2. Configure Cloudinary credentials — images must not rely on local disk in production.
 3. Prefer same-site reverse proxy (SPA + `/api`) so cookies stay `SameSite=Lax`.
 4. Change the seeded owner password immediately (`ChangeMe123!` is for local/dev only).
-5. Set production `PUBLIC_MENU_URL` **before** printing QR codes (never print from localhost).
-6. Health probe: `GET /api/health` (checks database connectivity).
-7. Build the client with `VITE_API_URL` when SPA and API are on different origins.
+5. Set production `PUBLIC_MENU_URL` / `CLIENT_URL` to **HTTPS** domains **before** printing QR codes (download/print are blocked for localhost/HTTP).
+6. Configure SPA fallback rewrites so `/menu/:token` and `/:slug/*` serve `index.html` (see `client/public/_redirects`, `client/vercel.json`, or `client/public/nginx-spa.conf.example`).
+7. Health probe: `GET /api/health` (checks database connectivity).
+8. Build the client with `VITE_API_URL` when SPA and API are on different origins.
