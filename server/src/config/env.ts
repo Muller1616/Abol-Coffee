@@ -69,22 +69,35 @@ function assertProductionReady(data: Env): void {
 
   const failures: string[] = [];
 
-  if (isLocalhostUrl(data.PUBLIC_MENU_URL) || isLocalhostUrl(data.CLIENT_URL)) {
-    if (isLocalhostUrl(data.CLIENT_URL)) {
-      failures.push(
-        'CLIENT_URL cannot be localhost/127.0.0.1 in production (used for CORS and cookie auth).',
-      );
-    }
-    if (isLocalhostUrl(data.PUBLIC_MENU_URL)) {
-      failures.push(
-        'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (origin used for printed QR codes).',
-      );
-    }
+  if (isLocalhostUrl(data.CLIENT_URL)) {
+    failures.push(
+      'CLIENT_URL cannot be localhost/127.0.0.1 in production (used for CORS and cookie auth).',
+    );
+  }
+  if (isLocalhostUrl(data.PUBLIC_MENU_URL)) {
+    failures.push(
+      'PUBLIC_MENU_URL cannot be localhost/127.0.0.1 in production (origin used for printed QR codes).',
+    );
   }
 
   // PUBLIC_MENU_URL is treated as the public web origin; /menu/{token} is appended from the DB.
+  // Production QR codes and cookie auth must use HTTPS so printed codes and sessions stay valid.
   try {
-    new URL(data.PUBLIC_MENU_URL);
+    const clientUrl = new URL(data.CLIENT_URL);
+    if (clientUrl.protocol !== 'https:') {
+      failures.push('CLIENT_URL must use https:// in production.');
+    }
+  } catch {
+    failures.push('CLIENT_URL must be a valid absolute URL.');
+  }
+
+  try {
+    const publicMenuUrl = new URL(data.PUBLIC_MENU_URL);
+    if (publicMenuUrl.protocol !== 'https:') {
+      failures.push(
+        'PUBLIC_MENU_URL must use https:// in production (printed QR codes encode this origin).',
+      );
+    }
   } catch {
     failures.push('PUBLIC_MENU_URL must be a valid absolute URL (public site origin).');
   }
