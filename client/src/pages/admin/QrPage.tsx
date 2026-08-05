@@ -118,25 +118,25 @@ export function QrPage() {
   const isDevUrl = Boolean(qr.isLocalhostUrl)
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {isDevUrl ? (
         <div className="flex gap-3 rounded-[24px] border border-amber-300/80 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <div>
+          <div className="min-w-0">
             <p className="font-semibold">Do not print this QR for restaurant tables</p>
-            <p className="mt-1 text-amber-900/80">
+            <p className="mt-1 break-words text-amber-900/80">
               It currently encodes a local/development URL. Set production{' '}
               <code className="rounded bg-amber-100 px-1">PUBLIC_MENU_URL</code> to your permanent
               HTTPS menu (e.g.{' '}
-              <code className="rounded bg-amber-100 px-1">https://yourdomain.com/menu</code>) before
+              <code className="rounded bg-amber-100 px-1 break-all">https://yourdomain.com/menu</code>) before
               printing.
             </p>
           </div>
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Distribution</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             QR studio
