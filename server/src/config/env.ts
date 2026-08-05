@@ -23,6 +23,8 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+  /** Optional unsigned upload preset — preferred for browser uploads when set. */
+  CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -135,6 +137,12 @@ function stripTrailingSlash(value: string): string {
   return value.replace(/\/$/, '');
 }
 
+function cleanEnvString(value: string | undefined): string | undefined {
+  if (value == null) return undefined;
+  const cleaned = value.trim().replace(/^["']|["']$/g, '').trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
@@ -153,7 +161,11 @@ function loadEnv(): Env {
     // Trailing slashes break exact CORS Origin matching.
     CLIENT_URL: stripTrailingSlash(parsed.data.CLIENT_URL.trim()),
     PUBLIC_MENU_URL: stripTrailingSlash(parsed.data.PUBLIC_MENU_URL.trim()),
-    COOKIE_DOMAIN: parsed.data.COOKIE_DOMAIN?.trim() || undefined,
+    COOKIE_DOMAIN: cleanEnvString(parsed.data.COOKIE_DOMAIN),
+    CLOUDINARY_CLOUD_NAME: cleanEnvString(parsed.data.CLOUDINARY_CLOUD_NAME),
+    CLOUDINARY_API_KEY: cleanEnvString(parsed.data.CLOUDINARY_API_KEY),
+    CLOUDINARY_API_SECRET: cleanEnvString(parsed.data.CLOUDINARY_API_SECRET),
+    CLOUDINARY_UPLOAD_PRESET: cleanEnvString(parsed.data.CLOUDINARY_UPLOAD_PRESET),
   };
 
   assertProductionReady(data);
