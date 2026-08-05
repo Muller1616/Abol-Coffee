@@ -3,9 +3,9 @@ import { env } from './env.js';
 
 export function isCloudinaryConfigured(): boolean {
   return Boolean(
-    env.CLOUDINARY_CLOUD_NAME?.trim() &&
-      env.CLOUDINARY_API_KEY?.trim() &&
-      env.CLOUDINARY_API_SECRET?.trim(),
+    env.CLOUDINARY_CLOUD_NAME &&
+      env.CLOUDINARY_API_KEY &&
+      env.CLOUDINARY_API_SECRET,
   );
 }
 
@@ -24,9 +24,15 @@ export function getCloudinary() {
       api_key: env.CLOUDINARY_API_KEY,
       api_secret: env.CLOUDINARY_API_SECRET,
       secure: true,
+      // Newer Cloudinary accounts reject SHA-1 signed uploads.
+      signature_algorithm: 'sha256',
     });
     configured = true;
   }
 
   return cloudinary;
+}
+
+export function getCloudinaryUploadPreset(): string | undefined {
+  return env.CLOUDINARY_UPLOAD_PRESET;
 }
