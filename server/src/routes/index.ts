@@ -14,6 +14,7 @@ import { menuItemRouter } from './menuItem.routes.js';
 import { publicMenuRouter } from './publicMenu.routes.js';
 import { qrRouter } from './qr.routes.js';
 import { restaurantRouter } from './restaurant.routes.js';
+import { uploadRouter } from './upload.routes.js';
 
 const apiRouter = Router();
 
@@ -29,6 +30,7 @@ function mountOwnerWorkspace(router: Router): void {
   router.use('/categories', categoryRouter);
   router.use('/menu-items', menuItemRouter);
   router.use('/qr', qrRouter);
+  router.use('/uploads', uploadRouter);
 }
 
 /** Owner workspace APIs — scoped by restaurant slug + ownership check. */

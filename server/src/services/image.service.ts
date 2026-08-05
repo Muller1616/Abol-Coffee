@@ -15,6 +15,15 @@ export async function uploadMenuItemImage(
   itemId: string,
   file: Express.Multer.File,
 ): Promise<MenuItemResponse> {
+  const publicPath = await processAndStoreImage(file, 'menuItem');
+  return attachMenuItemImageUrl(itemId, publicPath, { deleteOnFailure: true });
+}
+
+export async function attachMenuItemImageUrl(
+  itemId: string,
+  imageUrl: string,
+  options?: { deleteOnFailure?: boolean },
+): Promise<MenuItemResponse> {
   const existing = await prisma.menuItem.findUnique({
     where: { id: itemId },
     select: { id: true, name: true, image: true },
@@ -24,12 +33,10 @@ export async function uploadMenuItemImage(
     throw new AppError('Menu item not found', 404);
   }
 
-  const publicPath = await processAndStoreImage(file, 'menuItem');
-
   try {
     const updated = await prisma.menuItem.update({
       where: { id: itemId },
-      data: { image: publicPath },
+      data: { image: imageUrl },
       include: menuItemInclude,
     });
 
@@ -47,7 +54,9 @@ export async function uploadMenuItemImage(
     invalidatePublicMenuCache();
     return toMenuItemResponse(updated);
   } catch (error) {
-    await deleteStoredImage(publicPath);
+    if (options?.deleteOnFailure) {
+      await deleteStoredImage(imageUrl);
+    }
     throw error;
   }
 }
@@ -88,13 +97,20 @@ export async function removeMenuItemImage(itemId: string): Promise<MenuItemRespo
 }
 
 export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<RestaurantResponse> {
-  const existing = await getRestaurant();
   const publicPath = await processAndStoreImage(file, 'logo');
+  return attachRestaurantLogoUrl(publicPath, { deleteOnFailure: true });
+}
+
+export async function attachRestaurantLogoUrl(
+  imageUrl: string,
+  options?: { deleteOnFailure?: boolean },
+): Promise<RestaurantResponse> {
+  const existing = await getRestaurant();
 
   try {
     await prisma.restaurant.update({
       where: { id: existing.id },
-      data: { logo: publicPath },
+      data: { logo: imageUrl },
     });
 
     void deleteStoredImage(existing.logo);
@@ -109,9 +125,11 @@ export async function uploadRestaurantLogo(file: Express.Multer.File): Promise<R
     });
 
     invalidatePublicMenuCache();
-    return { ...existing, logo: publicPath };
+    return { ...existing, logo: imageUrl };
   } catch (error) {
-    await deleteStoredImage(publicPath);
+    if (options?.deleteOnFailure) {
+      await deleteStoredImage(imageUrl);
+    }
     throw error;
   }
 }
@@ -144,13 +162,20 @@ export async function removeRestaurantLogo(): Promise<RestaurantResponse> {
 }
 
 export async function uploadRestaurantCover(file: Express.Multer.File): Promise<RestaurantResponse> {
-  const existing = await getRestaurant();
   const publicPath = await processAndStoreImage(file, 'cover');
+  return attachRestaurantCoverUrl(publicPath, { deleteOnFailure: true });
+}
+
+export async function attachRestaurantCoverUrl(
+  imageUrl: string,
+  options?: { deleteOnFailure?: boolean },
+): Promise<RestaurantResponse> {
+  const existing = await getRestaurant();
 
   try {
     await prisma.restaurant.update({
       where: { id: existing.id },
-      data: { coverImage: publicPath },
+      data: { coverImage: imageUrl },
     });
 
     void deleteStoredImage(existing.coverImage);
@@ -165,9 +190,11 @@ export async function uploadRestaurantCover(file: Express.Multer.File): Promise<
     });
 
     invalidatePublicMenuCache();
-    return { ...existing, coverImage: publicPath };
+    return { ...existing, coverImage: imageUrl };
   } catch (error) {
-    await deleteStoredImage(publicPath);
+    if (options?.deleteOnFailure) {
+      await deleteStoredImage(imageUrl);
+    }
     throw error;
   }
 }

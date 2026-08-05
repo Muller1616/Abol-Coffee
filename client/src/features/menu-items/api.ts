@@ -1,5 +1,6 @@
 import { ensureCsrfToken } from '@/features/auth/api'
 import { api, type ApiSuccess } from '@/lib/api'
+import { uploadFileToCloudinary } from '@/lib/cloudinary-upload'
 
 export type MenuItem = {
   id: string
@@ -113,21 +114,12 @@ export async function uploadMenuItemImage(
   file: File,
   onProgress?: (percent: number) => void,
 ) {
+  const imageUrl = await uploadFileToCloudinary(file, 'menuItem', onProgress)
   await ensureCsrfToken()
-  const formData = new FormData()
-  formData.append('image', file)
-
-  const { data } = await api.post<ApiSuccess<{ item: MenuItem }>>(
+  const { data } = await api.put<ApiSuccess<{ item: MenuItem }>>(
     `/api/admin/menu-items/${id}/image`,
-    formData,
-    {
-      onUploadProgress: (event) => {
-        if (!onProgress || !event.total) return
-        onProgress(Math.round((event.loaded / event.total) * 100))
-      },
-    },
+    { imageUrl },
   )
-
   return data.data.item
 }
 

@@ -1,6 +1,7 @@
 import { ensureCsrfToken } from '@/features/auth/api'
 import type { OpeningHours } from '@/features/restaurant/types'
 import { api, type ApiSuccess } from '@/lib/api'
+import { uploadFileToCloudinary } from '@/lib/cloudinary-upload'
 
 export type Restaurant = {
   id: string
@@ -75,18 +76,11 @@ export async function uploadRestaurantLogo(
   file: File,
   onProgress?: (percent: number) => void,
 ) {
+  const imageUrl = await uploadFileToCloudinary(file, 'logo', onProgress)
   await ensureCsrfToken()
-  const formData = new FormData()
-  formData.append('image', file)
-  const { data } = await api.post<ApiSuccess<{ restaurant: Restaurant }>>(
+  const { data } = await api.put<ApiSuccess<{ restaurant: Restaurant }>>(
     '/api/admin/restaurant/logo',
-    formData,
-    {
-      onUploadProgress: (event) => {
-        if (!onProgress || !event.total) return
-        onProgress(Math.round((event.loaded / event.total) * 100))
-      },
-    },
+    { imageUrl },
   )
   return data.data.restaurant
 }
@@ -103,18 +97,11 @@ export async function uploadRestaurantCover(
   file: File,
   onProgress?: (percent: number) => void,
 ) {
+  const imageUrl = await uploadFileToCloudinary(file, 'cover', onProgress)
   await ensureCsrfToken()
-  const formData = new FormData()
-  formData.append('image', file)
-  const { data } = await api.post<ApiSuccess<{ restaurant: Restaurant }>>(
+  const { data } = await api.put<ApiSuccess<{ restaurant: Restaurant }>>(
     '/api/admin/restaurant/cover',
-    formData,
-    {
-      onUploadProgress: (event) => {
-        if (!onProgress || !event.total) return
-        onProgress(Math.round((event.loaded / event.total) * 100))
-      },
-    },
+    { imageUrl },
   )
   return data.data.restaurant
 }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+  attachMenuItemImageUrlHandler,
   removeMenuItemImageHandler,
   uploadMenuItemImageHandler,
 } from '../controllers/image.controller.js';
@@ -24,6 +25,7 @@ import {
   updateMenuItemAvailabilitySchema,
   updateMenuItemSchema,
 } from '../validators/menuItem.validators.js';
+import { cloudinaryImageUrlSchema } from '../validators/upload.validators.js';
 
 const menuItemRouter = Router();
 
@@ -64,6 +66,14 @@ menuItemRouter.post(
   validate(menuItemIdParamsSchema, 'params'),
   uploadSingleImage('image'),
   uploadMenuItemImageHandler,
+);
+
+menuItemRouter.put(
+  '/:id/image',
+  verifyCsrf,
+  validate(menuItemIdParamsSchema, 'params'),
+  validate(cloudinaryImageUrlSchema),
+  attachMenuItemImageUrlHandler,
 );
 
 menuItemRouter.delete(

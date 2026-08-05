@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import {
+  attachRestaurantCoverUrlHandler,
+  attachRestaurantLogoUrlHandler,
   removeRestaurantCoverHandler,
   removeRestaurantLogoHandler,
   uploadRestaurantCoverHandler,
@@ -18,6 +20,7 @@ import {
   updateRestaurantSchema,
   updateRestaurantStatusSchema,
 } from '../validators/restaurant.validators.js';
+import { cloudinaryImageUrlSchema } from '../validators/upload.validators.js';
 
 const restaurantRouter = Router();
 
@@ -41,6 +44,13 @@ restaurantRouter.post(
   uploadRestaurantLogoHandler,
 );
 
+restaurantRouter.put(
+  '/logo',
+  verifyCsrf,
+  validate(cloudinaryImageUrlSchema),
+  attachRestaurantLogoUrlHandler,
+);
+
 restaurantRouter.delete('/logo', verifyCsrf, removeRestaurantLogoHandler);
 
 restaurantRouter.post(
@@ -48,6 +58,13 @@ restaurantRouter.post(
   verifyCsrf,
   uploadSingleImage('image'),
   uploadRestaurantCoverHandler,
+);
+
+restaurantRouter.put(
+  '/cover',
+  verifyCsrf,
+  validate(cloudinaryImageUrlSchema),
+  attachRestaurantCoverUrlHandler,
 );
 
 restaurantRouter.delete('/cover', verifyCsrf, removeRestaurantCoverHandler);
