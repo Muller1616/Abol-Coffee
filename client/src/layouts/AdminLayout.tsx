@@ -135,7 +135,7 @@ export function AdminLayout() {
         <div className="absolute top-1/2 -left-20 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       </div>
 
-      <div className="relative flex min-h-dvh w-full">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-full">
         <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-border/70 bg-white/80 px-5 py-6 backdrop-blur-xl lg:flex">
           <div className="mb-8 flex items-center gap-3 px-2">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
@@ -143,7 +143,7 @@ export function AdminLayout() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight">Abol Coffee</p>
-              <p className="text-xs text-muted-foreground">/{slug}</p>
+              <p className="truncate text-xs text-muted-foreground">/{slug}</p>
             </div>
           </div>
 
@@ -165,15 +165,15 @@ export function AdminLayout() {
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border/70 bg-white/85 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2.5">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+          <header className="sticky top-0 z-20 border-b border-border/70 bg-white/85 px-3 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5">
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="lg:hidden"
+                  className="shrink-0 lg:hidden"
                   aria-label="Open navigation menu"
                   aria-expanded={mobileOpen}
                   onClick={() => setMobileOpen(true)}
@@ -184,12 +184,12 @@ export function AdminLayout() {
                   <p className="truncate text-sm font-semibold">Abol Coffee</p>
                   <p className="truncate text-xs text-muted-foreground">{activeLabel}</p>
                 </div>
-                <p className="hidden text-sm text-muted-foreground lg:block">
+                <p className="hidden truncate text-sm text-muted-foreground lg:block">
                   Manage your digital menu with clarity and speed.
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <Link
                   to={liveMenuPath}
                   className={cn(
@@ -203,7 +203,7 @@ export function AdminLayout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground lg:hidden"
+                  className="shrink-0 text-muted-foreground lg:hidden"
                   aria-label="Sign out"
                   onClick={() => void handleLogout()}
                 >
@@ -213,8 +213,8 @@ export function AdminLayout() {
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-            <div className="mx-auto w-full max-w-7xl">
+          <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div className="mx-auto w-full min-w-0 max-w-7xl overflow-x-clip">
               <Outlet />
             </div>
           </main>
@@ -229,8 +229,8 @@ export function AdminLayout() {
             className="absolute inset-0 animate-[toast-in_180ms_ease-out] bg-black/45 backdrop-blur-[2px]"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex h-dvh w-[min(100vw-3rem,20rem)] translate-x-0 animate-[drawer-in_220ms_ease-out] flex-col border-r border-border/80 bg-white shadow-[0_30px_80px_rgb(15_23_42/0.28)]">
-            <div className="flex h-full flex-col px-5 py-6">
+          <aside className="absolute inset-y-0 left-0 flex h-dvh w-[min(100vw-3rem,20rem)] max-w-full translate-x-0 animate-[drawer-in_220ms_ease-out] flex-col border-r border-border/80 bg-white shadow-[0_30px_80px_rgb(15_23_42/0.28)]">
+            <div className="flex h-full min-w-0 flex-col px-4 py-6 sm:px-5">
               <div className="mb-8 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_rgb(16_185_129/0.28)]">
@@ -245,6 +245,7 @@ export function AdminLayout() {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="shrink-0"
                   aria-label="Close navigation menu"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -252,7 +253,7 @@ export function AdminLayout() {
                 </Button>
               </div>
 
-              <NavItems slug={slug} onNavigate={() => setMobileOpen(false)} className="flex-1 overflow-y-auto" />
+              <NavItems slug={slug} onNavigate={() => setMobileOpen(false)} className="min-h-0 flex-1 overflow-y-auto" />
 
               <div className="mt-6 space-y-2 border-t border-border/70 pt-4">
                 <Link
