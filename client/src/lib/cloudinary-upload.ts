@@ -3,14 +3,21 @@ import { api, type ApiSuccess } from '@/lib/api'
 
 export type ImageUploadVariant = 'menuItem' | 'logo' | 'cover'
 
-type CloudinarySign = {
-  cloudName: string
-  apiKey: string
-  timestamp: number
-  folder: string
-  publicId: string
-  signature: string
-}
+type CloudinaryUploadSign =
+  | {
+      mode: 'unsigned'
+      cloudName: string
+      uploadPreset: string
+      folder: string
+    }
+  | {
+      mode: 'signed'
+      cloudName: string
+      apiKey: string
+      timestamp: number
+      publicId: string
+      signature: string
+    }
 
 /**
  * Upload image bytes straight to Cloudinary (bypasses Vercel 4.5MB /api proxy limit).
@@ -23,7 +30,7 @@ export async function uploadFileToCloudinary(
 ): Promise<string> {
   await ensureCsrfToken()
 
-  const { data: signEnvelope } = await api.post<ApiSuccess<CloudinarySign>>(
+  const { data: signEnvelope } = await api.post<ApiSuccess<CloudinaryUploadSign>>(
     '/api/admin/uploads/cloudinary-sign',
     { variant },
   )
@@ -31,11 +38,16 @@ export async function uploadFileToCloudinary(
 
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('api_key', sign.apiKey)
-  formData.append('timestamp', String(sign.timestamp))
-  formData.append('signature', sign.signature)
-  formData.append('folder', sign.folder)
-  formData.append('public_id', sign.publicId)
+
+  if (sign.mode === 'unsigned') {
+    formData.append('upload_preset', sign.uploadPreset)
+    formData.append('folder', sign.folder)
+  } else {
+    formData.append('api_key', sign.apiKey)
+    formData.append('timestamp', String(sign.timestamp))
+    formData.append('signature', sign.signature)
+    formData.append('public_id', sign.publicId)
+  }
 
   const cloudUrl = `https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`
 
@@ -56,9 +68,10 @@ export async function uploadFileToCloudinary(
           resolve(payload.secure_url)
           return
         }
-        reject(new Error(payload.error?.message || 'Cloudinary upload failed'))
+        const detail = payload.error?.message || `Cloudinary upload failed (${xhr.status})`
+        reject(new Error(detail))
       } catch {
-        reject(new Error('Cloudinary upload failed'))
+        reject(new Error(`Cloudinary upload failed (${xhr.status})`))
       }
     }
     xhr.onerror = () => reject(new Error('Cloudinary upload network error'))
