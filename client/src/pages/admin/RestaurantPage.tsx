@@ -262,11 +262,11 @@ export function RestaurantPage() {
   const coverPreview = !removeCover && !coverFile ? resolveMediaUrl(restaurant.coverImage) : null
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <DocumentTitle title="Restaurant · Admin" />
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Restaurant</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             Restaurant profile
@@ -287,8 +287,8 @@ export function RestaurantPage() {
             : 'border-accent/25 bg-linear-to-br from-accent/10 to-white',
         )}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight">Public menu status</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {isLive
@@ -296,7 +296,7 @@ export function RestaurantPage() {
                 : 'Guests see a temporary maintenance state instead of the menu.'}
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-full bg-white px-4 py-2 ring-1 ring-border">
+          <div className="flex w-full shrink-0 items-center justify-between gap-3 rounded-full bg-white px-4 py-2 ring-1 ring-border sm:w-auto sm:justify-start">
             <span className="text-sm font-medium text-muted-foreground">
               {isLive ? 'Active' : 'Maintenance'}
             </span>
@@ -583,7 +583,7 @@ export function RestaurantPage() {
           <OpeningHoursEditor control={control} errors={errors} />
         </section>
 
-        <div className="sticky bottom-3 z-10 -mx-1 flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/95 p-2 shadow-[0_12px_40px_rgb(15_23_42/0.12)] backdrop-blur sm:bottom-4 sm:mx-0 sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
+        <div className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-border/70 bg-white/95 p-2 shadow-[0_12px_40px_rgb(15_23_42/0.12)] backdrop-blur sm:bottom-4 sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
           {formDirty ? (
             <Button
               type="button"
