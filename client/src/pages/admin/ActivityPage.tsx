@@ -219,7 +219,7 @@ export function ActivityPage() {
   const pending = deleteMutation.isPending || bulkDeleteMutation.isPending
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div>
         <p className="text-sm font-medium text-primary">Audit</p>
         <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
@@ -286,22 +286,22 @@ export function ActivityPage() {
 
         {datePreset === 'custom' ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1.5 text-sm">
+            <label className="min-w-0 space-y-1.5 text-sm">
               <span className="font-medium text-muted-foreground">From</span>
               <input
                 type="date"
                 value={customFrom}
                 onChange={(event) => setCustomFrom(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                className="box-border h-12 w-full min-w-0 max-w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-3 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 sm:px-4"
               />
             </label>
-            <label className="space-y-1.5 text-sm">
+            <label className="min-w-0 space-y-1.5 text-sm">
               <span className="font-medium text-muted-foreground">To</span>
               <input
                 type="date"
                 value={customTo}
                 onChange={(event) => setCustomTo(event.target.value)}
-                className="h-12 w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                className="box-border h-12 w-full min-w-0 max-w-full rounded-2xl border border-border/80 bg-[#f8fafc] px-3 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 sm:px-4"
               />
             </label>
           </div>
