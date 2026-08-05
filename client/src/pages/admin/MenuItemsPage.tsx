@@ -423,7 +423,7 @@ export function MenuItemsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <Header onCreate={openCreate} />
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -454,7 +454,7 @@ export function MenuItemsPage() {
           <select
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="h-12 w-full min-w-0 max-w-full cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           >
             <option value="">All categories</option>
             {categories.map((category) => (
@@ -468,7 +468,7 @@ export function MenuItemsPage() {
             onChange={(event) =>
               setAvailability(event.target.value as 'all' | 'available' | 'hidden')
             }
-            className="h-12 cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+            className="h-12 w-full min-w-0 max-w-full cursor-pointer rounded-2xl border border-border/80 bg-[#f8fafc] px-4 text-sm outline-none transition-all duration-200 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
           >
             <option value="all">All availability</option>
             <option value="available">Available only</option>
