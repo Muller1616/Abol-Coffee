@@ -283,9 +283,9 @@ export function CategoriesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Catalog</p>
           <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             Categories
