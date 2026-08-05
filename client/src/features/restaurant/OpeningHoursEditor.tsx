@@ -62,44 +62,56 @@ export function OpeningHoursEditor({ control, errors }: OpeningHoursEditorProps)
                     </div>
 
                     {!isClosed ? (
-                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                        <input
-                          type="time"
-                          value={value.open ?? ''}
-                          aria-label={`${WEEKDAY_LABELS[day as Weekday]} opens`}
-                          aria-invalid={message ? true : undefined}
-                          onChange={(event) =>
-                            field.onChange({
-                              ...value,
-                              open: event.target.value || null,
-                            })
-                          }
-                          className={cn(
-                            'h-11 w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
-                            message
-                              ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
-                              : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
-                          )}
-                        />
-                        <span className="text-xs text-muted-foreground">to</span>
-                        <input
-                          type="time"
-                          value={value.close ?? ''}
-                          aria-label={`${WEEKDAY_LABELS[day as Weekday]} closes`}
-                          aria-invalid={message ? true : undefined}
-                          onChange={(event) =>
-                            field.onChange({
-                              ...value,
-                              close: event.target.value || null,
-                            })
-                          }
-                          className={cn(
-                            'h-11 w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
-                            message
-                              ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
-                              : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
-                          )}
-                        />
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                        <label className="block min-w-0">
+                          <span className="mb-1 block text-[11px] font-medium text-muted-foreground sm:sr-only">
+                            Opens
+                          </span>
+                          <input
+                            type="time"
+                            value={value.open ?? ''}
+                            aria-label={`${WEEKDAY_LABELS[day as Weekday]} opens`}
+                            aria-invalid={message ? true : undefined}
+                            onChange={(event) =>
+                              field.onChange({
+                                ...value,
+                                open: event.target.value || null,
+                              })
+                            }
+                            className={cn(
+                              'box-border h-11 w-full max-w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
+                              message
+                                ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
+                                : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
+                            )}
+                          />
+                        </label>
+                        <span className="hidden text-center text-xs text-muted-foreground sm:inline">
+                          to
+                        </span>
+                        <label className="block min-w-0">
+                          <span className="mb-1 block text-[11px] font-medium text-muted-foreground sm:sr-only">
+                            Closes
+                          </span>
+                          <input
+                            type="time"
+                            value={value.close ?? ''}
+                            aria-label={`${WEEKDAY_LABELS[day as Weekday]} closes`}
+                            aria-invalid={message ? true : undefined}
+                            onChange={(event) =>
+                              field.onChange({
+                                ...value,
+                                close: event.target.value || null,
+                              })
+                            }
+                            className={cn(
+                              'box-border h-11 w-full max-w-full min-w-0 cursor-pointer rounded-xl border bg-[#f8fafc] px-2 text-sm outline-none transition-all duration-200 focus:ring-4 sm:px-3',
+                              message
+                                ? 'border-danger/60 focus:border-danger focus:ring-danger/10'
+                                : 'border-border/80 hover:border-primary/40 focus:border-primary focus:ring-primary/10',
+                            )}
+                          />
+                        </label>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">Not accepting guests this day</p>
