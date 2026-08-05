@@ -141,11 +141,11 @@ export function DashboardPage() {
   ]
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+    <motion.div variants={container} initial="hidden" animate="show" className="min-w-0 space-y-6">
+      <motion.div variants={item} className="flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-primary">Dashboard</p>
-          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+          <h1 className="mt-1 break-words font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             {restaurant.name}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
@@ -153,13 +153,13 @@ export function DashboardPage() {
             access.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Badge variant={isLive ? 'success' : 'warning'}>
             {isLive ? 'Menu live' : 'Maintenance mode'}
           </Badge>
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground ring-1 ring-border">
-            <Clock3 className="h-3.5 w-3.5" />
-            Updated {formatRelativeTime(stats.lastUpdated)}
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-muted-foreground ring-1 ring-border">
+            <Clock3 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Updated {formatRelativeTime(stats.lastUpdated)}</span>
           </div>
         </div>
       </motion.div>
@@ -250,23 +250,29 @@ export function DashboardPage() {
               </div>
 
               <div className="grid gap-3 rounded-2xl bg-background p-4 text-sm">
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Status</span>
+                <div className="flex min-w-0 justify-between gap-3">
+                  <span className="shrink-0 text-muted-foreground">Status</span>
                   <Badge variant={isLive ? 'success' : 'warning'}>
                     {restaurant.status.toLowerCase()}
                   </Badge>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Phone</span>
-                  <span className="font-medium">{restaurant.phone || '—'}</span>
+                <div className="flex min-w-0 justify-between gap-3">
+                  <span className="shrink-0 text-muted-foreground">Phone</span>
+                  <span className="min-w-0 truncate text-right font-medium">
+                    {restaurant.phone || '—'}
+                  </span>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Email</span>
-                  <span className="truncate font-medium">{restaurant.email || '—'}</span>
+                <div className="flex min-w-0 justify-between gap-3">
+                  <span className="shrink-0 text-muted-foreground">Email</span>
+                  <span className="min-w-0 truncate text-right font-medium">
+                    {restaurant.email || '—'}
+                  </span>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Last updated</span>
-                  <span className="text-right font-medium">{formatDateTime(stats.lastUpdated)}</span>
+                <div className="flex min-w-0 justify-between gap-3">
+                  <span className="shrink-0 text-muted-foreground">Last updated</span>
+                  <span className="min-w-0 text-right font-medium break-words">
+                    {formatDateTime(stats.lastUpdated)}
+                  </span>
                 </div>
               </div>
 
@@ -301,14 +307,14 @@ export function DashboardPage() {
               />
             ) : (
               <div className="space-y-4">
-                <div className="mx-auto flex h-56 w-56 items-center justify-center rounded-3xl border border-border bg-[radial-gradient(circle_at_top,#f0fdfa,#ffffff)] p-4 shadow-inner">
+                <div className="mx-auto flex aspect-square w-full max-w-56 items-center justify-center rounded-3xl border border-border bg-[radial-gradient(circle_at_top,#f0fdfa,#ffffff)] p-4 shadow-inner">
                   <img
                     src={qrQuery.data.pngDataUrl}
                     alt="Restaurant menu QR code"
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p className="truncate rounded-xl bg-background px-3 py-2 text-center text-xs text-muted-foreground">
+                <p className="break-all rounded-xl bg-background px-3 py-2 text-center text-xs text-muted-foreground">
                   {qrQuery.data.menuUrl}
                 </p>
                 <Link to={`/${slug}/qr`} className={cn(buttonVariants(), 'w-full')}>
