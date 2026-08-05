@@ -1,6 +1,11 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { getCloudinary, isCloudinaryConfigured } from '../config/cloudinary.js';
+import {
+  getCloudinary,
+  getCloudinaryUploadPreset,
+  isCloudinaryConfigured,
+} from '../config/cloudinary.js';
+import { env } from '../config/env.js';
 import { uploadConfig, type ImageVariant } from '../config/upload.js';
 import { AppError } from '../utils/AppError.js';
 
@@ -12,18 +17,30 @@ export const cloudinarySignSchema = z.object({
 
 export type CloudinarySignInput = z.infer<typeof cloudinarySignSchema>;
 
-export type CloudinaryUploadSign = {
-  cloudName: string;
-  apiKey: string;
-  timestamp: number;
-  folder: string;
-  publicId: string;
-  signature: string;
-};
+export type CloudinaryUploadSign =
+  | {
+      mode: 'unsigned';
+      cloudName: string;
+      uploadPreset: string;
+      folder: string;
+    }
+  | {
+      mode: 'signed';
+      cloudName: string;
+      apiKey: string;
+      timestamp: number;
+      publicId: string;
+      signature: string;
+    };
+
+function folderForVariant(variant: ImageVariant): string {
+  return `${CLOUDINARY_ROOT_FOLDER}/${uploadConfig.variants[variant].folder}`;
+}
 
 /**
- * Signed params for browser → Cloudinary direct upload.
- * Avoids sending image bytes through Vercel (4.5MB proxy limit).
+ * Browser upload credentials.
+ * Prefer an unsigned upload preset when configured (most reliable for SPAs).
+ * Otherwise return a SHA-256 signed payload.
  */
 export function createCloudinaryUploadSign(variant: ImageVariant): CloudinaryUploadSign {
   if (!isCloudinaryConfigured()) {
@@ -33,26 +50,37 @@ export function createCloudinaryUploadSign(variant: ImageVariant): CloudinaryUpl
     );
   }
 
-  const cloudinary = getCloudinary();
-  const settings = uploadConfig.variants[variant];
-  const folder = `${CLOUDINARY_ROOT_FOLDER}/${settings.folder}`;
-  const publicId = randomUUID();
-  const timestamp = Math.round(Date.now() / 1000);
+  const cloudName = env.CLOUDINARY_CLOUD_NAME!;
+  const folder = folderForVariant(variant);
+  const preset = getCloudinaryUploadPreset();
 
-  const signature = cloudinary.utils.api_sign_request(
-    {
-      timestamp,
+  if (preset) {
+    return {
+      mode: 'unsigned',
+      cloudName,
+      uploadPreset: preset,
       folder,
-      public_id: publicId,
-    },
-    cloudinary.config().api_secret as string,
-  );
+    };
+  }
+
+  const apiKey = env.CLOUDINARY_API_KEY!;
+  const apiSecret = env.CLOUDINARY_API_SECRET!;
+  const timestamp = Math.round(Date.now() / 1000);
+  // Single public_id (includes folder path) — avoids folder+public_id signature mismatches.
+  const publicId = `${folder}/${randomUUID()}`;
+
+  // Explicit SHA-256 signature (Cloudinary rejects SHA-1 on newer accounts).
+  const toSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+  const signature = createHash('sha256').update(toSign).digest('hex');
+
+  // Keep SDK config in sync for destroy/other calls.
+  getCloudinary();
 
   return {
-    cloudName: cloudinary.config().cloud_name as string,
-    apiKey: cloudinary.config().api_key as string,
+    mode: 'signed',
+    cloudName,
+    apiKey,
     timestamp,
-    folder,
     publicId,
     signature,
   };
@@ -74,9 +102,8 @@ export function assertOwnedCloudinaryUrl(imageUrl: string): string {
     throw AppError.field('image', 'Image URL must be HTTPS.');
   }
 
-  const cloudName = getCloudinary().config().cloud_name as string;
-  const expectedHost = 'res.cloudinary.com';
-  if (parsed.hostname !== expectedHost && !parsed.hostname.endsWith('.cloudinary.com')) {
+  const cloudName = env.CLOUDINARY_CLOUD_NAME!;
+  if (parsed.hostname !== 'res.cloudinary.com' && !parsed.hostname.endsWith('.cloudinary.com')) {
     throw AppError.field('image', 'Image URL must be a Cloudinary delivery URL.');
   }
 
