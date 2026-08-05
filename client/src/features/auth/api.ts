@@ -28,11 +28,16 @@ export async function ensureCsrfToken() {
 }
 
 export async function loginRequest(payload: LoginPayload) {
-  await fetchCsrfToken()
+  const csrf = await fetchCsrfToken()
 
   const { data } = await api.post<ApiSuccess<{ owner: Owner; csrfToken: string }>>(
     '/api/auth/login',
     payload,
+    {
+      headers: {
+        'X-CSRF-Token': csrf,
+      },
+    },
   )
 
   setCsrfToken(data.data.csrfToken)

@@ -7,7 +7,18 @@ import {
 import { getCsrfToken } from '@/lib/csrf'
 import { peekActiveRestaurantSlug } from '@/features/restaurant/workspace'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL?.trim() || undefined
+/**
+ * Production (Vercel) must use same-origin `/api` so the Vercel rewrite can proxy
+ * to Render. That keeps auth cookies first-party and avoids CSRF/cookie breakage.
+ * VITE_API_URL is only used in local/dev when you intentionally point at a remote API.
+ */
+function resolveApiBaseUrl(): string | undefined {
+  const raw = import.meta.env.VITE_API_URL?.trim().replace(/^["']|["']$/g, '') || ''
+  if (import.meta.env.PROD) return undefined
+  return raw || undefined
+}
+
+const apiBaseUrl = resolveApiBaseUrl()
 
 export const api = axios.create({
   baseURL: apiBaseUrl,

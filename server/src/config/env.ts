@@ -131,6 +131,10 @@ function assertProductionReady(data: Env): void {
   }
 }
 
+function stripTrailingSlash(value: string): string {
+  return value.replace(/\/$/, '');
+}
+
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
@@ -144,8 +148,16 @@ function loadEnv(): Env {
     );
   }
 
-  assertProductionReady(parsed.data);
-  return parsed.data;
+  const data: Env = {
+    ...parsed.data,
+    // Trailing slashes break exact CORS Origin matching.
+    CLIENT_URL: stripTrailingSlash(parsed.data.CLIENT_URL.trim()),
+    PUBLIC_MENU_URL: stripTrailingSlash(parsed.data.PUBLIC_MENU_URL.trim()),
+    COOKIE_DOMAIN: parsed.data.COOKIE_DOMAIN?.trim() || undefined,
+  };
+
+  assertProductionReady(data);
+  return data;
 }
 
 export const env = loadEnv();
